@@ -156,10 +156,10 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
   n <- nrow(dt_mt)
   HDI <- cbind.data.frame(numeric(n), numeric(n))
   M_b=dt_mt$M_b ; UM_b=dt_mt$UM_b
-  if(sum(grepl("M_n", colnames(dt_mt)))>0){
+  if("M_n" %in% colnames(dt_mt)){
       M_n=dt_mt$M_n ; UM_n=dt_mt$UM_n
   }
-  if(sum(grepl("M_n_i", colnames(dt_mt)))>0){
+  if("M_n_i" %in% colnames(dt_mt)){
       M_n=dt_mt$M_n_i ; UM_n=dt_mt$UM_n_i
   }
   CN=dt_mt$CG_CN
@@ -391,10 +391,10 @@ plot_2d_density <- function(dt, path){
 
   # get relevant colummn
   tmp <- dt[, .SD, .SDcols=c("m_b","m_t_corr")]
-  if(sum(grepl("M_n", colnames(dt)))>0){
+  if("M_n" %in% colnames(dt)){
       tmp[, "m_n" := dt[,.(m_n)]]
   }
-  if(sum(grepl("M_n_i", colnames(dt)))>0){
+  if("M_n_i" %in% colnames(dt)){
      tmp[, "m_n" := dt[,.(m_n_o)]]
   }
 
