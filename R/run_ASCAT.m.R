@@ -116,11 +116,11 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
        colnames(dt_normal_SNPs)[idxs] <- c("total_counts_n","total_depth_n","BAF_n")
        rm(idxs)
     } else {
-       dt_normal_SNPs <- read_fst(reference_panel_coverage,as.data.table=FALSE)
+       dt_normal_SNPs <- read_fst(reference_panel_coverage, as.data.table=TRUE)
        dt_normal_SNPs <- 
-           dt_normal_SNPs[, .SD, .SDcols= c("chrom","POS","ref","alt","total_counts_n","total_depth_n")]
+           dt_normal_SNPs[, .SD, .SDcols= c("chrom","POS","ref","alt","total_depth_n")]
        dt_normal_SNPs[, BAF_n := as.numeric(NA)]
-       dt_normal_SNPs <- dt_normal_SNPs[total_counts >= min_normal,]
+       dt_normal_SNPs <- dt_normal_SNPs[total_depth_n >= min_normal,]
   }
     
     # double check chromosome format
@@ -256,6 +256,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
   if(sample_id!=normal_id){
     cols=c(cols,"LogR_t","LogR_t_corr","total_depth_n","total_counts_n",
            "BAF_n","rBAF_n","LogR_n","msp1_length","GC_content","replic")
+    if(!is.null(reference_panel_coverage)){cols <- cols[-which(cols=="total_counts_n")] }
   }
   dt <- dt_sample_SNPs[, .SD, .SDcols=c(cols,"type")]
  
