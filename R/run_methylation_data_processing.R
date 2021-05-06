@@ -188,11 +188,11 @@ if(!sample_id%in%normal_ids){
       load(filename_control[i])
      } else if(sum(!is.null(reference_panel))>0 & !is.na(reference_panel[i])){
       # If you don't have patient matched normal
-      dt_normal_m <- read_fst(path=reference_panel, as.data.table=TRUE)
+      dt_normal_m <- read_fst(path=reference_panel[i], as.data.table=TRUE)
 
       # Ensure all required columns are present
       if(!is.null(dt_normal_m)&sum(c("CHR", "start", "end", "M_n", "UM_n", "m_n", "cov_n")%in%colnames(dt_normal_m))!=7){
-         error(paste0("Required columns not all present in reference panel for the ",
+         stop(paste0("Required columns not all present in reference panel for the ",
                      c("tumour-infiltrating normal cells", "cell of origin")[i]))
       }
       # Ensure there are no NAs
@@ -224,9 +224,9 @@ if(!sample_id%in%normal_ids){
       } 
   
     } else {
-      error(paste0("No proxy provided for the normal ", c("tumour- infiltrating cells", " cell of origin")[i]), ".\n",
-                   "You must provide a proxy normal profile for the tumour infiltrating cells for tumour deconvolution and\n
-                    a proxy for the cell of origin for differential methylation analysis calling.")
+      stop(paste0("No proxy provided for the normal ", c("tumour- infiltrating cells", " cell of origin")[i]), ".\n",
+                  "You must provide a proxy normal profile for the tumour infiltrating cells for tumour deconvolution and\n
+                  a proxy for the cell of origin for differential methylation analysis calling.")
     }
 
     # Check seqlevels are matched
