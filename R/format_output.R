@@ -83,7 +83,8 @@ format_output <- function (patient_id,sample_id,sex,
   rm(f_nm, files)
   
   # Create dir and set output file for msp1 fragments sizes and copy number
-  dir.create(file.path(path_patient, "Copy_number",sample_id), recursive = TRUE)
+  cna_dir = file.path(path_patient, "Copy_number",sample_id)
+  if(!dir.exists(cna_dir)){dir.create(cna_dir, recursive = TRUE, )}
   outfile_prefix = paste0(path_patient,"/Copy_number/",sample_id, "/")
 
   # Get normal msp1 fragments sizes and nucleotide content
@@ -229,7 +230,7 @@ get_msp1_fragments <- function(dt,build,path_to_CAMDAC,outfile){
     scale_x_continuous(name="MspI fragment length", breaks = seq(100,1000,100),labels = seq(100,1000,100))+
     ggtitle(paste0("Mean MspI fragment length = ", mean_length,
                    "bp\nand the inter-quartile range is [", q25,", ",q75 ,"] bp"))+
-    theme(plot.title=element_text(hjust=0.5)) +
+    theme(plot.title=element_text(hjust=0.5))
     ggsave(file = outfile, device = "pdf", width=4.5, height = 3, units = "in")
 } 
 
