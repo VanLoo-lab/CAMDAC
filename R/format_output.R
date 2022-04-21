@@ -223,14 +223,14 @@ get_msp1_fragments <- function(dt,build,path_to_CAMDAC,outfile){
   
   # plot log10 fragment size distribution
   outfile = paste0(outfile,"fragment_length_histogram.pdf")
-  ggplot(df_fragments)+geom_histogram(aes(x=l,y=..count..),col="cornflowerblue",fill="white", bins = 100)+
+  p <- ggplot(df_fragments)+geom_histogram(aes(x=l,y=..count..),col="cornflowerblue",fill="white", bins = 100)+
     theme_classic()+ylab("Number of fragments")+coord_cartesian(xlim=c(35,1000))+#+coord_cartesian(xlim=c(log10(40),3))+
     #scale_x_continuous(name="Log Msp1 fragment length", breaks = seq(1,3,.25),labels = round2(10^seq(1,3,.25), digits = 0))+
     scale_x_continuous(name="MspI fragment length", breaks = seq(100,1000,100),labels = seq(100,1000,100))+
     ggtitle(paste0("Mean MspI fragment length = ", mean_length,
                    "bp\nand the inter-quartile range is [", q25,", ",q75 ,"] bp"))+
     theme(plot.title=element_text(hjust=0.5))
-    ggsave(file = outfile, device = "pdf", width=4.5, height = 3, units = "in")
+    ggsave(file = outfile, plot=p, device = "pdf", width=4.5, height = 3, units = "in")
 } 
 
 
