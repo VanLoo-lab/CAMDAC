@@ -84,7 +84,7 @@ format_output <- function (patient_id,sample_id,sex,
   
   # Create dir and set output file for msp1 fragments sizes and copy number
   cna_dir = file.path(path_patient, "Copy_number",sample_id)
-  if(!dir.exists(cna_dir)){dir.create(cna_dir, recursive = TRUE, )}
+  if(!dir.exists(cna_dir)){dir.create(cna_dir, recursive = TRUE)}
   outfile_prefix = paste0(path_patient,"/Copy_number/",sample_id, "/")
 
   # Get normal msp1 fragments sizes and nucleotide content
