@@ -35,6 +35,7 @@ rm(x)
 #' @param min_normal Numerical value correspdonding to the minimum counts for germline
 #' SNPs to be included (default:1)
 #' @param n_cores Numerical value correspdonding to the number of cores for parallel processing
+#' @param reference_panel_coverage Path to the reference panel for the coverage.
 #'
 #' @return Three text files with all the CpG loci and their SNP and/or CpG methylation info 
 
@@ -73,13 +74,13 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
   }
   
   # Rename R object (tumour samples)
-  if(sample_id!=normal_id){
+  if(sample_id != normal_id){
     dt_sample <- dt_tumour
     rm(dt_tumour)
   }
   
   # Create output directory
-  suppressWarnings(dir.create(file.path(path_patient, "Copy_number",sample_id), recursive = TRUE))
+  suppressWarnings(dir.create(file.path(path_patient, "Copy_number", sample_id), recursive = TRUE))
   path_output<-paste0(path_patient, "/Copy_number/",sample_id,"/")
   setwd(path_output)
   
