@@ -156,6 +156,22 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     df <- data.table(dplyr::bind_rows(lapply(bam_filtered, as.data.frame.list, stringsAsFactors=FALSE)))
     # duplicates created when unlisting and due to overlapping reads, to be removed in later lines
     rm(bam_filtered)
+    
+    # Return empty BAM file if no data
+    if(nrow(df) == 0){
+      df_names = c("CHR","chrom","start","end","width",
+                   "POS","ref","alt","alt_counts","ref_counts",
+                   "total_counts","BAF","total_depth",
+                   # "other_counts","all_counts",
+                   "M","UM","total_counts_m","m",
+                   # allele counts breakdown may be obtained by uncommenting this line + line 441.
+                   #"Af","Ar","Cf","Cr","Tf","Tr","Gf","Gr","CAr","TGf","CGf","CGr", 
+                   "CCGG")
+      df <- data.frame(matrix(NA, nrow=1, ncol=length(df_names)))
+      names(df) <- df_names
+      df <- df[-1,] # Return empty dataframe
+      return(df)
+    } 
         
     # Format pileup df for transformation into GRanges Object
     df$end <- df$pos + (df$qwidth - 1)
@@ -426,7 +442,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     #Remove rows with no allowed counts
     flag <- df_summary[, (is.na(total_counts_m)&is.na(total_counts))]
     if(sum(flag)>0){df_summary <- df_summary[flag==FALSE,]};rm(flag)
-        
+    
     # Remove positions with unexpected bases at SNPs (i.e. SNV)
     df_summary[, other_counts :=  total_depth - all_counts]
     flag <- df_summary[, (ifelse(other_counts <= 0.05*total_depth, TRUE, FALSE))]
@@ -501,6 +517,23 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     # format data.frame
     df[, ID := NULL]
     
+    # Return empty BAM file if no data
+    # If not, rownames() call below will raise error
+    if(nrow(df) == 0){
+      df_names = c("CHR","chrom","start","end","width",
+                   "POS","ref","alt","alt_counts","ref_counts",
+                   "total_counts","BAF","total_depth",
+                   # "other_counts","all_counts",
+                   "M","UM","total_counts_m","m",
+                   # allele counts breakdown may be obtained by uncommenting this line + line 441.
+                   #"Af","Ar","Cf","Cr","Tf","Tr","Gf","Gr","CAr","TGf","CGf","CGr", 
+                   "CCGG")
+      df <- data.frame(matrix(NA, nrow=1, ncol=length(df_names)))
+      names(df) <- df_names
+      df <- df[-1,] # Return empty dataframe
+      return(df)
+    } 
+    
     # Format row names and col classes
     rownames(df) <- 1:nrow(df)
     if(getOption("scipen")==0){options(scipen = 999)}
@@ -549,7 +582,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     df_merged <- foreach(j = 1:n_cores, .combine='rbind.data.frame', 
                          .packages=c("magrittr","Rsamtools", "GenomicRanges", "S4Vectors", 
                                      "IRanges", "dplyr", "data.table"),
-                         .multicombine = TRUE, .init=list(list(), list())) %dopar% {
+                         .multicombine = TRUE) %dopar% {
                  df_Jth_core <- get_reads(i=i,j=j,n_cores=n_cores,bam_file=bam_file,
                                           segments_subset=segments_subset,mq=mq,test=test)
                                  }

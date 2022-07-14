@@ -687,7 +687,7 @@ plot_methylation_info_with_anno <- function(dt, path, bulk){
   my_layout <- rbind(1, 2)
   gd <- arrangeGrob(grobs = c(gglist1, gglist2), layout_matrix = my_layout)
   Sys.sleep(1)
-  ggsave(gd, filename = paste0(path, "/", prefix, "_tumour_DMR_summary_plots.pdf"), device=pdf,
+  ggsave(gd, filename = paste0(path, "/", prefix, "_tumour_DMR_summary_plots.pdf"), device="pdf",
              width=9, height = 6, unit="in")
 }
 

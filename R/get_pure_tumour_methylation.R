@@ -435,7 +435,7 @@ plot_2d_density <- function(dt, path){
   my_layout <- matrix(c(rep(1,2), rep(2, 3)), nrow=1)
   gd <- arrangeGrob(grobs = c(gglist1, gglist2), layout_matrix = my_layout)
   Sys.sleep(1)
-  ggsave(gd, filename = paste0(path, "/tumour_versus_normal_methylomes.pdf"), device=pdf,
+  ggsave(gd, filename = paste0(path, "/tumour_versus_normal_methylomes.pdf"), device="pdf",
              width=6.5, height = 3, unit="in")
 }
 
