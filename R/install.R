@@ -15,5 +15,5 @@ if(length(new.packages)) install.packages(new.packages)
 
 # Load ASCAT lib
 library(devtools)
-devtools::install_github("VanLoo-lab/ascat/ASCAT")
+devtools::install_github("VanLoo-lab/ascat/ASCAT@v2.5.3")
 #devtools::install_github("fstpackage/fst")
