@@ -1,0 +1,127 @@
+---
+title: "deconvolution"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{deconvolution}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+CAMDAC deconvolves bulk tumor methylation by adjusting for the effects of copy number variation and cell type heterogeneity.
+
+CAMDAC inputs are defined by two functions:
+
+- `create_camdac_config()` defines the settings for CAMDAC deconvolution. The resulting config object can be passed to camdac pipeline functions.
+- `create_camdac_sample()` returns an object representing a unique biological sample.
+
+## Pipeline files
+
+A set of reference files are required to run CAMDAC. These can be downloaded using the command `download_pipeline_files("wgbs", directory="./camdac_refs")`. 
+
+If a download directory isn't given, CAMDAC will use the location defined by the environment variable `CAMDAC_PIPELINE_FILES`, or the current working directory if this is no set.
+
+## Configuration
+
+Setup a configuration object for CAMDAC analysis.
+
+```{r config_setup}
+suppressPackageStartupMessages(
+  suppressWarnings(
+    library(CAMDAC)
+  )
+)
+
+config = create_camdac_config(
+  outdir="./results", # Path for outputs
+  bsseq="wgbs", # WGBS
+  build="hg38", # Reference
+  bsseq_lib="pe", # Paired end
+  n_cores = 10 # Cores for parallel processing
+)
+```
+
+You may also explicitly pass your downloaded CAMDAC pipeline files directory via the `camdac_refs` argument.
+
+## Deconvolution
+
+The simplest case for CAMDAC deconvolution is a bulk tumor with a tissue-matched adjacent normal. The adjacent normal methylation profile is used to select germline heterozygous SNPs for copy number calling, to estimate the infiltrating cell methylation, and as a proxy for the cell of origin in differential methylation calling.
+
+We first create CAMDAC sample objects from the bulk tumor and normal BAM files. Test BAM files are provided with CAMDAC to verify the installation, however, please be aware **this is not whole genome bisulfite sequencing data** therefore the outputs from these files are not meaningful.
+
+```{r camdac_sample}
+# Get test BAM
+tumor_bam = system.file("extdata", "NA18939_test_v3.bam", package="CAMDAC")
+normal_bam = system.file("extdata", "NA20502_test_v3.bam", package="CAMDAC")
+
+# Set CAMDAC tumor sample
+tumour <- create_camdac_sample(
+  patient_id="P1",
+  patient_sex="XX",
+  sample_id="T",
+  sample_type="tumour",
+  bam_file=tumor_bam
+)
+
+# Set CAMDAC normal sample
+normal <- create_camdac_sample(
+  patient_id="P1",
+  patient_sex="XX",
+  sample_id="N",
+  sample_type="normal",
+  bam_file=normal_bam
+)
+```
+
+Run the CAMDAC tumor-normal pipeline. This analysis takes 1 hour using the test dataset, and approximately 8 hours on a full WGBS dataset.
+```{r deconvolve, eval=FALSE}
+pipeline_tumor_normal(tumor, normal, config)
+```
+
+
+## Results
+
+CAMDAC outputs are written in the directory given by `config$outdir` in the format `PATIENT/DATASET/SAMPLE/`:
+```
+└── P1
+    ├── Allelecounts
+    │   ├── N
+    │   │   └── P1.N.SNPs.CpGs.all.sorted.csv.gz
+    │   └── T
+    │       └── P1.T.SNPs.CpGs.all.sorted.csv.gz
+    ├── Copynumber
+    │   └── T
+    │       ├── battenberg # (Subset of files shown)
+    │           ├── P1-T_subclones.txt
+    │           └── P1-T_BattenbergProfile_average.png
+    │       ├── P1.T.ACF.and.ploidy.txt
+    │       ├── P1.T.ascat.bc.qs
+    │       ├── P1.T.ascat.frag.qs
+    │       ├── P1.T.ascat.output.qs
+    │       ├── P1.T.ASPCF.png
+    │       ├── P1.T.germline.png
+    │       ├── P1.T.SNPs.csv.gz
+    │       ├── P1.T.ASCATprofile.png
+    │       ├── P1.T.BAF.PCFed.txt
+    │       ├── P1.T.LogR.PCFed.txt
+    │       ├── P1.T.rawprofile.png
+    │       ├── P1.T.sunrise.png
+    │       └── P1.T.tumour.png
+    └── Methylation
+        ├── N
+        │   └── P1.N.m.csv.gz
+        └── T
+            ├── P1.T.CAMDAC_annotated_DMRs.fst
+            ├── P1.T.CAMDAC_results_per_CpG.fst
+            ├── P1.T.m.csv.gz
+            └── P1.T.pure.qs
+
+```
