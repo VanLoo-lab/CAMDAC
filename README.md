@@ -33,8 +33,7 @@ CAMDAC WGBS requires the following additional dependencies:
 
 ## Documentation
 
-View the full documentation at
-<https://github.com/VanLoo-lab/CAMDAC/blob/main/CAMDAC_manual.html>.
+View the full documentation at <https://vanloo-lab.github.io/CAMDAC/>.
 
 ## Quickstart
 
