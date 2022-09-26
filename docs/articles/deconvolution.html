@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CAMDAC</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.1</span>
       </span>
     </div>
 
@@ -84,47 +84,57 @@
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>CAMDAC deconvolves bulk tumor methylation by adjusting for the effects of copy number variation and cell type heterogeneity.</p>
-<p>CAMDAC inputs are defined by two functions:</p>
+<p>Here, we demonstrate the simplest case for CAMDAC deconvolution using a bulk tumor with adjacent normal tissue from the same patient. We can define CAMDAC inputs using two functions:</p>
 <ul>
 <li>
-<code><a href="../reference/create_camdac_config.html">create_camdac_config()</a></code> defines the settings for CAMDAC deconvolution. The resulting config object can be passed to camdac pipeline functions.</li>
+<code><a href="../reference/create_camdac_config.html">create_camdac_config()</a></code> sets the configuration for camdac pipeline functions.</li>
 <li>
-<code><a href="../reference/create_camdac_sample.html">create_camdac_sample()</a></code> returns an object representing a unique biological sample.</li>
+<code><a href="../reference/create_camdac_sample.html">create_camdac_sample()</a></code> sets details for each biological sample.</li>
 </ul>
-</div>
-<div class="section level2">
-<h2 id="pipeline-files">Pipeline files<a class="anchor" aria-label="anchor" href="#pipeline-files"></a>
-</h2>
-<p>A set of reference files are required to run CAMDAC. These can be downloaded using the command <code>download_pipeline_files("wgbs", directory="./camdac_refs")</code>.</p>
-<p>If a download directory isn’t given, CAMDAC will use the location defined by the environment variable <code>CAMDAC_PIPELINE_FILES</code>, or the current working directory if this is no set.</p>
-</div>
-<div class="section level2">
-<h2 id="configuration">Configuration<a class="anchor" aria-label="anchor" href="#configuration"></a>
-</h2>
-<p>Setup a configuration object for CAMDAC analysis.</p>
+<p>After which, we pass these input objects to <code>pipline_*</code> functions. This vignette will walk you through running the <code><a href="../reference/pipeline_tumor_normal.html">pipeline_tumor_normal()</a></code> workflow.</p>
+<p>Load the CAMDAC library:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressPackageStartupMessages</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span></span>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CAMDAC</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">config</span> <span class="op">=</span> <span class="fu"><a href="../reference/create_camdac_config.html">create_camdac_config</a></span><span class="op">(</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="configuration">Configuration<a class="anchor" aria-label="anchor" href="#configuration"></a>
+</h2>
+<div class="section level3">
+<h3 id="reference-files">Reference files<a class="anchor" aria-label="anchor" href="#reference-files"></a>
+</h3>
+<p>CAMDAC requires a set of pre-built reference files. These files are stored at a dropbox endpoint as tar.gz files. You can download these files with the command <code>CAMDAC::download_pipeline_files("wgbs")"</code>.</p>
+<p>CAMDAC pipeline functions search for the unpacked reference files in the following locations:</p>
+<ol style="list-style-type: decimal">
+<li>The directory passed when creating the CAMDAC config object (see camdac_refs argument in <code>create_camdac_config</code>)</li>
+<li>The location defined by the environment variable CAMDAC_PIPELINE_FILES.</li>
+<li>The current working directory</li>
+</ol>
+<p>If the download command fails, you can manually download the reference files from the endpoints listed in <code>inst/extdata/pipeline_files_urls.txt</code>.</p>
+</div>
+<div class="section level3">
+<h3 id="configuration-object">Configuration object<a class="anchor" aria-label="anchor" href="#configuration-object"></a>
+</h3>
+<p>Once reference files are downloaded, load the CAMDAC library and set up the configuration:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">config</span> <span class="op">=</span> <span class="fu"><a href="../reference/create_camdac_config.html">create_camdac_config</a></span><span class="op">(</span></span>
+<span>  <span class="co"># camdac_refs = "./camdac_refs", # Optional: Pass the location of pipeline files </span></span>
 <span>  outdir<span class="op">=</span><span class="st">"./results"</span>, <span class="co"># Path for outputs</span></span>
 <span>  bsseq<span class="op">=</span><span class="st">"wgbs"</span>, <span class="co"># WGBS</span></span>
 <span>  build<span class="op">=</span><span class="st">"hg38"</span>, <span class="co"># Reference</span></span>
 <span>  bsseq_lib<span class="op">=</span><span class="st">"pe"</span>, <span class="co"># Paired end</span></span>
 <span>  n_cores <span class="op">=</span> <span class="fl">10</span> <span class="co"># Cores for parallel processing</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>You may also explicitly pass your downloaded CAMDAC pipeline files directory via the <code>camdac_refs</code> argument.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="deconvolution">Deconvolution<a class="anchor" aria-label="anchor" href="#deconvolution"></a>
 </h2>
-<p>The simplest case for CAMDAC deconvolution is a bulk tumor with a tissue-matched adjacent normal. The adjacent normal methylation profile is used to select germline heterozygous SNPs for copy number calling, to estimate the infiltrating cell methylation, and as a proxy for the cell of origin in differential methylation calling.</p>
-<p>We first create CAMDAC sample objects from the bulk tumor and normal BAM files. Test BAM files are provided with CAMDAC to verify the installation, however, please be aware <strong>this is not whole genome bisulfite sequencing data</strong> therefore the outputs from these files are not meaningful.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<p>Next, define CAMDAC samples from the bulk tumor and normal BAM files. Test BAM files are provided with CAMDAC to verify your installation but please be aware that <strong>these are not whole genome bisulfite sequencing data</strong>, therefore the outputs from these files are not meaningful.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Get test BAM</span></span>
 <span><span class="va">tumor_bam</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"NA18939_test_v3.bam"</span>, package<span class="op">=</span><span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span><span class="va">normal_bam</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"NA20502_test_v3.bam"</span>, package<span class="op">=</span><span class="st">"CAMDAC"</span><span class="op">)</span></span>
@@ -147,8 +157,9 @@
 <span>  bam_file<span class="op">=</span><span class="va">normal_bam</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Run the CAMDAC tumor-normal pipeline. This analysis takes 1 hour using the test dataset, and approximately 8 hours on a full WGBS dataset.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pipeline_tumor_normal.html">pipeline_tumor_normal</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="va">normal</span>, <span class="va">config</span><span class="op">)</span></span></code></pre></div>
+<p>In this pipeline, the adjacent normal methylation profile is used to select germline heterozygous SNPs for copy number calling, to estimate the infiltrating cell methylation, and as a proxy for the cell of origin in differential methylation calling.</p>
 </div>
 <div class="section level2">
 <h2 id="results">Results<a class="anchor" aria-label="anchor" href="#results"></a>
