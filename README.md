@@ -26,10 +26,11 @@ remotes::install_github("VanLoo-lab/CAMDAC@wgbs")
 CAMDAC::download_pipeline_files("wgbs")
 ```
 
-CAMDAC WGBS requires the following additional dependencies:
+Additional dependencies:
 
-  - java runtime environment (jre). Tested using [openjdk
-    v18.9](https://openjdk.org/)
+  - java runtime environment [(jre)](https://openjdk.org/)
+  - [beagle5](http://faculty.washington.edu/browning/beagle/beagle.html)
+    (included)
 
 ## Documentation
 
