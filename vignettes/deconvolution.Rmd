@@ -16,31 +16,44 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-CAMDAC deconvolves bulk tumor methylation by adjusting for the effects of copy number variation and cell type heterogeneity.
+Here, we demonstrate the simplest case for CAMDAC deconvolution using a bulk tumor with adjacent normal tissue from the same patient. We can define CAMDAC inputs using two functions:
 
-CAMDAC inputs are defined by two functions:
+- `create_camdac_config()` sets the configuration for camdac pipeline functions.
+- `create_camdac_sample()` sets details for each biological sample.
 
-- `create_camdac_config()` defines the settings for CAMDAC deconvolution. The resulting config object can be passed to camdac pipeline functions.
-- `create_camdac_sample()` returns an object representing a unique biological sample.
+After which, we pass these input objects to `pipline_*` functions. This vignette will walk you through running the `pipeline_tumor_normal()` workflow.
 
-## Pipeline files
+Load the CAMDAC library:
 
-A set of reference files are required to run CAMDAC. These can be downloaded using the command `download_pipeline_files("wgbs", directory="./camdac_refs")`. 
-
-If a download directory isn't given, CAMDAC will use the location defined by the environment variable `CAMDAC_PIPELINE_FILES`, or the current working directory if this is no set.
-
-## Configuration
-
-Setup a configuration object for CAMDAC analysis.
-
-```{r config_setup}
+```{r camdac_load}
 suppressPackageStartupMessages(
   suppressWarnings(
     library(CAMDAC)
   )
 )
+```
 
+## Configuration
+
+### Reference files
+
+CAMDAC requires a set of pre-built reference files. These files are stored at a dropbox endpoint as tar.gz files. You can download these files with the command `CAMDAC::download_pipeline_files("wgbs")"`. 
+
+CAMDAC pipeline functions search for the unpacked reference files in the following locations:
+
+1. The directory passed when creating the CAMDAC config object (see camdac_refs argument in `create_camdac_config`)
+1. The location defined by the environment variable CAMDAC_PIPELINE_FILES.
+1. The current working directory
+
+If the download command fails, you can manually download the reference files from the endpoints listed in `inst/extdata/pipeline_files_urls.txt`.
+
+### Configuration object
+
+Once reference files are downloaded, load the CAMDAC library and set up the configuration:
+
+```{r config_setup}
 config = create_camdac_config(
+  # camdac_refs = "./camdac_refs", # Optional: Pass the location of pipeline files 
   outdir="./results", # Path for outputs
   bsseq="wgbs", # WGBS
   build="hg38", # Reference
@@ -49,13 +62,9 @@ config = create_camdac_config(
 )
 ```
 
-You may also explicitly pass your downloaded CAMDAC pipeline files directory via the `camdac_refs` argument.
-
 ## Deconvolution
 
-The simplest case for CAMDAC deconvolution is a bulk tumor with a tissue-matched adjacent normal. The adjacent normal methylation profile is used to select germline heterozygous SNPs for copy number calling, to estimate the infiltrating cell methylation, and as a proxy for the cell of origin in differential methylation calling.
-
-We first create CAMDAC sample objects from the bulk tumor and normal BAM files. Test BAM files are provided with CAMDAC to verify the installation, however, please be aware **this is not whole genome bisulfite sequencing data** therefore the outputs from these files are not meaningful.
+Next, define CAMDAC samples from the bulk tumor and normal BAM files. Test BAM files are provided with CAMDAC to verify your installation but please be aware that **these are not whole genome bisulfite sequencing data**, therefore the outputs from these files are not meaningful.
 
 ```{r camdac_sample}
 # Get test BAM
@@ -82,10 +91,12 @@ normal <- create_camdac_sample(
 ```
 
 Run the CAMDAC tumor-normal pipeline. This analysis takes 1 hour using the test dataset, and approximately 8 hours on a full WGBS dataset.
+
 ```{r deconvolve, eval=FALSE}
 pipeline_tumor_normal(tumor, normal, config)
 ```
 
+In this pipeline, the adjacent normal methylation profile is used to select germline heterozygous SNPs for copy number calling, to estimate the infiltrating cell methylation, and as a proxy for the cell of origin in differential methylation calling.
 
 ## Results
 
