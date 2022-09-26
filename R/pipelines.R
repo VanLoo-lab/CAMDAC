@@ -5,6 +5,7 @@
 #' @param tumor. Tumor sample data built with `create_camdac_sample()`.
 #' @param normal. Normal sample data built with `create_camdac_sample()`.
 #' @param config. Configuration built with `create_camdac_config()`.
+#' @export
 pipeline_tumor_normal <- function(tumor, normal, config){
   
   # Log

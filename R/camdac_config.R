@@ -38,7 +38,7 @@ create_camdac_sample <- function(
 #'  @param ascat_rho_manual ASCAT rho value for refitting
 #'  @param ascat_psi_manual ASCAT/Battenberg psi value for refitting
 #'  @param beaglejar Path to beagle Java file for Battenberg haplotyping (WGBS only)
-#' @export
+#'  @export
 create_camdac_config <- function(
   outdir, bsseq, bsseq_lib, build, n_cores=1, camdac_refs=NULL, n_seg_split=50,
   min_mapq=1, min_cov=3, ascat_rho_manual=NULL, ascat_psi_manual=NULL, beaglejar=NULL
