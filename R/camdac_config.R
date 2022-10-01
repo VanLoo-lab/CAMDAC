@@ -45,8 +45,9 @@ create_camdac_config <- function(
 ){
   # TODO: Validate inputs
   
-  # Create output directory if it doesn't exist
+  # Create output directory if it doesn't exist and set to absolute path
   fs::dir_create(outdir)
+  outdir <- fs::path_real(outdir)
   
   # Set camdac references if not they do not exist
   refs = ifelse(is.null(camdac_refs), pipeline_files(), camdac_refs)
