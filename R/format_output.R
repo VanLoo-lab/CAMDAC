@@ -35,6 +35,8 @@ format_output <- function (patient_id,sample_id,sex,
   path_output <- paste0(path_patient, "/Allelecounts/",sample_id,"/")
   setwd(path_output)
   
+  #FIXME: Running format_output on existing files raises error
+
   # Get the names of all allele counts sub-files
   index <- grepl(pattern=".SNPs.CpGs.fst",list.files())
   files <- list.files()[index];rm(index)
@@ -80,6 +82,7 @@ format_output <- function (patient_id,sample_id,sex,
   dir.create(file.path(path_patient, "Copy_number",sample_id), recursive = TRUE)
   outfile_prefix = paste0(path_patient,"/Copy_number/",sample_id, "/")
 
+  # FIXME: MSP1 fragments are not created on repeated runs of CAMDAC
   # Get normal msp1 fragments sizes and nucleotide content
   get_msp1_fragments(dt=dt_combined, build=build,
                      path_to_CAMDAC=path_to_CAMDAC, 
