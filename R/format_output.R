@@ -3,12 +3,6 @@
 ##  Version 1.0.0
 ##  Author: Elizabeth Larose Cadieux
 
-# Load library
-x <- c("readr", "stringr", "GenomicRanges", "dplyr", "ggplot2", "fst")
-invisible(lapply(x, function(y) suppressWarnings(suppressMessages(
-library(y, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))))
-rm(x)
-
 #' Format output nucleotide counts
 #' \code{format_output} 
 #'
@@ -129,7 +123,7 @@ get_msp1_fragments <- function(dt,build,path_to_CAMDAC,outfile){
   if(build=="GRCH37"){build="hg19"} 
   if(build=="GRCH38"){build="hg38"}
   
-  # Load fragments file
+  # Load fragments file 
   msp1_fragments_file=file.path(path_to_CAMDAC,
      paste0("pipeline_files/msp1_fragments/msp1_fragments_RRBS_",build,".fst"))
   fragments <- read_fst(path=msp1_fragments_file, as.data.table = TRUE)

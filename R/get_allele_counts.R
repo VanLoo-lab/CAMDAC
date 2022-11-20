@@ -3,15 +3,6 @@
 ##  Version 1.0.0
 ##  Author: Elizabeth Larose Cadieux
 
-# Load library
-x <- c("GenomicRanges", "Rsamtools", "data.table", "stringr", "dplyr", "fst")
-# library(pryr) # only needed if mem_used() is used to determine object RAM.
-if(sum(!x %in% .packages())>0){
-  invisible(lapply(x, function(y) suppressWarnings(suppressMessages(
-    library(y, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))))
-}
-rm(x)
-
 #' Compile allele counts at SNPs and at CpGs for bisulfite sequencing data
 #' \code{get_allele_counts}
 #'
@@ -597,6 +588,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
   
   # Create file
   f_nm <- paste(path_output, patient_id, ".", sample_id, ".", i, ".SNPs.CpGs.fst", sep = "")
+  print(f_nm)
   write_fst(df_merged,  f_nm)
 }
 
