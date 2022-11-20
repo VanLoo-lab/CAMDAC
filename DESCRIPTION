@@ -1,0 +1,66 @@
+Package: CAMDAC
+Title: Copy-number Aware Methylation Deconvolution and Analysis of Cancers
+Version: 0.0.1
+Authors@R: 
+    c(
+    person(given = "Elizabeth",
+           family = "Larose Cadieux",
+           role = c("aut")),
+    person(given = "Nana",
+           family = "Mensah",
+           role = c("aut", "cre"),
+           email="nana.mensah@crick.ac.uk"),
+    person(given = "Carla",
+           family = "Castignani",
+           role = c("aut")),
+    person(given = "Jonas",
+           family = "Demeulemeester",
+           role = c("aut")),
+    person(given = "Peter",
+           family = "Van Loo",
+           role = c("aut", "fnd"))
+    )
+Description: What the package does (one paragraph).
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
+Suggests: 
+    testthat,
+    devtools,
+    pryr,
+    tictoc,
+    mockr,
+    tidyr,
+    knitr,
+    rmarkdown,
+    pkgdown,
+    usethis
+biocViews:
+Imports: 
+    optparse,
+    logging
+Depends: 
+    R (>= 3.6.2),
+    ASCAT,
+    stringr,
+    GenomicRanges,
+    GenomicAlignments,
+    Rsamtools,
+    scales,
+    ggplot2,
+    gridExtra,
+    gtable,
+    data.table,
+    readr,
+    dplyr,
+    parallel,
+    doParallel,
+    devtools,
+    fst,
+    png,
+    grid
+Remotes: 
+    ASCAT=VanLoo-Lab/ascat/ASCAT@v2.5.3,
+VignetteBuilder: knitr
