@@ -1,0 +1,5 @@
+- Public dataset from Sun et al. 2018 Bioinformatics: https://academic.oup.com/bioinformatics/article/34/16/2715/4951450
+- This is the RRBSsim data
+- Project : PRJNA418601
+- P16N fastq : SRR6294853
+- P16T fastq : SRR6294852
