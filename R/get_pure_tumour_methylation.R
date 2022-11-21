@@ -4,13 +4,6 @@
 ##  Version 1.0.0
 ##  Author: Elizabeth Larose Cadieux
 
-# Load library
-x <- c("optparse","readr","GenomicRanges","scales","ggplot2",
-       "data.table","gridExtra","dplyr","parallel","stringr")
-invisible(lapply(x, function(y) suppressWarnings(suppressMessages(
-library(y, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))))
-rm(x)
-
 #' Deconvolve the pure tumour methylation rate from bisulfite sequencing data
 #'
 #' \code{get_pure_tumour_methylation}
