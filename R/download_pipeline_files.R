@@ -7,7 +7,7 @@
 #' @param assay Sequencing assay. Either wgbs or rrbs.
 #' @param directory Optional. Directory to download files to.
 #' @export
-download_pipeline_files <- function(bsseq, directory=NULL){
+download_pipeline_files <- function(bsseq, directory=NULL, quiet=TRUE){
   stopifnot(bsseq %in% c("wgbs", "rrbs", "test"))
   
   # Get download URL from CAMDAC index file
@@ -36,12 +36,9 @@ download_pipeline_files <- function(bsseq, directory=NULL){
   
   # Download pipeline files and unzip
   tf = tempfile()
-  download.file(link, destfile=tf, method="wget")
+  download.file(link, destfile=tf, method="wget", quiet=quiet)
   untar(tf, exdir=location)
   
-  loginfo("Tempfile unpacked and deleted %s", tf)
-  fs::file_delete(tf)
-  
-  loginfo("Pipeline files for %s downloaded to %s", bsseq, location)
-
+  logger::log_info("Pipeline files for {bsseq} downloaded to {location}")
+  return(location)
 }
