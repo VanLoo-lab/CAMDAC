@@ -71,7 +71,7 @@ preprocess_sample <- function(patient_id, sample_id, normal_id, bam_file, min_tu
         patient_id, sample_id, sex,
         patient_matched_normal_id = normal_id,
         path, path_to_CAMDAC, build,
-        min_normal, min_tumour,
+        min_normal, min_tumor,
         n_cores, reference_panel_coverage = NULL
     )
 
@@ -80,7 +80,7 @@ preprocess_sample <- function(patient_id, sample_id, normal_id, bam_file, min_tu
         patient_id, sample_id,
         normal_infiltrates_proxy_id = normal_id,
         normal_origin_proxy_id = normal_id,
-        path, min_normal, min_tumour, n_cores,
+        path, min_normal, min_tumor, n_cores,
         reference_panel_normal_infiltrates = NULL,
         reference_panel_normal_origin = NULL
     )
