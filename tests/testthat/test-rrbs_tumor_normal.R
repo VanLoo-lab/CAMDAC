@@ -17,7 +17,7 @@ test_that("rrbs tumor_normal_pipeline", {
   normal_bam <- system.file("extdata", "test_normal.bam", package = "CAMDAC")
   sex <- "XY"
   path <- fs::path_abs("results/")
-  path_to_CAMDAC <- fs::path_abs(outdir, "rrbs")
+  path_to_CAMDAC <- fs::path_abs(pf_dir)
   build <- "hg38"
 
   # Call pipeline
