@@ -27,7 +27,7 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.2
 Suggests: 
-    testthat,
+    testthat (>= 3.0.0),
     devtools,
     pryr,
     tictoc,
@@ -40,7 +40,7 @@ Suggests:
 biocViews:
 Imports: 
     optparse,
-    logging
+    logger
 Depends: 
     R (>= 3.6.2),
     ASCAT,
@@ -64,3 +64,4 @@ Depends:
 Remotes: 
     ASCAT=VanLoo-Lab/ascat/ASCAT@v2.5.3,
 VignetteBuilder: knitr
+Config/testthat/edition: 3
