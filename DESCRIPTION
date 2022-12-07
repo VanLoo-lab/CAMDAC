@@ -65,3 +65,4 @@ Remotes:
     ASCAT=VanLoo-Lab/ascat/ASCAT@v2.5.3,
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/testthat/start-first: test_download*
