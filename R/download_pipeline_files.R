@@ -36,7 +36,12 @@ download_pipeline_files <- function(bsseq, directory=NULL, quiet=TRUE){
   
   # Download pipeline files and unzip
   tf = tempfile()
-  download.file(link, destfile=tf, method="wget", quiet=quiet)
+  tryCatch({
+    download.file(link, destfile=tf, method="wget", quiet=quiet)
+  }, error=function(e){
+    logger::log_error("Pipeline files for {bsseq} could not be downloaded from {link}.")
+    stop()
+  })
   untar(tf, exdir=location)
   
   logger::log_info("Pipeline files for {bsseq} downloaded to {location}")
