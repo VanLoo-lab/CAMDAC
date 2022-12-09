@@ -8,7 +8,7 @@
 #' @param normal_bam character. Full path to normal bam file
 #' @param sex character. Patient sex: "XX" for female or "XY" for male
 #' @param path character. Full path to CAMDAC output directory
-#' @param path_to_CAMDAC character. Full path to parent directory containing CAMDAC pipeline_files
+#' @param pipeline_files character. Full path to parent directory containing CAMDAC pipeline_files
 #' @param build character. Genome build: "hg19" or "hg38"
 #' @param min_tumor integer. Minimum read filter for tumor samples
 #' @param min_normal integer. Minimum read filter for normal samples
@@ -16,23 +16,23 @@
 #' @param mq integer. Minimum mapping quality filter
 #' @export
 pipeline_tumor_normal <- function(patient_id, tumor_id, normal_id, tumor_bam, normal_bam, sex, path,
-                                  path_to_CAMDAC, build, min_tumor = 3, min_normal = 10,
+                                  pipeline_files, build, min_tumor = 3, min_normal = 10,
                                   n_cores = 1, mq = 0) {
     # Preprocess tumor and normal sample
     preprocess_sample(
         patient_id, normal_id, normal_id, normal_bam, min_tumor,
-        min_normal, mq, sex, path, path_to_CAMDAC, build, n_cores
+        min_normal, mq, sex, path, pipeline_files, build, n_cores
     )
     preprocess_sample(
         patient_id, tumor_id, normal_id, tumor_bam, min_tumor,
-        min_normal, mq, sex, path, path_to_CAMDAC, build, n_cores
+        min_normal, mq, sex, path, pipeline_files, build, n_cores
     )
 
     # Get purified methylation rate
     get_pure_tumour_methylation(
         patient_id = patient_id, sample_id = tumor_id, sex = sex,
         normal_infiltrates_proxy_id = normal_id,
-        path, path_to_CAMDAC, build,
+        path, pipeline_files, build,
         n_cores, reseg = FALSE
     )
 
@@ -40,7 +40,7 @@ pipeline_tumor_normal <- function(patient_id, tumor_id, normal_id, tumor_bam, no
     get_differential_methylation(
         patient_id = patient_id, sample_id = tumor_id, sex = sex,
         normal_origin_proxy_id = normal_id,
-        path, path_to_CAMDAC, build,
+        path, pipeline_files, build,
         effect_size = 0.2, prob = 0.99,
         min_DMP_counts_in_DMR = 5, min_consec_DMP_in_DMR = 4,
         n_cores, reseg = FALSE, bulk = FALSE
@@ -49,12 +49,12 @@ pipeline_tumor_normal <- function(patient_id, tumor_id, normal_id, tumor_bam, no
 
 
 preprocess_sample <- function(patient_id, sample_id, normal_id, bam_file, min_tumor,
-                              min_normal, mq, sex, path, path_to_CAMDAC, build, n_cores) {
+                              min_normal, mq, sex, path, pipeline_files, build, n_cores) {
     # Run allele counter for normal sample
     for (a in 1:25) {
         get_allele_counts(
             i = a, patient_id = patient_id, sample_id = sample_id, sex = sex, bam_file, mq = mq,
-            path, path_to_CAMDAC, build, n_cores, test = FALSE
+            path, pipeline_files, build, n_cores, test = FALSE
         )
     }
 
@@ -62,7 +62,7 @@ preprocess_sample <- function(patient_id, sample_id, normal_id, bam_file, min_tu
     # Set normal status based on whether sample and normal ID match
     is_normal <- ifelse(sample_id == normal_id, TRUE, FALSE)
     format_output(
-        patient_id, sample_id, sex, is_normal, path, path_to_CAMDAC, build,
+        patient_id, sample_id, sex, is_normal, path, pipeline_files, build,
         txt_output = FALSE
     )
 
@@ -70,7 +70,7 @@ preprocess_sample <- function(patient_id, sample_id, normal_id, bam_file, min_tu
     run_ASCAT.m(
         patient_id, sample_id, sex,
         patient_matched_normal_id = normal_id,
-        path, path_to_CAMDAC, build,
+        path, pipeline_files, build,
         min_normal, min_tumor,
         n_cores, reference_panel_coverage = NULL
     )
