@@ -7,7 +7,7 @@ To cite CAMDAC, please refer to our pre-print: [Larose Cadieux et al., 2020. Cop
 ## Installation
 
 The CAMDAC R library can be install from github repository:
-```{r}
+```r
 # Install the remotes package 
 install.packages("remotes")
 
@@ -16,7 +16,7 @@ remotes::install_github("VanLoo-lab/CAMDAC")
 ```
 
 Files required to run the CAMDAC pipeline [(listed here)](inst/extdata/pipeline_files_urls.txt) can be downloaded with a helper function:
-```{r}
+```r
 library(CAMDAC)
 CAMDAC::download_pipeline_files(bbseq="rrbs", directory="pipe_path/")
 ```
@@ -24,7 +24,7 @@ CAMDAC::download_pipeline_files(bbseq="rrbs", directory="pipe_path/")
 ## Quickstart
 
 To call CAMDAC with a matched tumor and adjacent normal sample:
-```{r}
+```r
 library(CAMDAC)
 tumor_bam <- system.file("extdata", "test_tumor.bam", package = "CAMDAC")
 normal_bam <- system.file("extdata", "test_normal.bam", package = "CAMDAC")
