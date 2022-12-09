@@ -1,0 +1,3 @@
+^pipeline_files$
+^tests/testthat/results$
+^tests/testthat/pf_rrbs$
