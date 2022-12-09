@@ -4,7 +4,7 @@
 \alias{plot_BAF_and_LogR}
 \title{Plot BAF and logR profiles with ggplot}
 \usage{
-plot_BAF_and_LogR(dt, outfile, downsample = 1e+05)
+plot_BAF_and_LogR(dt, outfile, downsample = 100000)
 }
 \arguments{
 \item{dt}{data.frame with methylation info}

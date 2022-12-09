@@ -10,14 +10,14 @@ pipeline_tumor_normal(
   normal_id,
   tumor_bam,
   normal_bam,
-  min_tumor,
-  min_normal,
-  mq,
   sex,
   path,
-  path_to_CAMDAC,
+  pipeline_files,
   build,
-  n_cores
+  min_tumor = 3,
+  min_normal = 10,
+  n_cores = 1,
+  mq = 0
 )
 }
 \arguments{
@@ -31,21 +31,21 @@ pipeline_tumor_normal(
 
 \item{normal_bam}{character. Full path to normal bam file}
 
-\item{min_tumor}{integer. Minimum read filter for tumor samples}
-
-\item{min_normal}{integer. Minimum read filter for normal samples}
-
-\item{mq}{integer. Minimum mapping quality filter}
-
 \item{sex}{character. Patient sex: "XX" for female or "XY" for male}
 
 \item{path}{character. Full path to CAMDAC output directory}
 
-\item{path_to_CAMDAC}{character. Full path to parent directory containing CAMDAC pipeline_files}
+\item{pipeline_files}{character. Full path to parent directory containing CAMDAC pipeline_files}
 
 \item{build}{character. Genome build: "hg19" or "hg38"}
 
+\item{min_tumor}{integer. Minimum read filter for tumor samples}
+
+\item{min_normal}{integer. Minimum read filter for normal samples}
+
 \item{n_cores}{integer. Number of cores to use for parallel processing}
+
+\item{mq}{integer. Minimum mapping quality filter}
 }
 \description{
 Call CAMDAC for a tumor and patient-matched normal sample
