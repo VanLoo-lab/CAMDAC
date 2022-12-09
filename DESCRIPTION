@@ -59,6 +59,7 @@ Depends:
     doParallel,
     devtools,
     fst,
+    fs,
     png,
     grid
 Remotes: 
