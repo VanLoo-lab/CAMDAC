@@ -2,5 +2,6 @@
 
 export(ascat.m.plotRawData)
 export(ascat.m.plotSegmentedData)
+export(download_pipeline_files)
 export(pipeline_tumor_normal)
 export(plot_methylation_info)
