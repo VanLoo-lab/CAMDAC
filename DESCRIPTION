@@ -1,6 +1,6 @@
 Package: CAMDAC
 Title: Copy-number Aware Methylation Deconvolution and Analysis of Cancers
-Version: 0.0.1
+Version: 0.1.0
 Authors@R: 
     c(
     person(given = "Elizabeth",
