@@ -35,7 +35,8 @@ processing. This parameter selects the number of segments per chromosome.
 @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP selection.
 @param ascat_rho_manual ASCAT rho value for refitting
 @param ascat_psi_manual ASCAT/Battenberg psi value for refitting
-@param beaglejar Path to beagle Java file for Battenberg haplotyping (WGBS only)}
+@param beaglejar Path to beagle Java file for Battenberg haplotyping (WGBS only)
+@export}
 }
 \description{
 Set CAMDAC configuration
