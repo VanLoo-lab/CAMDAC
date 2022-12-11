@@ -54,7 +54,7 @@ Imports:
     Battenberg
 Depends: 
     R (>= 3.6.2),
-    data.table,
+    data.table (>= 1.14.6),
     foreach,
     GenomicRanges,
     GenomicAlignments,
@@ -64,7 +64,8 @@ Depends:
     gridExtra,
     grid,
     stringr,
-    png
+    png,
+    logger
 Remotes: 
     ASCAT=VanLoo-Lab/ascat/ASCAT@v2.5.3,
     Battenberg=NMNS93/battenberg@dev
