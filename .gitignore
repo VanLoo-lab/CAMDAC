@@ -30,3 +30,10 @@ camdac_paper/
 man/
 docs
 inst/doc
+*.json
+temp/
+wgbs_test/
+test_*.R
+.lintr
+*.code-workspace
+dev.md
