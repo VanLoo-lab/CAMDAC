@@ -1,15 +1,14 @@
 test_that("allele counts combine to form panels", {
-  
   # load test allele counts
-  ac_file <- system.file("extdata", "NA18939_test_ac.SNPs.CpGs.all.sorted.csv.gz", package="CAMDAC")
+  ac_file <- system.file("extdata", "NA18939_test_ac.SNPs.CpGs.all.sorted.csv.gz", package = "CAMDAC")
   panel <- panel_meth_from_counts(
-    ac_files=c(ac_file, ac_file, ac_file),
-    min_coverage=3,
-    min_samples=1,
-    max_sd=0.1,
-    drop_snps=T
-    )
-  
+    ac_files = c(ac_file, ac_file, ac_file),
+    min_coverage = 3,
+    min_samples = 1,
+    max_sd = 0.1,
+    drop_snps = T
+  )
+
   # Test panel is a data table
   expect_is(panel, "data.table")
   # Test panel has expected rows
@@ -22,7 +21,8 @@ test_that("allele counts combine to form panels", {
 
   # Test panel has more reads than an individual file
   ac <- data.table::fread(ac_file)
-  counts_bool = (ac$total_counts_m < panel$total_counts_m) | (is.na(ac$total_counts_m))
+  setkey(ac, chrom, start, end)
+  cov_bool <- ac[panel, ][, .(total_counts_m < cov_n | is.na(total_counts_m))][[1]]
+  counts_bool <- all(cov_bool)
   expect_true(all(counts_bool))
-
 })

@@ -1,5 +1,6 @@
 
 #' Make CAMDAC methylation panel from allele counts
+#'  Methylation fractions are obtained by summing M and UM reads across samples
 #' @param ac_files Allele count files from CAMDAC
 #' @param min_coverage Minimum coverage for a sample's site to be included in panel
 #' @param min_samples Minimum number of samples with coverage for a site to be included in panel
@@ -8,27 +9,156 @@
 #' @export
 panel_meth_from_counts <- function(ac_files, min_coverage = 3, min_samples = 1,
                                    max_sd = 0.1, drop_snps = FALSE) {
-  # Load AC files
+  # Load AC files as list, ordering each sample by the same CpG positions
+  # Adds a PASS field for us to track and set sites to NA based on filters
+  acl <- load_panel_ac_files(ac_files)
 
-  # Find unique CpG positions
+  # Apply per-sample CpG constraints
+  acl <- apply_coverage_filter(acl, min_coverage)
+  acl <- apply_snp_filter(acl, drop_snps)
 
-  # Order AC files by unique CG overlap
-
-  # Filter CpGs by minimum sample coverage threshold
-
-  # Mask sample CpGs by coverage
-
-  # Mask sample CpGs by SNP loci if required
-
-  # Filter CpGs by maximum SD threshold
+  # Apply panel CpG constraints
+  mask_1 <- min_sample_cg_threshold(acl, min_samples)
+  mask_2 <- max_sd_threshold(acl, max_sd)
+  panel_mask <- mask_1 & mask_2
+  stopifnot(sum(panel_mask) > 0)
 
   # Combine counts to create methylation panel
+  panel <- panel_meth_counts(acl, panel_mask)
 
   # Return panel object
+  return(panel)
 
-  # Test pipeline:
-  # load_all();test_active_file("tests/testthat/test-panel.R")
-  x <- data.table(total_counts_m = 100)
-  x[, `:=`("chrom" = 1, "start" = 2, "end" = 3, "M_n" = 10, "UM_n" = 10, "m_n" = 10, "cov_n" = 5)]
+  # # Test pipeline:
+  # # load_all();test_active_file("tests/testthat/test-panel.R")
+  # x <- data.table(total_counts_m = 100)
+  # x[, `:=`("chrom" = 1, "start" = 2, "end" = 3, "M_n" = 10, "UM_n" = 10, "m_n" = 10, "cov_n" = 5)]
+  # return(x)
+}
+
+#' Load allele count files
+#' @param ac_files Allele count files from CAMDAC
+#' @return List of data tables for each allele counts file
+load_panel_ac_files <- function(ac_files) {
+  # Set fields to draw from AC files
+  ac_load_fields <- c("chrom", "start", "end", "POS", "ref", "alt", "total_depth", "M", "UM", "m", "total_counts_m", "BAF")
+  # Load ac files as list of data tables
+  data <- lapply(ac_files, function(x) {
+    v <- data.table::fread(x, select = ac_load_fields)
+    setkey(v, chrom, start, end)
+    return(v)
+  })
+  # Find unique cpg positions in all samples so we can create
+  #  a shared mapping for the dataset
+  uac <- unique_cpg_pos(data)
+
+  # Set all data tables to have the same cpg positions
+  cix <- lapply(data, get_overlap_ix, x = uac)
+  dix <- lapply(
+    seq_along(data),
+    function(i) data[[i]][cix[[i]], ]
+  )
+
+  # Add PASS field
+  dix <- lapply(dix, function(e) {
+    e$PASS <- TRUE
+    e[is.na(total_counts_m) | is.na(m), PASS := FALSE]
+    return(e)
+  })
+
+  # Add filename (no path prefixes) to list
+  names(dix) <- fs::path_file(ac_files)
+
+  return(dix)
+}
+
+unique_cpg_pos <- function(cg_list) {
+  x <- lapply(cg_list, function(e) e[, c("chrom", "start", "end")])
+  x <- Reduce(rbind, x)
+  x <- unique(x)
   return(x)
+}
+
+get_overlap_ix <- function(x, y) {
+  # Returns row indexes of y that exactly overlap x
+  foverlaps(x, y, by.x = c("chrom", "start", "end"), which = T, mult = "first", type = "equal")
+}
+
+apply_coverage_filter <- function(e, min_coverage) {
+  lapply(
+    e,
+    function(o) o[PASS == T & total_counts_m < min_coverage, PASS := FALSE]
+  )
+}
+
+apply_snp_filter <- function(acl, drop_snps) {
+  set_snps_na <- function(x) {
+    x[
+      PASS == T &
+        (!is.na(POS) & !is.na(BAF) & dplyr::between(BAF, 0.1, 0.9)),
+      PASS := FALSE
+    ]
+  }
+  # If we are to drop SNPS, set all PASS to False where SNPs are called
+  if (drop_snps) {
+    res <- lapply(acl, set_snps_na)
+  } else {
+    res <- acl
+  }
+  return(res)
+}
+
+min_sample_cg_threshold <- function(x, min_samples) {
+  rs <- Reduce(
+    cbind,
+    lapply(x, function(o) o$PASS)
+  ) %>% rowSums()
+  return(rs >= min_samples)
+}
+
+max_sd_threshold <- function(x, max_sd) {
+  rs <- Reduce(
+    cbind,
+    lapply(x, function(o) o$m)
+  ) %>% rowSds(na.rm = T)
+  bool <- ifelse(!is.na(rs) & rs <= max_sd, TRUE, FALSE)
+  return(bool)
+}
+
+panel_meth_counts <- function(x, panel_mask) {
+  # x is a list of data tables with the same cpg positions and fields from CAMDAC ac files
+  # mask is a boolean for CpG sites to be included in analysis
+
+  # Set non-passing counts to NA
+  x <- lapply(x, function(o) {
+    o[PASS == FALSE, `:=`(
+      M = NA, UM = NA, m = NA, total_counts_m = NA
+    )]
+    return(o)
+  })
+
+  # Create new counts
+  M <- Reduce(cbind, lapply(x, function(o) o$M)) %>% rowSums(na.rm = T)
+  UM <- Reduce(cbind, lapply(x, function(o) o$UM)) %>% rowSums(na.rm = T)
+  m <- M / (M + UM)
+  total_counts_m <- M + UM
+  POS <- NA
+  total_depth <- NA
+  chrom <- x[[1]]$chrom
+  start <- x[[1]]$start
+  end <- x[[1]]$end
+  BAF <- NA
+
+  res <- data.table(
+    chrom = chrom,
+    start = start,
+    end = end,
+    M_n = M,
+    UM_n = UM,
+    m_n = m,
+    cov_n = total_counts_m
+  )
+
+  # Filter CG sites by panel mask
+  res <- res[panel_mask, ]
 }
