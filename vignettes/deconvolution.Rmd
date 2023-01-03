@@ -3,7 +3,7 @@ title: "deconvolution"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{deconvolution}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{rmarkdown::render}
   %\VignetteEncoding{UTF-8}
 ---
 
