@@ -36,4 +36,4 @@ wgbs_test/
 test_*.R
 .lintr
 *.code-workspace
-dev.md
+*dev.md
