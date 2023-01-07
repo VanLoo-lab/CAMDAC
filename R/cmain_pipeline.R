@@ -1,49 +1,52 @@
 #' Count alleles
-#' 
+#'
 #' @param sample A camdac sample object
 #' @param config A camac allele object
 #' @export
-cmain_count_alleles <- function(sample, config){
-  
+cmain_count_alleles <- function(sample, config) {
   # Load segments as a list of GRanges objects over the genome.
   # The number of sections per chromosome is given by the config n_seg_split option.
-  segments_rds <- get_reference_files(config, type="segments_files")
+  segments_rds <- get_reference_files(config, type = "segments_files")
   segments <- split_segments_gr(segments_rds, config$n_seg_split)
-  loci_files <- get_reference_files(config, type="loci_files")
-  
+  loci_files <- get_reference_files(config, type = "loci_files")
+
   # Load sample data
   bam_file <- sample$bam_file
   paired_end <- is_pe(config)
   drop_ccgg <- is_ccgg(config)
   min_mapq <- config$min_mapq
   min_cov <- config$min_cov
-  
+
   # Initialise parallel workers.
-  doParallel::registerDoParallel(cores=config$n_cores)
+  doParallel::registerDoParallel(cores = config$n_cores)
 
   # For each segment, load the appropriate SNP/CpG loci file segment and call allele counter in parallel
   #   Set warn=2 to ensure foreach fails if any of the parallel workers are terminated due to memory.
   #   without this option, foreach simply returns a warning and software continues
-  options(warn=2)
-  tmpfiles <- foreach(seg=segments, .combine="c") %dopar% {
+  options(warn = 2)
+  tmpfiles <- foreach(seg = segments, .combine = "c") %dopar% {
     loci_dt <- load_loci_for_segment(seg, loci_files)
-    ac_file = cwrap_get_allele_counts(bam_file, seg, loci_dt, paired_end, drop_ccgg, min_mapq=min_mapq, min_cov=min_cov)
-    tmp = tempfile()
+    ac_file <- cwrap_get_allele_counts(bam_file, seg, loci_dt, paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov)
+    tmp <- tempfile()
     fst::write_fst(ac_file, tmp)
     rm(loci_dt, ac_file, seg)
     gc()
     return(tmp)
   }
-  options(warn=0)
-  
+  options(warn = 0)
+
   # Combine temporary files with allele counts results into a single data table
-  result = foreach(i=tmpfiles, .combine="rbind") %dopar% {fst::read_fst(i, as.data.table = T)}
+  result <- foreach(i = tmpfiles, .combine = "rbind") %dopar% {
+    fst::read_fst(i, as.data.table = T)
+  }
   # Write to output file
   output_filename <- build_output_name(sample, config, "allele_counts")
   format_and_write_output(result, output_filename) # 2 lines, unnecessary function!
   # Delete temporary files
-  foreach(i=tmpfiles) %dopar% {file.remove(i)}
-  
+  foreach(i = tmpfiles) %dopar% {
+    file.remove(i)
+  }
+
   # Stop parallel workers. When running the pipeline multiple times in an R session,
   # R re-uses workers but does not clear memory. Hence large objects in foreach loops will remain.
   # TODO: When a single pipeline function has been created, then migrate doParallel calls there.
@@ -53,275 +56,277 @@ cmain_count_alleles <- function(sample, config){
 
 
 #' Make SNPs
-#' 
+#'
 #' Format and save SNP file for CNA analysis (ASCAT or BATTENBERG)
-#' 
+#'
 #' @param tumor A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_make_snp_profiles <- function(tumour, normal, config){
-  
+cmain_make_snp_profiles <- function(tumour, normal, config) {
   # Load required reference files
-  gc_refs = get_reference_files(config, "gc_per_window")
-  repli_ref = get_reference_files(config, "repli_timing")
-  loci_ref = get_reference_files(config, "loci_files")
-  
+  gc_refs <- get_reference_files(config, "gc_per_window")
+  repli_ref <- get_reference_files(config, "repli_timing")
+  loci_ref <- get_reference_files(config, "loci_files")
+
   # Load SNP profiles
-  tumour_ac = build_output_name(tumour, config, "allele_counts")
-  normal_ac = build_output_name(normal, config, "allele_counts")
+  tumour_ac <- build_output_name(tumour, config, "allele_counts")
+  normal_ac <- build_output_name(normal, config, "allele_counts")
   tsnps <- load_snp_profile(tumour_ac, loci_ref)
   nsnps <- load_snp_profile(normal_ac, loci_ref)
-  
+
   # Annotate tumour SNPs
-  tsnps <- annotate_normal(tsnps, nsnps, min_cov=config$min_cov)
-  
+  tsnps <- annotate_normal(tsnps, nsnps, min_cov = config$min_cov)
+
   # Calculate LogR
   tsnps <- calculate_logr(tsnps) # Requires total_depth, total_depth_n
   # Correct LogR with GC and replication timing
-  tsnps <- annotate_gc(tsnps, gc_refs, n_cores=config$n_cores) # Long-running
+  tsnps <- annotate_gc(tsnps, gc_refs, n_cores = config$n_cores) # Long-running
   tsnps <- annotate_repli(tsnps, repli_ref)
-  tsnps[, LogR_corr:=spline_regress_logr(LogR, GC, repli)]
-  
+  tsnps[, LogR_corr := spline_regress_logr(LogR, GC, repli)]
+
   # Remove low coverage singletons (far apart from other SNPs).
   tsnps <- rm_low_cov_singletons(tsnps)
-  
+
   # Ensure SNPs sorted for ASCAT analysis
   tsnps <- sort_genomic_dt(tsnps)
 
   # Save tumor SNPs to output file
-  tsnps_output_file = CAMDAC::build_output_name(tumour, config, "tsnps")
+  tsnps_output_file <- CAMDAC::build_output_name(tumour, config, "tsnps")
   fs::dir_create(fs::path_dir(tsnps_output_file))
-  data.table::fwrite(tsnps, file=tsnps_output_file, compress="gzip")
-  
+  data.table::fwrite(tsnps, file = tsnps_output_file, compress = "gzip")
+
   # Return
   return(tsnps)
 }
 
 #' Run ASCAT.m
-#' 
+#'
 #' Expects SNP profiles to have been created using `cmain_make_snp_profiles`
-#' 
+#'
 #' @param tumor A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_run_ascat <- function(tumour, normal, config){
-
+cmain_run_ascat <- function(tumour, normal, config) {
   # Setup output object and results directory
   out_obj <- build_output_name(tumour, config, "ascat")
   out_dir <- fs::dir_create(fs::path_dir(out_obj))
-  
+
   # Load TSNPS
   tsnps <- data.table::fread(
     CAMDAC::build_output_name(tumour, config, "tsnps")
   )
-  
+
   # Set Rho and Psi to NA if not given (required by ASCAT)
-  if(!is.null(config$ascat_rho_manual) & !is.null(config$ascat_psi_manual)){
-    preset_rho = config$ascat_rho_manual
-    preset_psi = config$ascat_psi_manual
-  }else{
-    preset_rho=NA
-    preset_psi=NA
+  if (!is.null(config$ascat_rho_manual) & !is.null(config$ascat_psi_manual)) {
+    preset_rho <- config$ascat_rho_manual
+    preset_psi <- config$ascat_psi_manual
+  } else {
+    preset_rho <- NA
+    preset_psi <- NA
   }
 
   # Run ASCAT
-  ascat_results <- run_ascat.m2(tumour, tsnps, outdir=out_dir, rho_manual=preset_rho, psi_manual=preset_psi)
+  ascat_results <- run_ascat.m2(tumour, tsnps, outdir = out_dir, rho_manual = preset_rho, psi_manual = preset_psi)
 
   # Write ASCAT output files. QS used to serialise for faster read/write of WGBS data. RRBS uses .RData.
-  ascat_output_name = build_output_name(tumour, config, "ascat")
-  ascat_frag_name = gsub("output.qs", "frag.qs", ascat_output_name)
-  ascat_bc_name = gsub("output.qs", "bc.qs", ascat_output_name)
-  
+  ascat_output_name <- build_output_name(tumour, config, "ascat")
+  ascat_frag_name <- gsub("output.qs", "frag.qs", ascat_output_name)
+  ascat_bc_name <- gsub("output.qs", "bc.qs", ascat_output_name)
+
   qs::qsave(ascat_results$ascat.bc, ascat_bc_name)
   qs::qsave(ascat_results$ascat.frag, ascat_frag_name)
   qs::qsave(ascat_results$ascat.output, ascat_output_name)
-  
+
   return(ascat_output_name)
 }
 
 #' Run battenberg
-#' 
+#'
 #' Expects SNP profiles to have been created using `cmain_make_snp_profiles`
-#' 
+#'
 #' @param tumor A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_run_battenberg <- function(tumour, normal, config){
+cmain_run_battenberg <- function(tumour, normal, config) {
   # BB operates from within output directory, therefore we switch there to start and leave before ending
-  currentwd=getwd()
-  outdir=fs::dir_create(build_output_name(tumour, config, "battenberg", dir=T))
+  currentwd <- getwd()
+  outdir <- fs::dir_create(build_output_name(tumour, config, "battenberg", dir = T))
   setwd(outdir)
-  
+
   # Convert CAMDAC objects to bb inputs
-  tumour_prefix = paste0(tumour$patient_id, "-", tumour$sample_id)
-  normal_prefix = paste0(normal$patient_id, "-", normal$sample_id)
-  camdac_tumour_ac = build_output_name(tumour, config, "allele_counts")
-  camdac_normal_ac = build_output_name(normal, config, "allele_counts")
-  camdac_tsnps = build_output_name(tumour, config, "tsnps")
-  
+  tumour_prefix <- paste0(tumour$patient_id, "-", tumour$sample_id)
+  normal_prefix <- paste0(normal$patient_id, "-", normal$sample_id)
+  camdac_tumour_ac <- build_output_name(tumour, config, "allele_counts")
+  camdac_normal_ac <- build_output_name(normal, config, "allele_counts")
+  camdac_tsnps <- build_output_name(tumour, config, "tsnps")
+
   # Ensure camdac files exist
   stopifnot(all(sapply(
     c(camdac_tumour_ac, camdac_normal_ac, camdac_tsnps), fs::file_exists
   )))
-  
+
   loginfo("Preparing WGBS allele counts")
   camdac_to_battenberg_allele_freqs(camdac_tumour_ac, tumour_prefix, camdac_normal_ac, normal_prefix,
-                                    outdir, min_normal_depth=config$min_cov)
-  
+    outdir,
+    min_normal_depth = config$min_cov
+  )
+
   loginfo("Preparing WGBS BAF and logR")
   prepare_wgbs_files <- camdac_to_battenberg_prepare_wgbs(tumour_prefix, normal_prefix, camdac_tsnps, outdir)
-  
+
   # Define battenberg inputs.
   loginfo("Setting Battenberg Inputs")
-  tumourname=tumour_prefix
-  normalname=normal_prefix
-  ismale=ifelse(tumour$patient_sex=="XY", TRUE, FALSE)
-  
+  tumourname <- tumour_prefix
+  normalname <- normal_prefix
+  ismale <- ifelse(tumour$patient_sex == "XY", TRUE, FALSE)
+
   # Setup battenberg references
   # `get_reference_files` returns files in subdirectory, so to get root we take the parent of the first file returned.
-  bb_38_dir = fs::path_dir(get_reference_files(config, "battenberg"))[[1]] 
-  beagleref.template = paste0(bb_38_dir, "/beagle5/chrCHROMNAME.1kg.phase3.v5a_GRCh38nounref.vcf.gz")
-  beagleplink.template = paste0(bb_38_dir, "/beagle5/plink.chrCHROMNAME.GRCh38.map")
-  problemloci=paste0(bb_38_dir, "/probloci/probloci.txt.gz")
-  imputeinfofile=create_impute_info_file(bb_38_dir, outdir) # Created from template.
-  
+  bb_38_dir <- fs::path_dir(get_reference_files(config, "battenberg"))[[1]]
+  beagleref.template <- paste0(bb_38_dir, "/beagle5/chrCHROMNAME.1kg.phase3.v5a_GRCh38nounref.vcf.gz")
+  beagleplink.template <- paste0(bb_38_dir, "/beagle5/plink.chrCHROMNAME.GRCh38.map")
+  problemloci <- paste0(bb_38_dir, "/probloci/probloci.txt.gz")
+  imputeinfofile <- create_impute_info_file(bb_38_dir, outdir) # Created from template.
+
   # Set beagle software path. CAMDAC config creation fits by default.
-  beaglejar=config$beaglejar
-  
+  beaglejar <- config$beaglejar
+
   # Set default RHO and PSI based on config
-  if(!is.null(config$ascat_rho_manual) & !is.null(config$ascat_psi_manual)){
-    use_preset_rho_psi = T
-    preset_rho = config$ascat_rho_manual
-    preset_psi = config$ascat_psi_manual
-  }else{
-    use_preset_rho_psi=F
-    preset_rho=NA
-    preset_psi=NA
+  if (!is.null(config$ascat_rho_manual) & !is.null(config$ascat_psi_manual)) {
+    use_preset_rho_psi <- T
+    preset_rho <- config$ascat_rho_manual
+    preset_psi <- config$ascat_psi_manual
+  } else {
+    use_preset_rho_psi <- F
+    preset_rho <- NA
+    preset_psi <- NA
   }
-  
+
   # Limit number of cores to 6 to avoid battenberg memory errors.
   # TODO: Allele counts with 10 cores worked but battenberg with 10 gave OOM error. Setting nthreads to 5 for now.
-  bb_cores = ifelse(config$n_cores<=6, config$n_cores, 6)
-  min_normal_depth = config$min_cov
-  
+  bb_cores <- ifelse(config$n_cores <= 6, config$n_cores, 6)
+  min_normal_depth <- config$min_cov
+
   # Run battenberg
   loginfo("Running Battenberg")
   #   We could add another (optional) config parameter for battenberg cores?
   battenberg_wgbs_wrapper(tumourname, normalname, imputeinfofile, problemloci, ismale, beaglejar,
-                          beagleref.template, beagleplink.template, phasing_gamma=2, nthreads=bb_cores,
-                          use_preset_rho_psi=use_preset_rho_psi, preset_rho=preset_rho,
-                          min_normal_depth=min_normal_depth, preset_psi=preset_psi)
+    beagleref.template, beagleplink.template,
+    phasing_gamma = 2, nthreads = bb_cores,
+    use_preset_rho_psi = use_preset_rho_psi, preset_rho = preset_rho,
+    min_normal_depth = min_normal_depth, preset_psi = preset_psi
+  )
 
   setwd(currentwd) # Return to original directory
   return(outdir)
-  }
+}
 
 #' Make methylation
-#' 
+#'
 #' Pre-process methylation from allele counts for CAMDAC deconvolution
-#' 
+#'
 #' @param sample A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_make_methylation_profile <- function(sample, config){
+cmain_make_methylation_profile <- function(sample, config) {
   loginfo("Preprocessing methylation data: %s", sample$patient_id)
   allele_counts <- data.table::fread(build_output_name(sample, config, "allele_counts"))
-  methylation <- process_methylation(allele_counts, min_meth_loci_reads=config$min_cov)
+  methylation <- process_methylation(allele_counts, min_meth_loci_reads = config$min_cov)
   rm(allele_counts)
-  
+
   loginfo("Calculating HDI")
-  hdi = calculate_counts_hdi(methylation$M, methylation$UM, n_cores=config$n_cores)
-  methylation = cbind(methylation, hdi); rm(hdi)
+  hdi <- calculate_counts_hdi(methylation$M, methylation$UM, n_cores = config$n_cores)
+  methylation <- cbind(methylation, hdi)
+  rm(hdi)
 
   loginfo("Saving methylation profile: %s %s", sample$patient_id, sample$sample_id)
   output_file <- build_output_name(sample, config, "methylation")
   fs::dir_create(fs::path_dir(output_file))
-  data.table::fwrite(methylation, file=output_file)
+  data.table::fwrite(methylation, file = output_file)
   return(output_file)
 }
 
 #' Deconvolve methylation
-#' 
+#'
 #' @param tumor A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_deconvolve_methylation <- function(tumour, normal, config){
+cmain_deconvolve_methylation <- function(tumour, normal, config) {
   loginfo("Combining tumour-normal methylation: %s", tumour$patient_id)
   # Load DNAme data and merge (one function)
-  t_meth = data.table::fread(build_output_name(tumour, config, "methylation"))
-  n_meth = data.table::fread(build_output_name(normal, config, "methylation"))
+  t_meth <- data.table::fread(build_output_name(tumour, config, "methylation"))
+  n_meth <- data.table::fread(build_output_name(normal, config, "methylation"))
   meth_c <- combine_tumour_normal_methylation(t_meth, n_meth)
 
   loginfo("Loading CNAs: %s", tumour$patient_id)
   # Load copy number data from ascat.output and annotate CGs.
-  cna = load_cna_data(tumour, config, "battenberg")
+  cna <- load_cna_data(tumour, config, "battenberg")
   meth_c <- annotate_cgs_with_cnas(meth_c, tumour, cna)
 
   loginfo("Deconvolving DNAme: %s", tumour$patient_id)
   # Calculate m_t
   meth_c <- deconvolve_bulk_methylation(meth_c)
-  
+
   # Filter: CN=0 , effective cov_t>= 3, is.na(mt-raw)
   meth_c <- filter_deconvolved_methylation(meth_c)
-  
+
   loginfo("Calculating pure_tumour HDI: %s", tumour$patient_id)
   # Calculate m_t HDI # parallel - long-running function
   meth_c <- calculate_m_t_hdi(meth_c, config$n_cores)
 
-  outfile = build_output_name(tumour, config, "pure_methylation")
+  outfile <- build_output_name(tumour, config, "pure_methylation")
   qs::qsave(meth_c, outfile)
-  
 }
 
 #' Call tumor-normal DMPs
-#' 
+#'
 #' Single-sample DMP calling on CAMDAC-deconvolved data
-#' 
+#'
 #' @param tumor A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_call_dmps <- function(tumour, normal, config){
+cmain_call_dmps <- function(tumour, normal, config) {
   loginfo("Calling DMPs")
   # Call DMPs between tumour and normal
-  pmeth_file = build_output_name(tumour, config, "pure_methylation")
-  nmeth_file = build_output_name(normal, config, "methylation")
-  pmeth = qs::qread(pmeth_file)
-  nmeth = data.table::fread(nmeth_file)
-  
+  pmeth_file <- build_output_name(tumour, config, "pure_methylation")
+  nmeth_file <- build_output_name(normal, config, "methylation")
+  pmeth <- qs::qread(pmeth_file)
+  nmeth <- data.table::fread(nmeth_file)
+
   # Ensure tumour and normal subset to the same CpGs only.
-  overlaps = findOverlaps(
-    GRanges(seqnames=pmeth$chrom, ranges=IRanges(pmeth$start, pmeth$end)),
-    GRanges(seqnames=nmeth$chrom, ranges=IRanges(nmeth$start, nmeth$end)),
-    type="equal"
+  overlaps <- findOverlaps(
+    GRanges(seqnames = pmeth$chrom, ranges = IRanges(pmeth$start, pmeth$end)),
+    GRanges(seqnames = nmeth$chrom, ranges = IRanges(nmeth$start, nmeth$end)),
+    type = "equal"
   )
-  pmeth = pmeth[queryHits(overlaps),]
-  nmeth = nmeth[subjectHits(overlaps),]
-  
-  tmeth = call_dmps(pmeth, nmeth, effect_size=0.2, prob=0.99, itersplit=5e5, ncores=config$n_cores)
-  tmeth_outfile = build_output_name(tumour, config, "dmps")
+  pmeth <- pmeth[queryHits(overlaps), ]
+  nmeth <- nmeth[subjectHits(overlaps), ]
+
+  tmeth <- call_dmps(pmeth, nmeth, effect_size = 0.2, prob = 0.99, itersplit = 5e5, ncores = config$n_cores)
+  tmeth_outfile <- build_output_name(tumour, config, "dmps")
   fst::write_fst(tmeth, tmeth_outfile)
 }
 
 #' Call tumor-normal DMRs
-#' 
+#'
 #' Single-sample DMR calling on CAMDAC DMP data
-#' 
+#'
 #' @param tumor A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_call_dmrs <- function(tumour, config){
+cmain_call_dmrs <- function(tumour, config) {
   loginfo("Calling DMRs")
-  tmeth_outfile = build_output_name(tumour, config, "dmps")
-  tmeth_dmps = fst::read_fst(tmeth_outfile, as.data.table=T)
-  regions_file = CAMDAC::get_reference_files(config, "annotations", "*all_regions_annotations*")
-  regions_annotations = fst::read_fst(regions_file, as.data.table=T)
-  tmeth_dmrs = call_dmrs(tmeth_dmps, regions_annotations, n_cores=config$n_cores)
-  tmeth_dmrs_outfile = build_output_name(tumour, config, "dmrs")
+  tmeth_outfile <- build_output_name(tumour, config, "dmps")
+  tmeth_dmps <- fst::read_fst(tmeth_outfile, as.data.table = T)
+  regions_file <- CAMDAC::get_reference_files(config, "annotations", "*all_regions_annotations*")
+  regions_annotations <- fst::read_fst(regions_file, as.data.table = T)
+  tmeth_dmrs <- call_dmrs(tmeth_dmps, regions_annotations, n_cores = config$n_cores)
+  tmeth_dmrs_outfile <- build_output_name(tumour, config, "dmrs")
   fst::write_fst(tmeth_dmrs, tmeth_dmrs_outfile)
 }
