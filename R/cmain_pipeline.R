@@ -4,10 +4,17 @@
 #' @param config A camac allele object
 #' @export
 cmain_count_alleles <- function(sample, config) {
-  # Load segments as a list of GRanges objects over the genome.
-  # The number of sections per chromosome is given by the config n_seg_split option.
-  segments_rds <- get_reference_files(config, type = "segments_files")
-  segments <- split_segments_gr(segments_rds, config$n_seg_split)
+  # Load BAM regions to analyse (segments) as a list of GRanges
+  if (is.null(sample$segments_bed)) {
+    # Create segments across entire reference genome
+    # The number of sections per chromosome is given by the config n_seg_split option.
+    segments_rds <- get_reference_files(config, type = "segments_files")
+    segments <- split_segments_gr(segments_rds, config$n_seg_split)
+  } else {
+    # Read segments BED file as a list of granges
+    segments <- read_segments_bed(sample$segments_bed)
+  }
+  # Load SNP and CpG loci for reference genome
   loci_files <- get_reference_files(config, type = "loci_files")
 
   # Load sample data
@@ -264,8 +271,7 @@ cmain_deconvolve_methylation <- function(tumour, normal, config) {
 
   loginfo("Loading CNAs: %s", tumour$patient_id)
   # Load copy number data from ascat.output and annotate CGs.
-  cna <- load_cna_data(tumour, config, "battenberg")
-  meth_c <- annotate_cgs_with_cnas(meth_c, tumour, cna)
+  meth_c <- annotate_cgs_with_cnas(meth_c, tumour)
 
   loginfo("Deconvolving DNAme: %s", tumour$patient_id)
   # Calculate m_t
