@@ -6,9 +6,10 @@
 #' @param min_samples Minimum number of samples with coverage for a site to be included in panel
 #' @param max_sd Maximum standard deviation of methylation for a site to be included in panel
 #' @param drop_snps Boolean. If TRUE, drop per-sample CG-SNPs (BAF < 0.1 or BAF > 0.9) from panel
+#' @param cores Number of cores to use for calculating HDI
 #' @export
 panel_meth_from_counts <- function(ac_files, min_coverage = 3, min_samples = 1,
-                                   max_sd = 0.1, drop_snps = FALSE) {
+                                   max_sd = 0.1, drop_snps = FALSE, cores = 5) {
   # Load AC files as list, ordering each sample by the same CpG positions
   # Adds a PASS field for us to track and set sites to NA based on filters
   acl <- load_panel_ac_files(ac_files)
@@ -25,6 +26,10 @@ panel_meth_from_counts <- function(ac_files, min_coverage = 3, min_samples = 1,
 
   # Combine counts to create methylation panel
   panel <- panel_meth_counts(acl, panel_mask)
+
+  # Add methylation HDI to panel
+  hdi <- calculate_counts_hdi(panel$M, panel$UM, n_cores = cores)
+  panel <- cbind(panel, hdi)
 
   # Return panel object
   return(panel)
@@ -147,12 +152,27 @@ panel_meth_counts <- function(x, panel_mask) {
     chrom = chrom,
     start = start,
     end = end,
-    M_n = M,
-    UM_n = UM,
-    m_n = m,
-    cov_n = total_counts_m
+    M = M,
+    UM = UM,
+    m = m,
+    cov = total_counts_m
   )
 
   # Filter CG sites by panel mask
   res <- res[panel_mask, ]
+}
+
+#' Attach a methylation panel to a normal sample as it's methylation file
+#'    Overwrites CAMDAC methylation files for the sample object using the panel.
+#' @param sample CAMDAC sample created with `create_camdac_sample`
+#' @param config CAMDAC config object. Used to determine expected output directory
+#' @param panel Methylation panel dataframe built with `panel_meth_from_counts`
+#' @return Sample object with methylation file in expected output directory
+#' @export
+attach_methylation_panel <- function(sample, config, panel) {
+  meth_path <- build_output_name(sample, config, "methylation")
+  # Ensure directory exists
+  fs::dir_create(fs::path_dir(meth_path))
+  fwrite(panel, meth_path)
+  return(sample)
 }

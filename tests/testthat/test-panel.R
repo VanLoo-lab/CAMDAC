@@ -14,7 +14,7 @@ test_that("allele counts combine to form panels", {
   # Test panel has expected rows
   expect_true(nrow(panel) >= 1)
   # Test panel has the expected columns
-  expected_fields <- c("chrom", "start", "end", "M_n", "UM_n", "m_n", "cov_n")
+  expected_fields <- c("chrom", "start", "end", "M", "UM", "m", "cov")
   expect_true(
     all(expected_fields %in% names(panel))
   )
@@ -22,7 +22,7 @@ test_that("allele counts combine to form panels", {
   # Test panel has more reads than an individual file
   ac <- data.table::fread(ac_file)
   setkey(ac, chrom, start, end)
-  cov_bool <- ac[panel, ][, .(total_counts_m < cov_n | is.na(total_counts_m))][[1]]
+  cov_bool <- ac[panel, ][, .(total_counts_m < cov | is.na(total_counts_m))][[1]]
   counts_bool <- all(cov_bool)
   expect_true(all(counts_bool))
 })
