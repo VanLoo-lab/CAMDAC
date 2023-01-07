@@ -28,12 +28,6 @@ panel_meth_from_counts <- function(ac_files, min_coverage = 3, min_samples = 1,
 
   # Return panel object
   return(panel)
-
-  # # Test pipeline:
-  # # load_all();test_active_file("tests/testthat/test-panel.R")
-  # x <- data.table(total_counts_m = 100)
-  # x[, `:=`("chrom" = 1, "start" = 2, "end" = 3, "M_n" = 10, "UM_n" = 10, "m_n" = 10, "cov_n" = 5)]
-  # return(x)
 }
 
 #' Load allele count files
