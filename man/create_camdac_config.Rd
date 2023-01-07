@@ -14,6 +14,7 @@ create_camdac_config(
   n_seg_split = 50,
   min_mapq = 1,
   min_cov = 3,
+  overwrite = FALSE,
   ascat_rho_manual = NULL,
   ascat_psi_manual = NULL,
   beaglejar = NULL
@@ -23,7 +24,7 @@ create_camdac_config(
 \item{outdir}{A path to save CAMDAC results. The results folder structure follows the format
 PATIENT/DATASET/SAMPLE/.
 @param bsseq Bisulfite sequencing platform. Choose between "wgbs" or "rrbs".
-@param bsseq_lib Bisulfite sequencing library. Choose "pe" for paired end or "se" for single end.
+@param bsseq_lib Bisulfite sequencing library. Choose "pe" for paired end, "se" for single end.
 @param build Reference genome build. Choose "hg38" or "hg19".
 @param n_cores Number of cores to process CAMDAC data in parallel wherever possible.
 @param camdac_refs Path to CAMDAC reference files. If this is not given, CAMDAC searched the
@@ -31,8 +32,9 @@ environment variable CAMDAC_PIPELINE_FILES. If this is not set, CAMDAC looks in 
 working directory.
 @param n_seg_split In WGBS mode, the reference genome is split into segments for parallele
 processing. This parameter selects the number of segments per chromosome.
-@param min_mapq Minimum mapping quality filter for BAM file reads. Used in \code{cmain_allele_counts()}.
+@param min_mapq Minimum mapping quality filter used in \code{cmain_allele_counts()}.
 @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP selection.
+@param overwrite Config to overwrite files if they already exist.
 @param ascat_rho_manual ASCAT rho value for refitting
 @param ascat_psi_manual ASCAT/Battenberg psi value for refitting
 @param beaglejar Path to beagle Java file for Battenberg haplotyping (WGBS only)

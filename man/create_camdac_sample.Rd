@@ -4,7 +4,15 @@
 \alias{create_camdac_sample}
 \title{Build CAMDAC sample object}
 \usage{
-create_camdac_sample(patient_id, patient_sex, sample_id, sample_type, bam_file)
+create_camdac_sample(
+  patient_id,
+  patient_sex,
+  sample_id,
+  sample_type,
+  bam_file,
+  segments_bed = NULL,
+  cna = NULL
+)
 }
 \arguments{
 \item{patient_id}{An identifier for the patient}
@@ -14,6 +22,19 @@ create_camdac_sample(patient_id, patient_sex, sample_id, sample_type, bam_file)
 \item{sample_type}{Currently unused field.}
 
 \item{bam_file}{Sample BAM file}
+
+\item{segments_bed}{Optional. a BED file of genomic regions to analyse with CAMDAC.  If empty,
+the whole genome is processed.}
+
+\item{cna}{Optional. Pre-determined allele-specific copy number data for the tumor sample. Format
+is a list with three entries:
+\itemize{
+\item \code{purity} fraction denoting tumor purity
+\item \code{ploidy} overal tumor ploidy e.g. 3.25
+\item \code{ascna} a data frame where each row is a copy number segment. Data is taken by column position
+where 1=chromosome, 2=start, 3=end, 4=major copy number and 5=minor copy number. If the ascna
+entry is left blank, the purity and ploidy entries will be used for re-fitting
+}}
 }
 \description{
 Build CAMDAC sample object
