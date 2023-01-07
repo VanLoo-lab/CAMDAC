@@ -94,11 +94,9 @@ unique_calculate_counts_hdi <- function(M, UM, n_cores = 1, itersplit = 5e5) {
 
 calculate_counts_hdi <- function(M, UM, n_cores = 1, itersplit = 5e5) {
   # Calculate HDI and bind to original data. Adds columns "m_x_low" and "m_x_high"
-  loginfo("Calculating HDI from counts.")
   u_hdi <- unique_calculate_counts_hdi(M, UM, n_cores = n_cores, itersplit = itersplit)
   u_hdi <- round(u_hdi, digits = 5)
   # Combine original data with HDI in order
-  loginfo("Merging HDI result")
   hdi_data <- merge(
     data.table(M = M, UM = UM, i = seq(length(M))),
     u_hdi,
