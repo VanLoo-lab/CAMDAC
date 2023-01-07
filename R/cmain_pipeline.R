@@ -4,6 +4,13 @@
 #' @param config A camac allele object
 #' @export
 cmain_count_alleles <- function(sample, config) {
+  #  Check if outputs exist and skip if required
+  output_filename <- build_output_name(sample, config, "allele_counts")
+  if (file.exists(output_filename) && !config$overwrite) {
+    loginfo("Skipping allele counting for %s", paste0(sample$patient_id, sample$sample_id))
+    return(output_filename)
+  }
+
   # Load BAM regions to analyse (segments) as a list of GRanges
   if (is.null(sample$segments_bed)) {
     # Create segments across entire reference genome
@@ -46,8 +53,8 @@ cmain_count_alleles <- function(sample, config) {
   result <- foreach(i = tmpfiles, .combine = "rbind") %dopar% {
     fst::read_fst(i, as.data.table = T)
   }
+
   # Write to output file
-  output_filename <- build_output_name(sample, config, "allele_counts")
   format_and_write_output(result, output_filename) # 2 lines, unnecessary function!
   # Delete temporary files
   foreach(i = tmpfiles) %dopar% {
