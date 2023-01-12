@@ -24,7 +24,7 @@ load_camdac_opts_from_input <- function(sample_id, input_file, outdir, refdir) {
   opt$reference_dir <- refdir
   opt$outdir <- outdir
 
-  tumour <- create_camdac_sample(
+  tumour <- CamSample(
     patient_id = opt$patient_id,
     patient_sex = opt$patient_sex,
     sample_id = "T",
@@ -32,7 +32,7 @@ load_camdac_opts_from_input <- function(sample_id, input_file, outdir, refdir) {
     bam_file = opt$tumour_bam
   )
 
-  normal <- create_camdac_sample(
+  normal <- CamSample(
     patient_id = opt$patient_id,
     patient_sex = opt$patient_sex,
     sample_id = "N",
@@ -40,7 +40,7 @@ load_camdac_opts_from_input <- function(sample_id, input_file, outdir, refdir) {
     bam_file = opt$normal_bam
   )
 
-  config <- create_camdac_config(
+  config <- CamConfig(
     camdac_refs = opt$reference_dir,
     outdir = opt$outdir,
     build = "hg38",
@@ -322,7 +322,7 @@ camdac_winsorize_tsnps <- function(tumour, config) {
 
 chelper_import_pon_meth <- function(tumour, normal_id, config, pon_file) {
   # Imports PON file into the same patient folder as the tumour sample.
-  normal_pon_tpid <- create_camdac_sample(
+  normal_pon_tpid <- CamSample(
     tumour$patient_id, tumour$patient_sex, normal_id, "normal", NA
   )
   outfile <- build_output_name(normal_pon_tpid, config, "methylation")

@@ -15,7 +15,7 @@
 #'     where 1=chromosome, 2=start, 3=end, 4=major copy number and 5=minor copy number. If the ascna
 #'     entry is left blank, the purity and ploidy entries will be used for re-fitting
 #' @export
-create_camdac_sample <- function(patient_id, patient_sex, sample_id, sample_type, bam_file, segments_bed = NULL, cna = NULL) {
+CamSample <- function(patient_id, patient_sex, sample_id, sample_type, bam_file, segments_bed = NULL, cna = NULL) {
   return(
     list(
       patient_id = patient_id,
@@ -49,11 +49,11 @@ create_camdac_sample <- function(patient_id, patient_sex, sample_id, sample_type
 #'  @param ascat_psi_manual ASCAT/Battenberg psi value for refitting
 #'  @param beaglejar Path to beagle Java file for Battenberg haplotyping (WGBS only)
 #'  @export
-create_camdac_config <- function(outdir, bsseq, bsseq_lib, build, n_cores = 1,
-                                 camdac_refs = NULL, n_seg_split = 50,
-                                 min_mapq = 1, min_cov = 3, overwrite = FALSE,
-                                 ascat_rho_manual = NULL,
-                                 ascat_psi_manual = NULL, beaglejar = NULL) {
+CamConfig <- function(outdir, bsseq, bsseq_lib, build, n_cores = 1,
+                      camdac_refs = NULL, n_seg_split = 50,
+                      min_mapq = 1, min_cov = 3, overwrite = FALSE,
+                      ascat_rho_manual = NULL,
+                      ascat_psi_manual = NULL, beaglejar = NULL) {
   # TODO: Validate inputs
   # TODO: Ensure overwrite is used by all cmain* pipeline functions.
 

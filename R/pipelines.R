@@ -2,9 +2,9 @@
 #'
 #' Run CAMDAC analysis on a bulk tumor and patient-matched tissue-matched tumor-adjacent normal sample.
 #'
-#' @param tumor. Tumor sample data built with `create_camdac_sample()`.
-#' @param normal. Normal sample data built with `create_camdac_sample()`.
-#' @param config. Configuration built with `create_camdac_config()`.
+#' @param tumor. Tumor sample data built with `CamSample()`.
+#' @param normal. Normal sample data built with `CamSample()`.
+#' @param config. Configuration built with `CamConfig()`.
 #' @export
 pipeline_tumor_normal <- function(tumor, normal, config) {
   # Log
@@ -48,7 +48,7 @@ pipeline_tumor_normal <- function(tumor, normal, config) {
 #' object built or attached using `attach_methylation_panel()`.
 #' @param cell_of_origin. Normal sample data built with `create_camdac_sample()`. Must have
 #' methylation object attached using `attach_methylation_panel()`.
-#' @param config. Configuration object created with `create_camdac_config()`.
+#' @param config. Configuration object created with `CamConfig()`.
 #' @export
 pipeline_tumor_panel <- function(tumor, infiltrates = normal, cell_of_origin = normal, config) {
   # Log
