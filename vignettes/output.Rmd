@@ -1,0 +1,56 @@
+---
+title: "output"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{output}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval=FALSE
+)
+```
+
+# Output
+
+CAMDAC outputs are written in the directory given by `config$outdir` in the format `PATIENT/DATASET/SAMPLE/`:
+
+```
+└── P1
+    ├── Allelecounts
+    │   ├── N
+    │   │   └── P1.N.SNPs.CpGs.all.sorted.csv.gz
+    │   └── T
+    │       └── P1.T.SNPs.CpGs.all.sorted.csv.gz
+    ├── Copynumber
+    │   └── T
+    │       ├── battenberg # (Subset of files shown)
+    │           ├── P1-T_subclones.txt
+    │           └── P1-T_BattenbergProfile_average.png
+    │       ├── P1.T.ACF.and.ploidy.txt
+    │       ├── P1.T.ascat.bc.qs
+    │       ├── P1.T.ascat.frag.qs
+    │       ├── P1.T.ascat.output.qs
+    │       ├── P1.T.ASPCF.png
+    │       ├── P1.T.germline.png
+    │       ├── P1.T.SNPs.csv.gz
+    │       ├── P1.T.ASCATprofile.png
+    │       ├── P1.T.BAF.PCFed.txt
+    │       ├── P1.T.LogR.PCFed.txt
+    │       ├── P1.T.rawprofile.png
+    │       ├── P1.T.sunrise.png
+    │       └── P1.T.tumour.png
+    └── Methylation
+        ├── N
+        │   └── P1.N.m.csv.gz
+        └── T
+            ├── P1.T.CAMDAC_annotated_DMRs.fst
+            ├── P1.T.CAMDAC_results_per_CpG.fst
+            ├── P1.T.m.csv.gz
+            └── P1.T.pure.qs
+
+```
