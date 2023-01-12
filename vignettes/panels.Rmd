@@ -1,0 +1,72 @@
+---
+title: "panels"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{panels}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval=FALSE
+)
+```
+
+# Panel deconvolution
+
+## Create a methylation panel from multiple normal BAM files
+
+CAMDAC supports the use of multiple DNA methylation BAM files as a source of the normal infiltrates or normal cell of origin.
+
+To create a panel, you must first process your BAM files with the CAMDAC allele counter:
+
+```
+library(CAMDAC)
+
+# Get BAM files
+b_normal1 = system.file("inst/testdata/normal.bam")
+b_normal2 = system.file("inst/testdata/normal.bam")
+b_normal3 = system.file("inst/testdata/normal.bam")
+
+# Run allele counter
+for(file in c(b_normal1, b_normal2, b_normal3)){
+    prefix = fs::path_ext_remove(file)
+    outfile = paste0(prefix, ".all.SNPs.CG.csv.gz")
+    data = cmain_count_alleles(bam_file)
+    data.table::fwrite(data, outfile)
+}
+
+# Create a panel by merging allele counts
+pan_data <- fs::dir_ls(".", glob="*.SNPs.CG.csv.gz")
+panel <- cmain_normal_panel(pan_data)
+data.table::fwrite(panel, "panel.m.csv.gz")
+
+```
+
+To run CAMDAC with your newly created panel, pass the panel to CSample using the `meth` argument.
+
+```{r}
+
+# Load test data
+b_tumor = system.file("inst/testdata/tumor.bam")
+b_normal = system.file("inst/testdata/normal.bam")
+
+# Load panel
+panel_file <- "panel.m.csv.gz"
+
+tumor <- CamSample(id="tumor", bam=b_tumor)
+normal <- CamSample(id="normal", bam=b_normal)
+panel <- CamSample(id="panel", meth=panel_file)
+config <- CamConfig(outdir="./results", ref="./pipeline_files", bsseq="wgbs", lib="pe", cores=10)
+
+pipeline(
+    tumor=tumor,
+    germline=normal,
+    infiltrates=panel,
+    origin=panel,
+    config=config
+)
+```
