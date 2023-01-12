@@ -19,9 +19,9 @@ knitr::opts_chunk$set(
 
 Settings for a CAMDAC pipeline are stored in a `CamConfig` object. For example, to run CAMDAC on hg38 with 10 cores:
   
-  ```{r create_config}
+```{r create_config}
 library(CAMDAC)
-#config <- CamConfig() 
+config <- CamConfig() 
 ```
 
 ## Create Sample objects
