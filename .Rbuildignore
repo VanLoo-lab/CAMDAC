@@ -36,3 +36,4 @@ rrbs_pipeline_files$
 ^docs$
 ^pkgdown$
 ^\.github$
+^test_.*$
