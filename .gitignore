@@ -38,3 +38,4 @@ test_*.R
 *.code-workspace
 *dev.md
 *result_test
+*panel_test/

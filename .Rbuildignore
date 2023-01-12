@@ -29,6 +29,7 @@ rrbs_pipeline_files
 rrbs_pipeline_files$
 .*test.*rrbs.*$
 ^tests/testthat/data$
+^tests/testthat/*_test/$
 ^tests$
 ^\./tests$
 ^_pkgdown\.yml$
