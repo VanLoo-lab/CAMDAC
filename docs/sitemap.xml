@@ -7,10 +7,28 @@
     <loc>/LICENSE.html</loc>
   </url>
   <url>
+    <loc>/articles/background.html</loc>
+  </url>
+  <url>
     <loc>/articles/deconvolution.html</loc>
   </url>
   <url>
+    <loc>/articles/differential_methylation.html</loc>
+  </url>
+  <url>
     <loc>/articles/index.html</loc>
+  </url>
+  <url>
+    <loc>/articles/preprocessing.html</loc>
+  </url>
+  <url>
+    <loc>/articles/purity_ploidy_cna.html</loc>
+  </url>
+  <url>
+    <loc>/articles/setup.html</loc>
+  </url>
+  <url>
+    <loc>/articles/visualisation.html</loc>
   </url>
   <url>
     <loc>/authors.html</loc>
@@ -20,6 +38,12 @@
   </url>
   <url>
     <loc>/news/index.html</loc>
+  </url>
+  <url>
+    <loc>/reference/CamConfig.html</loc>
+  </url>
+  <url>
+    <loc>/reference/CamSample.html</loc>
   </url>
   <url>
     <loc>/reference/HDIofICDF.html</loc>
@@ -41,6 +65,9 @@
   </url>
   <url>
     <loc>/reference/ascat.plotSegmentedData.RRBS.html</loc>
+  </url>
+  <url>
+    <loc>/reference/attach_methylation_panel.html</loc>
   </url>
   <url>
     <loc>/reference/bseq_bool.html</loc>
@@ -115,13 +142,22 @@
     <loc>/reference/load_cna_data.html</loc>
   </url>
   <url>
+    <loc>/reference/load_panel_ac_files.html</loc>
+  </url>
+  <url>
     <loc>/reference/make_split_factor.html</loc>
   </url>
   <url>
     <loc>/reference/max_consec_dmp.html</loc>
   </url>
   <url>
+    <loc>/reference/panel_meth_from_counts.html</loc>
+  </url>
+  <url>
     <loc>/reference/pipeline_tumor_normal.html</loc>
+  </url>
+  <url>
+    <loc>/reference/pipeline_tumor_panel.html</loc>
   </url>
   <url>
     <loc>/reference/prob_diff_meth.html</loc>
@@ -143,5 +179,8 @@
   </url>
   <url>
     <loc>/reference/winsorize.html</loc>
+  </url>
+  <url>
+    <loc>/test_rrbs_dev.html</loc>
   </url>
 </urlset>

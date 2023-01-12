@@ -1,7 +1,13 @@
 pandoc: '2.10'
-pkgdown: 2.0.6.9000
-pkgdown_sha: 956f076f661eb2de9413f64ea24a580cf444466d
+pkgdown: 2.0.7
+pkgdown_sha: ~
 articles:
+  background: background.html
   deconvolution: deconvolution.html
-last_built: 2022-09-26T21:25Z
+  differential_methylation: differential_methylation.html
+  preprocessing: preprocessing.html
+  purity_ploidy_cna: purity_ploidy_cna.html
+  setup: setup.html
+  visualisation: visualisation.html
+last_built: 2023-01-12T17:21Z
 

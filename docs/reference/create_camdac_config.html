@@ -26,13 +26,31 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/background.html">background</a>
+    </li>
+    <li>
       <a href="../articles/deconvolution.html">deconvolution</a>
+    </li>
+    <li>
+      <a href="../articles/differential_methylation.html">differential_methylation</a>
+    </li>
+    <li>
+      <a href="../articles/preprocessing.html">preprocessing</a>
+    </li>
+    <li>
+      <a href="../articles/purity_ploidy_cna.html">purity_ploidy_cna</a>
+    </li>
+    <li>
+      <a href="../articles/setup.html">setup</a>
+    </li>
+    <li>
+      <a href="../articles/visualisation.html">visualisation</a>
     </li>
   </ul></li>
 <li>
@@ -67,6 +85,7 @@
 <span>  n_seg_split <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  min_mapq <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  min_cov <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ascat_rho_manual <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ascat_psi_manual <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  beaglejar <span class="op">=</span> <span class="cn">NULL</span></span>
@@ -79,7 +98,7 @@
 <dd><p>A path to save CAMDAC results. The results folder structure follows the format
 PATIENT/DATASET/SAMPLE/.
 @param bsseq Bisulfite sequencing platform. Choose between "wgbs" or "rrbs".
-@param bsseq_lib Bisulfite sequencing library. Choose "pe" for paired end or "se" for single end.
+@param bsseq_lib Bisulfite sequencing library. Choose "pe" for paired end, "se" for single end.
 @param build Reference genome build. Choose "hg38" or "hg19".
 @param n_cores Number of cores to process CAMDAC data in parallel wherever possible.
 @param camdac_refs Path to CAMDAC reference files. If this is not given, CAMDAC searched the
@@ -87,11 +106,13 @@ environment variable CAMDAC_PIPELINE_FILES. If this is not set, CAMDAC looks in 
 working directory.
 @param n_seg_split In WGBS mode, the reference genome is split into segments for parallele
 processing. This parameter selects the number of segments per chromosome.
-@param min_mapq Minimum mapping quality filter for BAM file reads. Used in <code>cmain_allele_counts()</code>.
+@param min_mapq Minimum mapping quality filter used in <code>cmain_allele_counts()</code>.
 @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP selection.
+@param overwrite Config to overwrite files if they already exist.
 @param ascat_rho_manual ASCAT rho value for refitting
 @param ascat_psi_manual ASCAT/Battenberg psi value for refitting
-@param beaglejar Path to beagle Java file for Battenberg haplotyping (WGBS only)</p></dd>
+@param beaglejar Path to beagle Java file for Battenberg haplotyping (WGBS only)
+@export</p></dd>
 
 </dl></div>
 
@@ -107,7 +128,7 @@ processing. This parameter selects the number of segments per chromosome.
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.9000.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>

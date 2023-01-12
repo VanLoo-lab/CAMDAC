@@ -43,14 +43,32 @@
   <a href="reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
+      <a href="articles/background.html">background</a>
+    </li>
+    <li>
       <a href="articles/deconvolution.html">deconvolution</a>
+    </li>
+    <li>
+      <a href="articles/differential_methylation.html">differential_methylation</a>
+    </li>
+    <li>
+      <a href="articles/preprocessing.html">preprocessing</a>
+    </li>
+    <li>
+      <a href="articles/purity_ploidy_cna.html">purity_ploidy_cna</a>
+    </li>
+    <li>
+      <a href="articles/setup.html">1. Setup</a>
+    </li>
+    <li>
+      <a href="articles/visualisation.html">visualisation</a>
     </li>
   </ul>
 </li>
@@ -101,9 +119,9 @@
 <p>CAMDAC tumor-normal deconvolution pipeline with test data:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CAMDAC</span><span class="op">)</span></span>
-<span><span class="va">tumor</span> <span class="op">=</span> <span class="fu"><a href="reference/create_camdac_sample.html">create_camdac_sample</a></span><span class="op">(</span><span class="st">"P1_T1"</span>, bam_file <span class="op">=</span> <span class="st">"tumor.bam"</span><span class="op">)</span></span>
-<span><span class="va">normal</span> <span class="op">=</span> <span class="fu"><a href="reference/create_camdac_sample.html">create_camdac_sample</a></span><span class="op">(</span><span class="st">"P1_N1"</span>, bam_file <span class="op">=</span> <span class="st">"normal.bam"</span><span class="op">)</span></span>
-<span><span class="va">config</span> <span class="op">=</span> <span class="fu"><a href="reference/create_camdac_config.html">create_camdac_config</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, bsseq_lib<span class="op">=</span><span class="st">"pe"</span>, build<span class="op">=</span><span class="st">"hg38"</span><span class="op">)</span></span>
+<span><span class="va">tumor</span> <span class="op">=</span> <span class="fu"><a href="reference/CamSample.html">CamSample</a></span><span class="op">(</span><span class="st">"P1_T1"</span>, bam_file <span class="op">=</span> <span class="st">"tumor.bam"</span><span class="op">)</span></span>
+<span><span class="va">normal</span> <span class="op">=</span> <span class="fu"><a href="reference/CamSample.html">CamSample</a></span><span class="op">(</span><span class="st">"P1_N1"</span>, bam_file <span class="op">=</span> <span class="st">"normal.bam"</span><span class="op">)</span></span>
+<span><span class="va">config</span> <span class="op">=</span> <span class="fu"><a href="reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, bsseq_lib<span class="op">=</span><span class="st">"pe"</span>, build<span class="op">=</span><span class="st">"hg38"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/pipeline_tumor_normal.html">pipeline_tumor_normal</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="va">normal</span>, <span class="va">config</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
@@ -150,7 +168,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.9000.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>

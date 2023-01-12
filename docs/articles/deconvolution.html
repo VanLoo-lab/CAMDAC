@@ -43,14 +43,32 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
+      <a href="../articles/background.html">background</a>
+    </li>
+    <li>
       <a href="../articles/deconvolution.html">deconvolution</a>
+    </li>
+    <li>
+      <a href="../articles/differential_methylation.html">differential_methylation</a>
+    </li>
+    <li>
+      <a href="../articles/preprocessing.html">preprocessing</a>
+    </li>
+    <li>
+      <a href="../articles/purity_ploidy_cna.html">purity_ploidy_cna</a>
+    </li>
+    <li>
+      <a href="../articles/setup.html">1. Setup</a>
+    </li>
+    <li>
+      <a href="../articles/visualisation.html">visualisation</a>
     </li>
   </ul>
 </li>
@@ -87,9 +105,9 @@
 <p>Here, we demonstrate the simplest case for CAMDAC deconvolution using a bulk tumor with adjacent normal tissue from the same patient. We can define CAMDAC inputs using two functions:</p>
 <ul>
 <li>
-<code><a href="../reference/create_camdac_config.html">create_camdac_config()</a></code> sets the configuration for camdac pipeline functions.</li>
+<code><a href="../reference/CamConfig.html">CamConfig()</a></code> sets the configuration for camdac pipeline functions.</li>
 <li>
-<code><a href="../reference/create_camdac_sample.html">create_camdac_sample()</a></code> sets details for each biological sample.</li>
+<code><a href="../reference/CamSample.html">CamSample()</a></code> sets details for each biological sample.</li>
 </ul>
 <p>After which, we pass these input objects to <code>pipline_*</code> functions. This vignette will walk you through running the <code><a href="../reference/pipeline_tumor_normal.html">pipeline_tumor_normal()</a></code> workflow.</p>
 <p>Load the CAMDAC library:</p>
@@ -109,7 +127,7 @@
 <p>CAMDAC requires a set of pre-built reference files. These files are stored at a dropbox endpoint as tar.gz files. You can download these files with the command <code>CAMDAC::download_pipeline_files("wgbs")"</code>.</p>
 <p>CAMDAC pipeline functions search for the unpacked reference files in the following locations:</p>
 <ol style="list-style-type: decimal">
-<li>The directory passed when creating the CAMDAC config object (see camdac_refs argument in <code>create_camdac_config</code>)</li>
+<li>The directory passed when creating the CAMDAC config object (see camdac_refs argument in <code><a href="../reference/CamConfig.html">CamConfig()</a></code>)</li>
 <li>The location defined by the environment variable CAMDAC_PIPELINE_FILES.</li>
 <li>The current working directory</li>
 </ol>
@@ -120,7 +138,7 @@
 </h3>
 <p>Once reference files are downloaded, load the CAMDAC library and set up the configuration:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">config</span> <span class="op">=</span> <span class="fu"><a href="../reference/create_camdac_config.html">create_camdac_config</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">config</span> <span class="op">=</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span></span>
 <span>  <span class="co"># camdac_refs = "./camdac_refs", # Optional: Pass the location of pipeline files </span></span>
 <span>  outdir<span class="op">=</span><span class="st">"./results"</span>, <span class="co"># Path for outputs</span></span>
 <span>  bsseq<span class="op">=</span><span class="st">"wgbs"</span>, <span class="co"># WGBS</span></span>
@@ -140,7 +158,7 @@
 <span><span class="va">normal_bam</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"NA20502_test_v3.bam"</span>, package<span class="op">=</span><span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Set CAMDAC tumor sample</span></span>
-<span><span class="va">tumour</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_camdac_sample.html">create_camdac_sample</a></span><span class="op">(</span></span>
+<span><span class="va">tumour</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span></span>
 <span>  patient_id<span class="op">=</span><span class="st">"P1"</span>,</span>
 <span>  patient_sex<span class="op">=</span><span class="st">"XX"</span>,</span>
 <span>  sample_id<span class="op">=</span><span class="st">"T"</span>,</span>
@@ -149,7 +167,7 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Set CAMDAC normal sample</span></span>
-<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_camdac_sample.html">create_camdac_sample</a></span><span class="op">(</span></span>
+<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span></span>
 <span>  patient_id<span class="op">=</span><span class="st">"P1"</span>,</span>
 <span>  patient_sex<span class="op">=</span><span class="st">"XX"</span>,</span>
 <span>  sample_id<span class="op">=</span><span class="st">"N"</span>,</span>
@@ -218,7 +236,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.9000.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
