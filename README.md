@@ -19,6 +19,12 @@ branch](https://github.com/VanLoo-lab/CAMDAC/tree/main).
 
 ## Installation
 
+## Documentation
+
+View the full documentation at <https://vanloo-lab.github.io/CAMDAC/>.
+
+## Quickstart
+
 CAMDAC can be installed from an R console:
 
 ``` r
@@ -26,24 +32,12 @@ remotes::install_github("VanLoo-lab/CAMDAC@wgbs")
 CAMDAC::download_pipeline_files("wgbs")
 ```
 
-Additional dependencies:
-
-  - java runtime environment [(jre)](https://openjdk.org/)
-  - [beagle5](http://faculty.washington.edu/browning/beagle/beagle.html)
-    (included)
-
-## Documentation
-
-View the full documentation at <https://vanloo-lab.github.io/CAMDAC/>.
-
-## Quickstart
-
-CAMDAC tumor-normal deconvolution pipeline with test data:
+To run the tumor-normal deconvolution pipeline with test data:
 
 ``` r
 library(CAMDAC)
-tumor = create_camdac_sample("P1_T1", bam_file = "tumor.bam")
-normal = create_camdac_sample("P1_N1", bam_file = "normal.bam")
-config = create_camdac_config(outdir="./results", bsseq="wgbs", bsseq_lib="pe", build="hg38")
-pipeline_tumor_normal(tumor, normal, config)
+tumor = CamConfig("P1_T1", bam_file = "tumor.bam")
+normal = CamConfig("P1_N1", bam_file = "normal.bam")
+config = CamConfig(outdir="./results", bsseq="wgbs", bsseq_lib="pe", build="hg38")
+CamPipeline(tumor, normal, config)
 ```
