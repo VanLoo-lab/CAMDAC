@@ -10,7 +10,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval=FALSE
 )
 ```
 
@@ -18,8 +19,8 @@ knitr::opts_chunk$set(
 
 Here, we demonstrate the simplest case for CAMDAC deconvolution using a bulk tumor with adjacent normal tissue from the same patient. We can define CAMDAC inputs using two functions:
 
-- `create_camdac_config()` sets the configuration for camdac pipeline functions.
-- `create_camdac_sample()` sets details for each biological sample.
+- `CamConfig()` sets the configuration for camdac pipeline functions.
+- `CamSample()` sets details for each biological sample.
 
 After which, we pass these input objects to `pipline_*` functions. This vignette will walk you through running the `pipeline_tumor_normal()` workflow.
 
@@ -37,11 +38,11 @@ suppressPackageStartupMessages(
 
 ### Reference files
 
-CAMDAC requires a set of pre-built reference files. These files are stored at a dropbox endpoint as tar.gz files. You can download these files with the command `CAMDAC::download_pipeline_files("wgbs")"`. 
+CAMDAC requires a set of pre-built reference files. These files are stored at a dropbox endpoint as tar.gz files. You can download these files with the command `CAMDAC::download_pipeline_files("wgbs")"`.
 
 CAMDAC pipeline functions search for the unpacked reference files in the following locations:
 
-1. The directory passed when creating the CAMDAC config object (see camdac_refs argument in `create_camdac_config`)
+1. The directory passed when creating the CAMDAC config object (see camdac_refs argument in `CamConfig()`)
 1. The location defined by the environment variable CAMDAC_PIPELINE_FILES.
 1. The current working directory
 
@@ -52,7 +53,7 @@ If the download command fails, you can manually download the reference files fro
 Once reference files are downloaded, load the CAMDAC library and set up the configuration:
 
 ```{r config_setup}
-config = create_camdac_config(
+config = CamConfig(
   # camdac_refs = "./camdac_refs", # Optional: Pass the location of pipeline files 
   outdir="./results", # Path for outputs
   bsseq="wgbs", # WGBS
@@ -72,7 +73,7 @@ tumor_bam = system.file("extdata", "NA18939_test_v3.bam", package="CAMDAC")
 normal_bam = system.file("extdata", "NA20502_test_v3.bam", package="CAMDAC")
 
 # Set CAMDAC tumor sample
-tumour <- create_camdac_sample(
+tumour <- CamSample(
   patient_id="P1",
   patient_sex="XX",
   sample_id="T",
@@ -81,7 +82,7 @@ tumour <- create_camdac_sample(
 )
 
 # Set CAMDAC normal sample
-normal <- create_camdac_sample(
+normal <- CamSample(
   patient_id="P1",
   patient_sex="XX",
   sample_id="N",
@@ -92,7 +93,7 @@ normal <- create_camdac_sample(
 
 Run the CAMDAC tumor-normal pipeline. This analysis takes 1 hour using the test dataset, and approximately 8 hours on a full WGBS dataset.
 
-```{r deconvolve, eval=FALSE}
+```{r deconvolve}
 pipeline_tumor_normal(tumor, normal, config)
 ```
 
@@ -101,6 +102,7 @@ In this pipeline, the adjacent normal methylation profile is used to select germ
 ## Results
 
 CAMDAC outputs are written in the directory given by `config$outdir` in the format `PATIENT/DATASET/SAMPLE/`:
+
 ```
 └── P1
     ├── Allelecounts

@@ -1,0 +1,20 @@
+---
+title: "background"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{background}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+```{r setup}
+library(CAMDAC)
+```

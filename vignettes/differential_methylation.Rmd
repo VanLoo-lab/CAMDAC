@@ -1,0 +1,20 @@
+---
+title: "differential_methylation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{differential_methylation}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+```{r setup}
+#library(CAMDAC)
+```

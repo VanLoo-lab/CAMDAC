@@ -1,0 +1,58 @@
+---
+title: "1. Setup"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{setup}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Install CAMDAC
+
+From within R, install CAMDAC from github:
+
+```{r install, eval=FALSE}
+library(remotes)
+remotes::install_github("VanLoo-lab/CAMDAC@wgbs")
+```
+
+## Prepare pipeline files
+
+CAMDAC requires pre-made annotation files to run, which you can download by running:
+
+```{r download}
+CAMDAC::download_pipeline_files("wgbs", directory="./pipeline_files")
+```
+
+Now, you're ready to run CAMDAC! Next, see `vignette("preprocessing")`.
+
+## Setup FAQ
+
+### Are there external dependencies?
+
+CAMDAC runs Battenberg to call copy number variants in WGBS mode. This requires requires the `java` command-line utility to be available in the system path. Otherwise, you can download Java from [https://openjdk.org/](https://openjdk.org/).
+
+### How does CAMDAC find pipeline files?
+
+CAMDAC searches for pipeline files in the following order:
+
+1. A directory passed when creating the config object (see `CamConfig()`)
+1. The location defined by the environment variable CAMDAC_PIPELINE_FILES.
+1. The current working directory
+
+We recommend that you set the environment variable `CAMDAC_PIPELINE_FILES` to the directory where you downloaded the files. This will allow CAMDAC to find the files automatically whenever you load R.
+
+From a Unix terminal:
+> echo "CAMDAC_PIPELINE_FILES=$(realpath R)" >> ~/.Renviron
+
+### I have an error when downloading pipeline files
+
+Some instutites setup firewalls for direct donwloads. If the download command fails, please [raise an issue on github](https://github.com/VanLoo-lab/CAMDAC/issues) describing the error. You can manually download the files from the endpoints listed in `inst/extdata/pipeline_files_urls.txt`. The files are stored as tar.gz files, therefore you will need to unpack them with the command `tar -xvzf <file>`.
