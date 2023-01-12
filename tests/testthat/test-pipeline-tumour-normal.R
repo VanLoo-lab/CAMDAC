@@ -1,7 +1,9 @@
 test_that("Pipeline tumour-normal completes", {
+    testthat::skip("Skipped. Long-running.")
+
     # Warning: Currently requires 30 minutes to run and CAMDAC_PIPELINE_FILES environment var
     #    to be set to the location of the CAMDAC pipeline files.
-    config <- create_camdac_config(
+    config <- CamConfig(
         outdir = "./result_test", # Path for outputs
         bsseq = "wgbs", # WGBS
         build = "hg38", # Reference
@@ -14,7 +16,7 @@ test_that("Pipeline tumour-normal completes", {
     normal_bam <- system.file("extdata", "NA20502_test_v3.bam", package = "CAMDAC")
 
     # Set CAMDAC tumor sample
-    tumor <- create_camdac_sample(
+    tumor <- CamSample(
         patient_id = "P1",
         patient_sex = "XX",
         sample_id = "T",
@@ -23,7 +25,7 @@ test_that("Pipeline tumour-normal completes", {
     )
 
     # Set CAMDAC normal sample
-    normal <- create_camdac_sample(
+    normal <- CamSample(
         patient_id = "P1",
         patient_sex = "XX",
         sample_id = "N",

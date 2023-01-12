@@ -9,7 +9,7 @@ test_that("allele counting regions can be read from BED file", {
     n_cores = 10 # Cores for parallel processing
   )
 
-  tumor <- create_camdac_sample(
+  tumor <- CamSample(
     patient_id = "P1",
     patient_sex = "XX",
     sample_id = "T",

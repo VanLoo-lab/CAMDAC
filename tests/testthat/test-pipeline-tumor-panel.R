@@ -16,7 +16,7 @@ test_that("tumor panel pipeline runs with panel of normals", {
   panel <- fread(system.file("testdata", "test_panel.csv.gz", package = "CAMDAC"))
 
   # Load tumor from BAM with pre-computed CNAs
-  tumor <- create_camdac_sample(
+  tumor <- CamSample(
     patient_id = "P1",
     patient_sex = "XX",
     sample_id = "T",
@@ -27,7 +27,7 @@ test_that("tumor panel pipeline runs with panel of normals", {
   )
 
   # Load normal from panels
-  normal <- create_camdac_sample(
+  normal <- CamSample(
     patient_id = "P1",
     patient_sex = "XX",
     sample_id = "PANEL",
