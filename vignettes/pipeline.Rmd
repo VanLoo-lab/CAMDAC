@@ -1,0 +1,92 @@
+---
+title: "background"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{pipeline}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Pipeline
+
+To run the CAMDAC pipeline, raw data for each sample is loaded as a `CamSample` object and passed to the main `pipeline` function along with the configuration. CAMDAC expects the following `CamSample` objects:
+
+1. `tumor` - the bulk tumor sample you want to deconvolve
+2. `germline` (optional) - patient-matched normal for allele-specific copy number calling. Alternatively, see `using external CNA solutions`.
+3. `infiltrates` - the normal infiltrating cells for deconvolution. These need not be patient-matched.
+4. `origin` (optional) - normal cell type from which the tumour originated for differential methylation calling. These need not be patient-matched.
+
+## Run the CAMDAC pipeline
+
+```{r pipeline}
+library(CAMDAC)
+
+# Load test data
+b_tumor = system.file("inst/testdata/tumor.bam")
+b_normal = system.file("inst/testdata/normal.bam")
+
+tumor <- CamSample(id="tumor", bam=b_tumor)
+normal <- CamSample(id="normal", bam=b_normal)
+config <- CamConfig(outdir="./results", ref="./pipeline_files", bsseq="wgbs", lib="pe", cores=10)
+```
+
+When defining CamSample objects, samples must have a unique `id` value between runs otherwise data will be overwritten. Alternatively, users may use the `patient` argument to separate samples with the same ideas.
+
+To run the pipelineP=:
+
+```
+pipeline(
+    tumor=tumor,
+    germline=normal,
+    infiltrates=normal,
+    origin=normal,
+    config=config
+)
+```
+
+Next, see `outputs` for a detailed summary of CAMDAC results files.
+
+## Using external CNA solutions
+
+The germline sample is optional, as allele-specific CNA solutions for the same sample can be used for deconvolution if no patient-matched methylation data is available.
+
+For example, CNAs may be called from bulk WGS for the same samples. A tab-delimited text file can be provided in the following format:
+
+| chrom | start | end | major_cn | minor_cn | purity | ploidy |
+| --------- | ---- | ---- | ---- | ---- | ---- | ---- |
+| chr1 | 1 | 400 | 2 | 1 | 0.67 | 3.5 |
+| chr1 | 400 | 1000 | 1 | 1 | 0.67 | 3.5 |
+
+For simplicity:
+
+- column names are optional
+- purity and ploidy values are taken from the first data row alone as these are sample-wide metrics.
+- chromosome information may be provided without the 'chr' prefix.
+
+Given a CNA solution, you can run CAMDAC without the germline normal sample:
+
+```{r add_cna}
+
+cna_file <- system.file("inst/testdata/test_cna.txt")
+
+tumor <- CSample(
+    id="tumor",
+    bam=b_tumor,
+    cna=cna_file
+)
+
+pipeline(
+    tumor=tumor,
+    infiltrates=normal,
+    origin=normal,
+    config=config
+)
+```
