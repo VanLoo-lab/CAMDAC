@@ -50,19 +50,16 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="articles/background.html">background</a>
+      <a href="articles/output.html">output</a>
     </li>
     <li>
-      <a href="articles/deconvolution.html">deconvolution</a>
+      <a href="articles/panels.html">panels</a>
     </li>
     <li>
-      <a href="articles/differential_methylation.html">differential_methylation</a>
+      <a href="articles/pipeline.html">background</a>
     </li>
     <li>
-      <a href="articles/preprocessing.html">preprocessing</a>
-    </li>
-    <li>
-      <a href="articles/purity_ploidy_cna.html">purity_ploidy_cna</a>
+      <a href="articles/questions.html">questions</a>
     </li>
     <li>
       <a href="articles/setup.html">1. Setup</a>
@@ -93,21 +90,8 @@
 </h1></div>
 <p>Copy-number Aware Methylation Deconvolution Analysis of Cancer (CAMDAC) is a tool that deconvolves pure tumor methylation from bulk tumor sequencing data (<a href="https://www.biorxiv.org/content/10.1101/2020.11.03.366252v2" class="external-link">Larose Cadieux et al., 2022, bioXriv</a>).</p>
 <p>This branch describes CAMDAC for whole genome bisulfite sequencing (WGBS) data. To run CAMDAC on Reduced Representation Bisulfite Sequencing (RRBS) data, visit the <a href="https://github.com/VanLoo-lab/CAMDAC/tree/main" class="external-link">VanLoo-lab/CAMDAC main branch</a>.</p>
-<!-- badges: start --><!-- badges: end --><div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
-</h2>
-<p>CAMDAC can be installed from an R console:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"VanLoo-lab/CAMDAC@wgbs"</span><span class="op">)</span></span>
-<span><span class="fu">CAMDAC</span><span class="fu">::</span><span class="fu"><a href="reference/download_pipeline_files.html">download_pipeline_files</a></span><span class="op">(</span><span class="st">"wgbs"</span><span class="op">)</span></span></code></pre></div>
-<p>Additional dependencies:</p>
-<ul>
-<li>java runtime environment <a href="https://openjdk.org/" class="external-link">(jre)</a>
-</li>
-<li>
-<a href="http://faculty.washington.edu/browning/beagle/beagle.html" class="external-link">beagle5</a> (included)</li>
-</ul>
-</div>
+<!-- badges: start --><!-- badges: end --><div class="section level2"><h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2></div>
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
@@ -116,13 +100,17 @@
 <div class="section level2">
 <h2 id="quickstart">Quickstart<a class="anchor" aria-label="anchor" href="#quickstart"></a>
 </h2>
-<p>CAMDAC tumor-normal deconvolution pipeline with test data:</p>
+<p>CAMDAC can be installed from an R console:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"VanLoo-lab/CAMDAC@wgbs"</span><span class="op">)</span></span>
+<span><span class="fu">CAMDAC</span><span class="fu">::</span><span class="fu">download_pipeline_files</span><span class="op">(</span><span class="st">"wgbs"</span><span class="op">)</span></span></code></pre></div>
+<p>To run the tumor-normal deconvolution pipeline with test data:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CAMDAC</span><span class="op">)</span></span>
-<span><span class="va">tumor</span> <span class="op">=</span> <span class="fu"><a href="reference/CamSample.html">CamSample</a></span><span class="op">(</span><span class="st">"P1_T1"</span>, bam_file <span class="op">=</span> <span class="st">"tumor.bam"</span><span class="op">)</span></span>
-<span><span class="va">normal</span> <span class="op">=</span> <span class="fu"><a href="reference/CamSample.html">CamSample</a></span><span class="op">(</span><span class="st">"P1_N1"</span>, bam_file <span class="op">=</span> <span class="st">"normal.bam"</span><span class="op">)</span></span>
+<span><span class="va">tumor</span> <span class="op">=</span> <span class="fu"><a href="reference/CamConfig.html">CamConfig</a></span><span class="op">(</span><span class="st">"P1_T1"</span>, bam_file <span class="op">=</span> <span class="st">"tumor.bam"</span><span class="op">)</span></span>
+<span><span class="va">normal</span> <span class="op">=</span> <span class="fu"><a href="reference/CamConfig.html">CamConfig</a></span><span class="op">(</span><span class="st">"P1_N1"</span>, bam_file <span class="op">=</span> <span class="st">"normal.bam"</span><span class="op">)</span></span>
 <span><span class="va">config</span> <span class="op">=</span> <span class="fu"><a href="reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, bsseq_lib<span class="op">=</span><span class="st">"pe"</span>, build<span class="op">=</span><span class="st">"hg38"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/pipeline_tumor_normal.html">pipeline_tumor_normal</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="va">normal</span>, <span class="va">config</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">CamPipeline</span><span class="op">(</span><span class="va">tumor</span>, <span class="va">normal</span>, <span class="va">config</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
   </div>

@@ -19,10 +19,22 @@
     <loc>/articles/index.html</loc>
   </url>
   <url>
+    <loc>/articles/output.html</loc>
+  </url>
+  <url>
+    <loc>/articles/panels.html</loc>
+  </url>
+  <url>
+    <loc>/articles/pipeline.html</loc>
+  </url>
+  <url>
     <loc>/articles/preprocessing.html</loc>
   </url>
   <url>
     <loc>/articles/purity_ploidy_cna.html</loc>
+  </url>
+  <url>
+    <loc>/articles/questions.html</loc>
   </url>
   <url>
     <loc>/articles/setup.html</loc>
