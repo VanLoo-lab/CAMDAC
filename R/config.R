@@ -125,9 +125,15 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
         sep = "."
       )
     ),
-    code == "tsnps" ~ fs::path(
+    code == "snps" ~ fs::path(
       config$outdir, sample$patient_id, "Copynumber", sample$id, paste(
         sample$patient_id, sample$id, "SNPs", "csv", "gz",
+        sep = "."
+      )
+    ),
+    code == "tsnps" ~ fs::path(
+      config$outdir, sample$patient_id, "Copynumber", sample$id, paste(
+        sample$patient_id, sample$id, "tnSNP", "csv", "gz",
         sep = "."
       )
     ),
@@ -140,6 +146,12 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
     code == "battenberg" ~ fs::path(
       config$outdir, sample$patient_id, "Copynumber", sample$id, "battenberg", paste(
         sample$patient_id, sample$id, "battenberg", "output", "qs",
+        sep = "."
+      )
+    ),
+    code == "cna" ~ fs::path(
+      config$outdir, sample$patient_id, "Copynumber", sample$id, paste(
+        sample$patient_id, sample$id, "cna", "txt",
         sep = "."
       )
     )
