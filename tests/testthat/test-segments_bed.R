@@ -1,26 +1,20 @@
 test_that("allele counting regions can be read from BED file", {
-  # Load test sample and config
-  config <- create_camdac_config(
-    # camdac_refs = "./camdac_refs", # Optional: Pass the location of pipeline files
-    outdir = "./wgbs_test", # Path for outputs
-    bsseq = "wgbs", # WGBS
-    build = "hg38", # Reference
-    bsseq_lib = "pe", # Paired end
-    n_cores = 10 # Cores for parallel processing
+  # Est. 5 minutes
+  bam <- system.file("testdata", "tumor.bam", package = "CAMDAC")
+  regions <- system.file("testdata", "test_wgbs_small.bed", package = "CAMDAC")
+
+  config <- CamConfig(
+    outdir = "./result_test",
+    bsseq = "wgbs",
+    build = "hg38",
+    lib = "pe",
+    regions = regions,
+    n_cores = 10
   )
 
-  tumor <- CamSample(
-    patient_id = "P1",
-    patient_sex = "XX",
-    sample_id = "T",
-    sample_type = "tumour",
-    # Load segments from BED file
-    bam_file = system.file("extdata", "NA18939_test_v3.bam", package = "CAMDAC"),
-    segments_bed = system.file("testdata", "test_segments.bed", package = "CAMDAC")
-  )
-
+  tumor <- CamSample(id = "T", sex = "XY", bam = bam)
   cmain_count_alleles(tumor, config)
-  ac_file <- build_output_name(tumor, config, "allele_counts")
+  ac_file <- get_fpath(tumor, config, "counts")
 
   testthat::expect_true(
     fs::file_exists(
