@@ -25,7 +25,7 @@ randomise_BAF <- function(BAF) {
 # Load a sample's SNP profile from allele_counts
 load_snp_profile <- function(ac_file, loci_files) {
   # Load data and subset to SNP sites and relevant columns
-  snps <- data.table::fread(
+  snps <- fread_chrom(
     ac_file,
     select = c("CHR", "chrom", "POS", "total_counts", "total_depth", "ref", "alt", "BAF")
   )
@@ -117,7 +117,7 @@ annotate_gc <- function(tsample, gc_refs, max_window = 10000, n_cores = 1) {
     }
 
     # Load data
-    gcdf <- data.table::fread(gc_file)[, .(seqnames, start, end, GC)]
+    gcdf <- data.table::fread(gc_file, showProgress = FALSE)[, .(seqnames, start, end, GC)]
     setkey(gcdf, seqnames, start, end)
     overlap <- data.table::foverlaps(dt, gcdf)
     gc_corr <- abs(cor(overlap$GC, overlap$LogR))
@@ -368,7 +368,7 @@ use_external_normal_baf <- function(tumour, external_ac_file, config) {
   stopifnot(fs::file_exists(external_ac_file))
 
   # Load TSNPs
-  tsnps_file <- CAMDAC::build_output_name(tumour, config, "tsnps")
+  tsnps_file <- CAMDAC::get_fpath(tumour, config, "tsnps")
   tsnps <- data.table::fread(tsnps_file)
   tsnps$chrom <- as.character(tsnps$chrom)
 
@@ -448,7 +448,7 @@ run_ascat.m2 <- function(tumour, tsnps, penalty = 200, outdir, rho_manual = NA, 
     logr_n = tsnps$LogR_n, baf_n = tsnps$BAFr_n,
     chrom = tsnps$chrom, POS = tsnps$POS,
     samples = sample_prefix,
-    sex = tumour$patient_sex
+    sex = tumour$sex
   )
 
   # Plot raw data
