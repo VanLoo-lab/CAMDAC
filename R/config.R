@@ -1,29 +1,18 @@
 
 #' Build CAMDAC sample object
-#'
+#' @param id Unique identifier for the sample
+#' @param sex The sex of the patient, "XX" or "XY". Required for CNA calling.
+#' @param bam Sample BAM file
 #' @param patient_id An identifier for the patient
-#' @param patient_sex The sex of the patient, "XX" or "XY". Required for CNA calling.
-#' @param sample_type Currently unused field.
-#' @param bam_file Sample BAM file
-#' @param segments_bed Optional. a BED file of genomic regions to analyse with CAMDAC.  If empty,
-#'   the whole genome is processed.
-#' @param cna Optional. Pre-determined allele-specific copy number data for the tumor sample. Format
-#'   is a list with three entries:
-#'  - `purity` fraction denoting tumor purity
-#'  - `ploidy` overal tumor ploidy e.g. 3.25
-#'  - `ascna` a data frame where each row is a copy number segment. Data is taken by column position
-#'     where 1=chromosome, 2=start, 3=end, 4=major copy number and 5=minor copy number. If the ascna
-#'     entry is left blank, the purity and ploidy entries will be used for re-fitting
+#' @param cna Optional. A text file with allele-specific copy number data for the tumor sample.
 #' @export
-CamSample <- function(patient_id, patient_sex, sample_id, sample_type, bam_file, segments_bed = NULL, cna = NULL) {
+CamSample <- function(id, sex, bam, patient_id = "P", meth = NULL, counts = NULL, cna = NULL) {
   return(
     list(
+      id = id,
+      sex = sex,
+      bam = bam,
       patient_id = patient_id,
-      patient_sex = patient_sex,
-      sample_id = sample_id,
-      sample_type = sample_type, # TODO: define for tumour and multiple matched normals
-      bam_file = bam_file,
-      segments_bed = segments_bed,
       cna = validate_cna(cna)
     )
   )
@@ -37,6 +26,7 @@ CamSample <- function(patient_id, patient_sex, sample_id, sample_type, bam_file,
 #'  @param lib Bisulfite sequencing library. Choose "pe" for paired end, "se" for single end.
 #'  @param build Reference genome build. Choose "hg38" or "hg19".
 #'  @param n_cores Number of cores to process CAMDAC data in parallel wherever possible.
+#'  @param regions A BED file with regions to restrict the analysis to
 #'  @param camdac_refs Path to CAMDAC reference files. If this is not given, CAMDAC searched the
 #'    environment variable CAMDAC_PIPELINE_FILES. If this is not set, CAMDAC looks in the current
 #'    working directory.
@@ -44,7 +34,7 @@ CamSample <- function(patient_id, patient_sex, sample_id, sample_type, bam_file,
 #'  @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP selection.
 #'  @param overwrite Config to overwrite files if they already exist.
 #'  @export
-CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1,
+CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
                       camdac_refs = NULL, min_mapq = 1, min_cov = 3, overwrite = FALSE) {
   # TODO: Validate inputs
   # TODO: Ensure overwrite is used by all cmain* pipeline functions.
@@ -77,7 +67,8 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1,
     min_mapq = min_mapq,
     min_cov = min_cov,
     overwrite = overwrite,
-    beaglejar = bjar
+    beaglejar = bjar,
+    regions = regions
   ))
 }
 
@@ -95,60 +86,60 @@ is_ccgg <- function(config) {
 
 #' @export
 # Get output directory for function
-build_output_name <- function(sample, config, code, dir = FALSE) {
+get_fpath <- function(sample, config, code, dir = FALSE) {
   # Set output file name
   output_name <- dplyr::case_when(
-    code == "allele_counts" ~ fs::path(
-      config$outdir, sample$patient_id, "Allelecounts", sample$sample_id, paste(
-        sample$patient_id, sample$sample_id, "SNPs", "CpGs", "all", "sorted", "csv", "gz",
+    code == "counts" ~ fs::path(
+      config$outdir, sample$patient_id, "Allelecounts", sample$id, paste(
+        sample$patient_id, sample$id, "SNPs", "CpGs", "all", "sorted", "csv", "gz",
         sep = "."
       )
     ),
     code == "segment_split" ~ fs::path( # TEST: Tempfile to place segments
-      config$outdir, sample$patient_id, "Allelecounts", sample$sample_id, paste(
-        sample$patient_id, sample$sample_id, "segment", "counts", fs::path_file(tempfile()), "fst",
+      config$outdir, sample$patient_id, "Allelecounts", sample$id, paste(
+        sample$patient_id, sample$id, "segment", "counts", fs::path_file(tempfile()), "fst",
         sep = "."
       )
     ),
     code == "methylation" ~ fs::path(
-      config$outdir, sample$patient_id, "Methylation", sample$sample_id, paste(
-        sample$patient_id, sample$sample_id, "m", "csv", "gz",
+      config$outdir, sample$patient_id, "Methylation", sample$id, paste(
+        sample$patient_id, sample$id, "m", "csv", "gz",
         sep = "."
       )
     ),
     code == "pure_methylation" ~ fs::path(
-      config$outdir, sample$patient_id, "Methylation", sample$sample_id, paste(
-        sample$patient_id, sample$sample_id, "pure", "qs",
+      config$outdir, sample$patient_id, "Methylation", sample$id, paste(
+        sample$patient_id, sample$id, "pure", "qs",
         sep = "."
       )
     ),
     code == "dmps" ~ fs::path(
-      config$outdir, sample$patient_id, "Methylation", sample$sample_id, paste(
-        sample$patient_id, sample$sample_id, "CAMDAC_results_per_CpG", "fst",
+      config$outdir, sample$patient_id, "Methylation", sample$id, paste(
+        sample$patient_id, sample$id, "CAMDAC_results_per_CpG", "fst",
         sep = "."
       )
     ),
     code == "dmrs" ~ fs::path(
-      config$outdir, sample$patient_id, "Methylation", sample$sample_id, paste(
-        sample$patient_id, sample$sample_id, "CAMDAC_annotated_DMRs", "fst",
+      config$outdir, sample$patient_id, "Methylation", sample$id, paste(
+        sample$patient_id, sample$id, "CAMDAC_annotated_DMRs", "fst",
         sep = "."
       )
     ),
     code == "tsnps" ~ fs::path(
-      config$outdir, sample$patient_id, "Copynumber", sample$sample_id, paste(
-        sample$patient_id, sample$sample_id, "SNPs", "csv", "gz",
+      config$outdir, sample$patient_id, "Copynumber", sample$id, paste(
+        sample$patient_id, sample$id, "SNPs", "csv", "gz",
         sep = "."
       )
     ),
     code == "ascat" ~ fs::path(
-      config$outdir, sample$patient_id, "Copynumber", sample$sample_id, paste(
-        sample$patient_id, sample$sample_id, "ascat", "output", "qs",
+      config$outdir, sample$patient_id, "Copynumber", sample$id, paste(
+        sample$patient_id, sample$id, "ascat", "output", "qs",
         sep = "."
       )
     ),
     code == "battenberg" ~ fs::path(
-      config$outdir, sample$patient_id, "Copynumber", sample$sample_id, "battenberg", paste(
-        sample$patient_id, sample$sample_id, "battenberg", "output", "qs",
+      config$outdir, sample$patient_id, "Copynumber", sample$id, "battenberg", paste(
+        sample$patient_id, sample$id, "battenberg", "output", "qs",
         sep = "."
       )
     )
