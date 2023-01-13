@@ -170,7 +170,7 @@ panel_meth_counts <- function(x, panel_mask) {
 #' @return Sample object with methylation file in expected output directory
 #' @export
 attach_methylation_panel <- function(sample, config, panel) {
-  meth_path <- build_output_name(sample, config, "methylation")
+  meth_path <- get_fpath(sample, config, "methylation")
   # Ensure directory exists
   fs::dir_create(fs::path_dir(meth_path))
   fwrite(panel, meth_path)

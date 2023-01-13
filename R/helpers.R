@@ -20,13 +20,13 @@ load_camdac_opts_from_input <- function(sample_id, input_file, outdir, refdir) {
   opt$patient_id <- data[1]
   opt$tumour_bam <- data[2]
   opt$normal_bam <- data[3]
-  opt$patient_sex <- data[4]
+  opt$sex <- data[4]
   opt$reference_dir <- refdir
   opt$outdir <- outdir
 
   tumour <- CamSample(
     patient_id = opt$patient_id,
-    patient_sex = opt$patient_sex,
+    sex = opt$sex,
     sample_id = "T",
     sample_type = "tumour",
     bam_file = opt$tumour_bam
@@ -34,7 +34,7 @@ load_camdac_opts_from_input <- function(sample_id, input_file, outdir, refdir) {
 
   normal <- CamSample(
     patient_id = opt$patient_id,
-    patient_sex = opt$patient_sex,
+    sex = opt$sex,
     sample_id = "N",
     sample_type = "normal",
     bam_file = opt$normal_bam
@@ -58,13 +58,13 @@ setup_cna_inject_subdir <- function(tumour, normal, config, subdir_name) {
   wgs_outdir <- fs::path(config$outdir, subdir_name)
 
   # Sym-link allele counts and tsnps file
-  allele_counts_t <- build_output_name(tumour, config, "allele_counts")
+  allele_counts_t <- get_fpath(tumour, config, "counts")
   wgs_allele_counts_t <- fs::path(wgs_outdir, gsub(config$outdir, "", allele_counts_t))
 
-  allele_counts_n <- build_output_name(normal, config, "allele_counts")
+  allele_counts_n <- get_fpath(normal, config, "counts")
   wgs_allele_counts_n <- fs::path(wgs_outdir, gsub(config$outdir, "", allele_counts_n))
 
-  tsnps_f <- build_output_name(tumour, config, "tsnps")
+  tsnps_f <- get_fpath(tumour, config, "tsnps")
   wgs_tsnps_f <- fs::path(wgs_outdir, gsub(config$outdir, "", tsnps_f))
 
   # Ensure parent directories exist fore ach new file
@@ -142,7 +142,7 @@ load_cna_data <- function(tumour, config, data_type) {
 
 
 load_cna_data_ascat <- function(tumour, config) {
-  ascat.output <- qs::qread(build_output_name(tumour, config, "ascat"))
+  ascat.output <- qs::qread(get_fpath(tumour, config, "ascat"))
   purity <- ascat.output$aberrantcellfraction
   ploidy <- ascat.output$ploidy
   fit <- ascat.output$goodnessOfFit
@@ -160,11 +160,10 @@ load_cna_data_ascat <- function(tumour, config) {
 
   setkeyv(cna_clean, cols = c("chrom", "start", "end"))
 
-  result <- list(
-    purity = purity, ploidy = ploidy, fit = fit, ascna = cna_clean
-  )
-
-  return(result)
+  cna_clean$purity <- purity
+  cna_clean$ploidy <- ploidy
+  cna_clean$fit <- fit
+  return(cna_clean)
 }
 
 load_cna_data_ascat_wgs <- function(ascat_output_file) {
@@ -196,7 +195,7 @@ load_cna_data_ascat_wgs <- function(ascat_output_file) {
 load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA) {
   # Allows us to use this helper for non-CAMDAC directories
   if (is.na(bb_dir)) {
-    bb_dir <- fs::path_dir(build_output_name(tumour, config, "battenberg"))
+    bb_dir <- fs::path_dir(get_fpath(tumour, config, "battenberg"))
   }
 
   # Load purity and ploidy
@@ -243,11 +242,10 @@ load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA
   )]
   setkeyv(cna_clean, cols = c("chrom", "start", "end"))
 
-  result <- list(
-    purity = pp$purity, ploidy = pp$ploidy, fit = pp$fit, ascna = cna_clean
-  )
-
-  return(result)
+  cna_clean$purity <- purity
+  cna_clean$ploidy <- ploidy
+  cna_clean$fit <- fit
+  return(cna_clean)
 }
 
 # Helper to load clonal profile from battenberg output directory
@@ -304,7 +302,7 @@ load_clonal_bb <- function(bb_dir) {
 
 camdac_winsorize_tsnps <- function(tumour, config) {
   # Read data, winsorize BAF, delete outliers at 0/1 & write
-  tsnps_output_file <- CAMDAC::build_output_name(tumour, config, "tsnps")
+  tsnps_output_file <- CAMDAC::get_fpath(tumour, config, "tsnps")
   tsnps <- data.table::fread(tsnps_output_file)
   tsnps_hets <- tsnps[between(BAFr_n, 0.15, 0.85), .(chrom, POS, BAFr)]
   baf_outliers <- winsorize(tsnps_hets$BAFr)$outliers
@@ -323,9 +321,9 @@ camdac_winsorize_tsnps <- function(tumour, config) {
 chelper_import_pon_meth <- function(tumour, normal_id, config, pon_file) {
   # Imports PON file into the same patient folder as the tumour sample.
   normal_pon_tpid <- CamSample(
-    tumour$patient_id, tumour$patient_sex, normal_id, "normal", NA
+    tumour$patient_id, tumour$sex, normal_id, "normal", NA
   )
-  outfile <- build_output_name(normal_pon_tpid, config, "methylation")
+  outfile <- get_fpath(normal_pon_tpid, config, "methylation")
   outdir <- fs::path_dir(outfile)
   fs::dir_create(outdir)
   fs::file_copy(pon_file, outfile, overwrite = T)
@@ -345,4 +343,12 @@ read_segments_bed <- function(bed_file) {
   segments <- split(segments, seq_len(length(segments)))
 
   return(segments)
+}
+
+fread_chrom <- function(x, ...) {
+  # Read a file with a chrom column and ensure it is a factor
+  # Used for counts and snp files where X and Y are missing
+  x <- data.table::fread(x, ...)
+  x$chrom <- as.character(x$chrom)
+  return(x)
 }
