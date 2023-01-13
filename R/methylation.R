@@ -137,7 +137,7 @@ process_methylation <- function(allele_counts, min_meth_loci_reads = 3) {
 
 
 save_methylation_df <- function(methyl, sample, config) {
-  output_file <- build_output_name(sample, config, "methylation")
+  output_file <- get_fpath(sample, config, "methylation")
   data.table::fwrite(methyl, file = output_file)
 }
 
@@ -361,29 +361,6 @@ vec_HDIofMCMC_mt <- function(...) {
 
 # TODO: Calculate HDI and annotate data table.
 # Note: CAMDAC defines a column name suffix depending on the tumour/normal status
-
-# MISC DEV -----
-
-
-# SETUP TEST ( CAMP ) Nov 2021:
-# devtools::load_all("~/projects/nmns93-camdac")
-# opt = load_camdac_opts_from_input("DTB-042", "~/data/211027_CAMDAC/211001_camdac_wgbs_all_inputs.tsv",
-#                                   "~/data/211027_CAMDAC/", "~/projects/nmns93-camdac/tests/testthat/data/pipeline_files/")
-# tumour=opt[[1]]; normal=opt[[2]]; config=opt[[3]]
-# ac_file = build_output_name(tumour, config, "allele_counts")
-# allele_counts = data.table::fread(ac_file, nrow=1e5)
-# min_meth_loci_reads=3
-# t_m = data.table::fread(build_output_name(tumour, config, "methylation"))
-# t_n=data.table::fread(build_output_name(normal, config, "methylation"))
-#  qplot(x=m, geom="density", data=t_n) + geom_density(data=t_m, mapping=aes(x=m), colour="pink")
-
-# SETUP TEST (LOCAL PC):
-# devtools::load_all("~/Documents/CAMDAC")
-# setwd("~/Documents/CAMDAC/tests/testthat")
-# Note files will soon change to csv.gz
-# allele_counts = readRDS("runs/pgp-test/Allelecounts/pgp-001/pgp-test.pgp-001.SNPs.CpGs.all.sorted.rds")
-# allele_counts = add_fake(allele_counts)
-# min_meth_loci_reads=3
 
 # TEMP: ADD fake data for testing while full dataframe is insufficient
 add_fake <- function(data) {
