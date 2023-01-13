@@ -267,6 +267,13 @@ camdac_to_battenberg_prepare_wgbs <- function(tumour_prefix, normal_prefix, camd
   return(filenames)
 }
 
+check_callChrXSubclones <- function(TUMOURNAME) {
+  # Helper function to check whether we can run callChrX subclones i.e. enough SNPs in non-par regions
+  PCFinput <- data.frame(read_table_generic(paste0(TUMOURNAME, "_mutantLogR_gcCorrected.tab")), stringsAsFactors = F)
+  PCFinput <- PCFinput[which(PCFinput$Chromosome == "X" & PCFinput$Position > 2.6e6 & PCFinput$Position < 156e6), ] # get nonPAR
+  colnames(PCFinput)[3] <- TUMOURNAME
+  nrow(PCFinput) > 0
+}
 
 # Run phasing to end of BB pipeline
 # The Battenberg::battenberg function runs the main pipeline, however in the recent dev version,
@@ -441,12 +448,14 @@ battenberg_wgbs_wrapper <- function(tumourname,
 
   # 6. If patient is male, get copy number status of ChrX based only on logR segmentation (due to hemizygosity of SNPs)
   if (ismale) {
-    Battenberg::callChrXsubclones(
-      TUMOURNAME = tumourname[sampleidx],
-      X_GAMMA = 1000,
-      X_KMIN = 100,
-      GENOMEBUILD = GENOMEBUILD,
-      AR = TRUE
-    )
+    if (check_callChrXSubclones(tumourname[sampleidx])) {
+      Battenberg::callChrXsubclones(
+        TUMOURNAME = tumourname[sampleidx],
+        X_GAMMA = 1000,
+        X_KMIN = 100,
+        GENOMEBUILD = GENOMEBUILD,
+        AR = TRUE
+      )
+    }
   }
 }

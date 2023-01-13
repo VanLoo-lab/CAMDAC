@@ -242,9 +242,9 @@ load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA
   )]
   setkeyv(cna_clean, cols = c("chrom", "start", "end"))
 
-  cna_clean$purity <- purity
-  cna_clean$ploidy <- ploidy
-  cna_clean$fit <- fit
+  cna_clean$purity <- pp$purity
+  cna_clean$ploidy <- pp$ploidy
+  cna_clean$fit <- pp$fit
   return(cna_clean)
 }
 
