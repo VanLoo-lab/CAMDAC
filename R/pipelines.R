@@ -82,7 +82,7 @@ validate_pipeline_tumor_panel <- function(tumor, normal, config) {
   }
 
   # Check if normal has methylation object
-  normal_meth_exists <- file.exists(build_output_name(normal, config, "methylation"))
+  normal_meth_exists <- file.exists(get_fpath(normal, config, "methylation"))
   if (!normal_meth_exists) {
     stop("Normal methylation data not found. Please run `attach_methylation_panel()` first.")
   }
