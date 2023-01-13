@@ -7,7 +7,7 @@ cmain_count_alleles <- function(sample, config) {
   #  Check if outputs exist and skip if required
   output_filename <- get_fpath(sample, config, "counts")
   if (file.exists(output_filename) && !config$overwrite) {
-    loginfo("Skipping allele counting for %s", paste0(sample$patient_id, sample$sample_id))
+    loginfo("Skipping allele counting for %s", paste0(sample$patient_id, ":", sample$id))
     return(output_filename)
   }
 
@@ -34,6 +34,7 @@ cmain_count_alleles <- function(sample, config) {
   # Initialise parallel workers.
   doParallel::registerDoParallel(cores = config$n_cores)
 
+  loginfo("Counting alleles for %s", paste0(sample$patient_id, ":", sample$id))
   # For each segment, load the appropriate SNP/CpG loci file segment and call allele counter in parallel
   #   Set warn=2 to ensure foreach fails if any of the parallel workers are terminated due to memory.
   #   without this option, foreach simply returns a warning and software continues
@@ -69,25 +70,64 @@ cmain_count_alleles <- function(sample, config) {
 }
 
 
+
 #' Make SNPs
 #'
 #' Format and save SNP file for CNA analysis (ASCAT or BATTENBERG)
 #'
-#' @param tumor A camdac sample object
-#' @param normal A camdac sample object
+#' @param sample A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_make_snp_profiles <- function(tumour, normal, config) {
+cmain_make_snps <- function(sample, config) {
+  output_file <- CAMDAC::get_fpath(sample, config, "snps")
+  if (fs::file_exists(output_file) & !config$overwrite) {
+    loginfo("Skipping SNP profile creation for %s", paste0(sample$id))
+    return(output_file)
+  }
+
   # Load required reference files
   gc_refs <- get_reference_files(config, "gc_per_window")
   repli_ref <- get_reference_files(config, "repli_timing")
   loci_ref <- get_reference_files(config, "loci_files")
 
   # Load SNP profiles
-  tumour_ac <- get_fpath(tumour, config, "allele_counts")
-  normal_ac <- get_fpath(normal, config, "allele_counts")
-  tsnps <- load_snp_profile(tumour_ac, loci_ref)
-  nsnps <- load_snp_profile(normal_ac, loci_ref)
+  ac_file <- get_fpath(sample, config, "counts")
+  snps <- load_snp_profile(ac_file, loci_ref)
+  # Ensure SNPs sorted for ASCAT analysis
+  snps <- sort_genomic_dt(snps)
+
+  # Save tumor SNPs to output file
+  fs::dir_create(fs::path_dir(output_file))
+  data.table::fwrite(snps, file = output_file, compress = "gzip")
+
+  # Return
+  return(output_file)
+}
+
+
+
+#' Bind SNPs
+#'
+#' Combing tumor-normal SNP file for CNA analysis (ASCAT or BATTENBERG)
+#'
+#' @param tumor A camdac sample object
+#' @param normal A camdac sample object
+#' @param config A camdac config object
+#' @export
+cmain_bind_snps <- function(tumour, normal, config) {
+  tsnps_output_file <- CAMDAC::get_fpath(tumour, config, "tsnps")
+  if (fs::file_exists(tsnps_output_file) & !config$overwrite) {
+    loginfo("Skipping SNP profile creation for %s", paste0(tumour$id, "&", normal$id))
+    return(tsnps_output_file)
+  }
+
+  # Load required reference files
+  gc_refs <- get_reference_files(config, "gc_per_window")
+  repli_ref <- get_reference_files(config, "repli_timing")
+
+  # Load SNP profiles
+  tsnps <- fread_chrom(get_fpath(tumour, config, "snps"))
+  nsnps <- fread_chrom(get_fpath(normal, config, "snps"))
 
   # Annotate tumour SNPs
   tsnps <- annotate_normal(tsnps, nsnps, min_cov = config$min_cov)
@@ -106,12 +146,11 @@ cmain_make_snp_profiles <- function(tumour, normal, config) {
   tsnps <- sort_genomic_dt(tsnps)
 
   # Save tumor SNPs to output file
-  tsnps_output_file <- CAMDAC::get_fpath(tumour, config, "tsnps")
   fs::dir_create(fs::path_dir(tsnps_output_file))
   data.table::fwrite(tsnps, file = tsnps_output_file, compress = "gzip")
 
   # Return
-  return(tsnps)
+  return(tsnps_output_file)
 }
 
 #' Run ASCAT.m
@@ -123,12 +162,19 @@ cmain_make_snp_profiles <- function(tumour, normal, config) {
 #' @param config A camdac config object
 #' @export
 cmain_run_ascat <- function(tumour, normal, config) {
+  # Skip if file exists and overwrite is false
+  cna_output_name <- get_fpath(tumour, config, "cna")
+  if (fs::file_exists(cna_output_name) & !config$overwrite) {
+    loginfo("Skipping ASCAT analysis for %s", paste0(tumour$id))
+    return(cna_output_name)
+  }
+
   # Setup output object and results directory
   out_obj <- get_fpath(tumour, config, "ascat")
   out_dir <- fs::dir_create(fs::path_dir(out_obj))
 
   # Load TSNPS
-  tsnps <- data.table::fread(
+  tsnps <- fread_chrom(
     CAMDAC::get_fpath(tumour, config, "tsnps")
   )
 
@@ -153,7 +199,12 @@ cmain_run_ascat <- function(tumour, normal, config) {
   qs::qsave(ascat_results$ascat.frag, ascat_frag_name)
   qs::qsave(ascat_results$ascat.output, ascat_output_name)
 
-  return(ascat_output_name)
+  # Write CNA object to file for ease
+
+  cna <- load_cna_data(tumor, config, "ascat")
+  data.table::fwrite(cna, file = cna_output_name, sep = "\t", col.names = T, quote = F)
+
+  return(cna_output_name)
 }
 
 #' Run battenberg
@@ -165,16 +216,22 @@ cmain_run_ascat <- function(tumour, normal, config) {
 #' @param config A camdac config object
 #' @export
 cmain_run_battenberg <- function(tumour, normal, config) {
+  cna_output_name <- get_fpath(tumour, config, "cna")
+  if (fs::file_exists(cna_output_name) & !config$overwrite) {
+    loginfo("Skipping Battenberg analysis for %s", paste0(tumour$id))
+    return(cna_output_name)
+  }
+
   # BB operates from within output directory, therefore we switch there to start and leave before ending
   currentwd <- getwd()
   outdir <- fs::dir_create(get_fpath(tumour, config, "battenberg", dir = T))
   setwd(outdir)
 
   # Convert CAMDAC objects to bb inputs
-  tumour_prefix <- paste0(tumour$patient_id, "-", tumour$sample_id)
-  normal_prefix <- paste0(normal$patient_id, "-", normal$sample_id)
-  camdac_tumour_ac <- get_fpath(tumour, config, "allele_counts")
-  camdac_normal_ac <- get_fpath(normal, config, "allele_counts")
+  tumour_prefix <- paste0(tumour$patient_id, "-", tumour$id)
+  normal_prefix <- paste0(normal$patient_id, "-", normal$id)
+  camdac_tumour_ac <- get_fpath(tumour, config, "counts")
+  camdac_normal_ac <- get_fpath(normal, config, "counts")
   camdac_tsnps <- get_fpath(tumour, config, "tsnps")
 
   # Ensure camdac files exist
@@ -182,7 +239,8 @@ cmain_run_battenberg <- function(tumour, normal, config) {
     c(camdac_tumour_ac, camdac_normal_ac, camdac_tsnps), fs::file_exists
   )))
 
-  loginfo("Preparing WGBS allele counts")
+  loginfo("Preparing WGBS allele counts for Battenberg")
+  # TODO: Should we use existing SNP objects instead of ac?
   camdac_to_battenberg_allele_freqs(camdac_tumour_ac, tumour_prefix, camdac_normal_ac, normal_prefix,
     outdir,
     min_normal_depth = config$min_cov
@@ -195,7 +253,7 @@ cmain_run_battenberg <- function(tumour, normal, config) {
   loginfo("Setting Battenberg Inputs")
   tumourname <- tumour_prefix
   normalname <- normal_prefix
-  ismale <- ifelse(tumour$patient_sex == "XY", TRUE, FALSE)
+  ismale <- ifelse(tumour$sex == "XY", TRUE, FALSE)
 
   # Setup battenberg references
   # `get_reference_files` returns files in subdirectory, so to get root we take the parent of the first file returned.
@@ -234,8 +292,12 @@ cmain_run_battenberg <- function(tumour, normal, config) {
     min_normal_depth = min_normal_depth, preset_psi = preset_psi
   )
 
+  loginfo("Saving results")
+  cna <- load_cna_data(tumor, config, "battenberg")
+  data.table::fwrite(cna, file = cna_output_name, sep = "\t", col.names = T, quote = F)
+
   setwd(currentwd) # Return to original directory
-  return(outdir)
+  return(cna_output_name)
 }
 
 #' Make methylation
@@ -247,7 +309,7 @@ cmain_run_battenberg <- function(tumour, normal, config) {
 #' @export
 cmain_make_methylation_profile <- function(sample, config) {
   loginfo("Preprocessing methylation data: %s", sample$patient_id)
-  allele_counts <- data.table::fread(get_fpath(sample, config, "allele_counts"))
+  allele_counts <- data.table::fread(get_fpath(sample, config, "counts"))
   methylation <- process_methylation(allele_counts, min_meth_loci_reads = config$min_cov)
   rm(allele_counts)
 
@@ -256,7 +318,7 @@ cmain_make_methylation_profile <- function(sample, config) {
   methylation <- cbind(methylation, hdi)
   rm(hdi)
 
-  loginfo("Saving methylation profile: %s %s", sample$patient_id, sample$sample_id)
+  loginfo("Saving methylation profile: %s %s", sample$patient_id, sample$id)
   output_file <- get_fpath(sample, config, "methylation")
   fs::dir_create(fs::path_dir(output_file))
   data.table::fwrite(methylation, file = output_file)
