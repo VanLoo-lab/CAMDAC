@@ -5,27 +5,27 @@
 #' @export
 cmain_count_alleles <- function(sample, config) {
   #  Check if outputs exist and skip if required
-  output_filename <- build_output_name(sample, config, "allele_counts")
+  output_filename <- get_fpath(sample, config, "counts")
   if (file.exists(output_filename) && !config$overwrite) {
     loginfo("Skipping allele counting for %s", paste0(sample$patient_id, sample$sample_id))
     return(output_filename)
   }
 
   # Load BAM regions to analyse (segments) as a list of GRanges
-  if (is.null(sample$segments_bed)) {
+  if (is.null(config$regions)) {
     # Create segments across entire reference genome
     # The number of sections per chromosome is given by the config n_seg_split option.
     segments_rds <- get_reference_files(config, type = "segments_files")
     segments <- split_segments_gr(segments_rds, config$n_seg_split)
   } else {
     # Read segments BED file as a list of granges
-    segments <- read_segments_bed(sample$segments_bed)
+    segments <- read_segments_bed(config$regions)
   }
   # Load SNP and CpG loci for reference genome
   loci_files <- get_reference_files(config, type = "loci_files")
 
   # Load sample data
-  bam_file <- sample$bam_file
+  bam_file <- sample$bam
   paired_end <- is_pe(config)
   drop_ccgg <- is_ccgg(config)
   min_mapq <- config$min_mapq
@@ -84,8 +84,8 @@ cmain_make_snp_profiles <- function(tumour, normal, config) {
   loci_ref <- get_reference_files(config, "loci_files")
 
   # Load SNP profiles
-  tumour_ac <- build_output_name(tumour, config, "allele_counts")
-  normal_ac <- build_output_name(normal, config, "allele_counts")
+  tumour_ac <- get_fpath(tumour, config, "allele_counts")
+  normal_ac <- get_fpath(normal, config, "allele_counts")
   tsnps <- load_snp_profile(tumour_ac, loci_ref)
   nsnps <- load_snp_profile(normal_ac, loci_ref)
 
@@ -106,7 +106,7 @@ cmain_make_snp_profiles <- function(tumour, normal, config) {
   tsnps <- sort_genomic_dt(tsnps)
 
   # Save tumor SNPs to output file
-  tsnps_output_file <- CAMDAC::build_output_name(tumour, config, "tsnps")
+  tsnps_output_file <- CAMDAC::get_fpath(tumour, config, "tsnps")
   fs::dir_create(fs::path_dir(tsnps_output_file))
   data.table::fwrite(tsnps, file = tsnps_output_file, compress = "gzip")
 
@@ -124,12 +124,12 @@ cmain_make_snp_profiles <- function(tumour, normal, config) {
 #' @export
 cmain_run_ascat <- function(tumour, normal, config) {
   # Setup output object and results directory
-  out_obj <- build_output_name(tumour, config, "ascat")
+  out_obj <- get_fpath(tumour, config, "ascat")
   out_dir <- fs::dir_create(fs::path_dir(out_obj))
 
   # Load TSNPS
   tsnps <- data.table::fread(
-    CAMDAC::build_output_name(tumour, config, "tsnps")
+    CAMDAC::get_fpath(tumour, config, "tsnps")
   )
 
   # Set Rho and Psi to NA if not given (required by ASCAT)
@@ -145,7 +145,7 @@ cmain_run_ascat <- function(tumour, normal, config) {
   ascat_results <- run_ascat.m2(tumour, tsnps, outdir = out_dir, rho_manual = preset_rho, psi_manual = preset_psi)
 
   # Write ASCAT output files. QS used to serialise for faster read/write of WGBS data. RRBS uses .RData.
-  ascat_output_name <- build_output_name(tumour, config, "ascat")
+  ascat_output_name <- get_fpath(tumour, config, "ascat")
   ascat_frag_name <- gsub("output.qs", "frag.qs", ascat_output_name)
   ascat_bc_name <- gsub("output.qs", "bc.qs", ascat_output_name)
 
@@ -167,15 +167,15 @@ cmain_run_ascat <- function(tumour, normal, config) {
 cmain_run_battenberg <- function(tumour, normal, config) {
   # BB operates from within output directory, therefore we switch there to start and leave before ending
   currentwd <- getwd()
-  outdir <- fs::dir_create(build_output_name(tumour, config, "battenberg", dir = T))
+  outdir <- fs::dir_create(get_fpath(tumour, config, "battenberg", dir = T))
   setwd(outdir)
 
   # Convert CAMDAC objects to bb inputs
   tumour_prefix <- paste0(tumour$patient_id, "-", tumour$sample_id)
   normal_prefix <- paste0(normal$patient_id, "-", normal$sample_id)
-  camdac_tumour_ac <- build_output_name(tumour, config, "allele_counts")
-  camdac_normal_ac <- build_output_name(normal, config, "allele_counts")
-  camdac_tsnps <- build_output_name(tumour, config, "tsnps")
+  camdac_tumour_ac <- get_fpath(tumour, config, "allele_counts")
+  camdac_normal_ac <- get_fpath(normal, config, "allele_counts")
+  camdac_tsnps <- get_fpath(tumour, config, "tsnps")
 
   # Ensure camdac files exist
   stopifnot(all(sapply(
@@ -247,7 +247,7 @@ cmain_run_battenberg <- function(tumour, normal, config) {
 #' @export
 cmain_make_methylation_profile <- function(sample, config) {
   loginfo("Preprocessing methylation data: %s", sample$patient_id)
-  allele_counts <- data.table::fread(build_output_name(sample, config, "allele_counts"))
+  allele_counts <- data.table::fread(get_fpath(sample, config, "allele_counts"))
   methylation <- process_methylation(allele_counts, min_meth_loci_reads = config$min_cov)
   rm(allele_counts)
 
@@ -257,7 +257,7 @@ cmain_make_methylation_profile <- function(sample, config) {
   rm(hdi)
 
   loginfo("Saving methylation profile: %s %s", sample$patient_id, sample$sample_id)
-  output_file <- build_output_name(sample, config, "methylation")
+  output_file <- get_fpath(sample, config, "methylation")
   fs::dir_create(fs::path_dir(output_file))
   data.table::fwrite(methylation, file = output_file)
   return(output_file)
@@ -272,8 +272,8 @@ cmain_make_methylation_profile <- function(sample, config) {
 cmain_deconvolve_methylation <- function(tumour, normal, config) {
   loginfo("Combining tumour-normal methylation: %s", tumour$patient_id)
   # Load DNAme data and merge (one function)
-  t_meth <- data.table::fread(build_output_name(tumour, config, "methylation"))
-  n_meth <- data.table::fread(build_output_name(normal, config, "methylation"))
+  t_meth <- data.table::fread(get_fpath(tumour, config, "methylation"))
+  n_meth <- data.table::fread(get_fpath(normal, config, "methylation"))
   meth_c <- combine_tumour_normal_methylation(t_meth, n_meth)
 
   loginfo("Loading CNAs: %s", tumour$patient_id)
@@ -291,7 +291,7 @@ cmain_deconvolve_methylation <- function(tumour, normal, config) {
   # Calculate m_t HDI # parallel - long-running function
   meth_c <- calculate_m_t_hdi(meth_c, config$n_cores)
 
-  outfile <- build_output_name(tumour, config, "pure_methylation")
+  outfile <- get_fpath(tumour, config, "pure_methylation")
   qs::qsave(meth_c, outfile)
 }
 
@@ -306,8 +306,8 @@ cmain_deconvolve_methylation <- function(tumour, normal, config) {
 cmain_call_dmps <- function(tumour, normal, config) {
   loginfo("Calling DMPs")
   # Call DMPs between tumour and normal
-  pmeth_file <- build_output_name(tumour, config, "pure_methylation")
-  nmeth_file <- build_output_name(normal, config, "methylation")
+  pmeth_file <- get_fpath(tumour, config, "pure_methylation")
+  nmeth_file <- get_fpath(normal, config, "methylation")
   pmeth <- qs::qread(pmeth_file)
   nmeth <- data.table::fread(nmeth_file)
 
@@ -321,7 +321,7 @@ cmain_call_dmps <- function(tumour, normal, config) {
   nmeth <- nmeth[subjectHits(overlaps), ]
 
   tmeth <- call_dmps(pmeth, nmeth, effect_size = 0.2, prob = 0.99, itersplit = 5e5, ncores = config$n_cores)
-  tmeth_outfile <- build_output_name(tumour, config, "dmps")
+  tmeth_outfile <- get_fpath(tumour, config, "dmps")
   fst::write_fst(tmeth, tmeth_outfile)
 }
 
@@ -335,11 +335,11 @@ cmain_call_dmps <- function(tumour, normal, config) {
 #' @export
 cmain_call_dmrs <- function(tumour, config) {
   loginfo("Calling DMRs")
-  tmeth_outfile <- build_output_name(tumour, config, "dmps")
+  tmeth_outfile <- get_fpath(tumour, config, "dmps")
   tmeth_dmps <- fst::read_fst(tmeth_outfile, as.data.table = T)
   regions_file <- CAMDAC::get_reference_files(config, "annotations", "*all_regions_annotations*")
   regions_annotations <- fst::read_fst(regions_file, as.data.table = T)
   tmeth_dmrs <- call_dmrs(tmeth_dmps, regions_annotations, n_cores = config$n_cores)
-  tmeth_dmrs_outfile <- build_output_name(tumour, config, "dmrs")
+  tmeth_dmrs_outfile <- get_fpath(tumour, config, "dmrs")
   fst::write_fst(tmeth_dmrs, tmeth_dmrs_outfile)
 }
