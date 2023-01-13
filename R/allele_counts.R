@@ -652,12 +652,13 @@ filter_bad_allele_count_rows <- function(pileup_summary, min_cov) {
   loci_high_unexpected <- loci_all - loci_low_unexpected
   # Alert users to how many loci filtered for unexpected reads
   if (loci_high_unexpected > 0) {
-    print(paste0(
-      "Unexpected nucleotides represent > 5% of the alleles at ", loci_high_unexpected,
-      " positions ( ", round(loci_high_unexpected * 100 / loci_all, digits = 2),
-      " %) - positions removed.",
-      sep = ""
-    ))
+    # TODO: Design reporter to log CpG sites not included in allele counting.
+    # print(paste0(
+    #   "Unexpected nucleotides represent > 5% of the alleles at ", loci_high_unexpected,
+    #   " positions ( ", round(loci_high_unexpected * 100 / loci_all, digits = 2),
+    #   " %) - positions removed.",
+    #   sep = ""
+    # ))
   }
 
   # Remove positions without distinguishable ref/alt alleles or without methylation
