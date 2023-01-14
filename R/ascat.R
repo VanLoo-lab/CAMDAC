@@ -297,8 +297,8 @@ load_ascat_bc <- function(logr_t, baf_t, logr_n, baf_n, chrom, POS, samples, sex
 #' @title bseq_bool
 #' A helper function for filtering out reference and alternate
 #' SNPs where bisulfite conversion cannot be distinguished.
-#' @param ref
-#' @param alt
+#' @param ref Reference allele
+#' @param alt Alternate allele
 #' @noRd
 bseq_bool <- function(ref, alt) {
   return(!(
