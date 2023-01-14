@@ -163,6 +163,23 @@ cmain_bind_snps <- function(tumour, normal, config) {
   return(tsnps_output_file)
 }
 
+#' Call CNA
+#'
+#' Config determines whether ASCAT or Battenberg is used
+#' @param tumor A camdac sample object
+#' @param normal A camdac sample object
+#' @param config A camdac config object
+#' @export
+cmain_call_cna <- function(tumor, normal, config) {
+  if (config$cna_caller == "ascat") {
+    cmain_run_ascat(tumor, normal, config)
+  } else if (config$cna_caller == "battenberg") {
+    cmain_run_battenberg(tumor, normal, config)
+  } else {
+    stop("Unknown cna caller option in config")
+  }
+}
+
 #' Run ASCAT.m
 #'
 #' Expects SNP profiles to have been created using `cmain_make_snp_profiles`
@@ -331,7 +348,7 @@ cmain_make_methylation_profile <- function(sample, config) {
   rm(hdi)
 
   loginfo("Saving methylation profile: %s %s", sample$patient_id, sample$id)
-  output_file <- get_fpath(sample, config, "methylation")
+  output_file <- get_fpath(sample, config, "meth")
   fs::dir_create(fs::path_dir(output_file))
   data.table::fwrite(methylation, file = output_file)
   return(output_file)
@@ -346,8 +363,8 @@ cmain_make_methylation_profile <- function(sample, config) {
 cmain_deconvolve_methylation <- function(tumour, normal, config) {
   loginfo("Combining tumour-normal methylation: %s", tumour$patient_id)
   # Load DNAme data and merge (one function)
-  t_meth <- fread_chrom(get_fpath(tumour, config, "methylation"))
-  n_meth <- fread_chrom(get_fpath(normal, config, "methylation"))
+  t_meth <- fread_chrom(get_fpath(tumour, config, "meth"))
+  n_meth <- fread_chrom(get_fpath(normal, config, "meth"))
   meth_c <- combine_tumour_normal_methylation(t_meth, n_meth)
 
   loginfo("Annotating CNAs: %s", paste0(tumour$id, ":", normal$id))
@@ -382,7 +399,7 @@ cmain_call_dmps <- function(tumour, normal, config) {
   loginfo("Calling DMPs")
   # Call DMPs between tumour and normal
   pmeth <- fread_chrom(get_fpath(tumour, config, "pure"))
-  nmeth <- fread_chrom(get_fpath(normal, config, "methylation"))
+  nmeth <- fread_chrom(get_fpath(normal, config, "meth"))
 
   # Ensure tumour and normal subset to the same CpGs only.
   overlaps <- findOverlaps(
