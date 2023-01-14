@@ -96,36 +96,8 @@
 
     
     
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CAMDAC</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
-</h2>
-<div class="section level3">
-<h3 id="are-there-external-dependencies">Are there external dependencies?<a class="anchor" aria-label="anchor" href="#are-there-external-dependencies"></a>
-</h3>
-<p>CAMDAC runs Battenberg to call copy number variants in WGBS mode. This requires requires the <code>java</code> command-line utility to be available in the system path. Otherwise, you can download Java from <a href="https://openjdk.org/" class="external-link">https://openjdk.org/</a>.</p>
-</div>
-<div class="section level3">
-<h3 id="how-does-camdac-find-pipeline-files">How does CAMDAC find pipeline files?<a class="anchor" aria-label="anchor" href="#how-does-camdac-find-pipeline-files"></a>
-</h3>
-<p>CAMDAC searches for pipeline files in the following order:</p>
-<ol style="list-style-type: decimal">
-<li>A directory passed when creating the config object (see <code><a href="../reference/CamConfig.html">CamConfig()</a></code>)</li>
-<li>The location defined by the environment variable CAMDAC_PIPELINE_FILES.</li>
-<li>The current working directory</li>
-</ol>
-<p>We recommend that you set the environment variable <code>CAMDAC_PIPELINE_FILES</code> to the directory where you downloaded the files. This will allow CAMDAC to find the files automatically whenever you load R.</p>
-<p>From a Unix terminal: &gt; echo “CAMDAC_PIPELINE_FILES=$(realpath R)” &gt;&gt; ~/.Renviron</p>
-</div>
-<div class="section level3">
-<h3 id="i-have-an-error-when-downloading-pipeline-files">I have an error when downloading pipeline files<a class="anchor" aria-label="anchor" href="#i-have-an-error-when-downloading-pipeline-files"></a>
-</h3>
-<p>Some instutites setup firewalls for direct donwloads. If the download command fails, please <a href="https://github.com/VanLoo-lab/CAMDAC/issues" class="external-link">raise an issue on github</a> describing the error. You can manually download the files from the endpoints listed in <code>inst/extdata/pipeline_files_urls.txt</code>. The files are stored as tar.gz files, therefore you will need to unpack them with the command <code>tar -xvzf &lt;file&gt;</code>.</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="general">General<a class="anchor" aria-label="anchor" href="#general"></a>
+<h2 id="general-faq">General FAQ<a class="anchor" aria-label="anchor" href="#general-faq"></a>
 </h2>
 <div class="section level3">
 <h3 id="what-if-i-dont-have-a-cna-or-matched-germline-sample">What if I don’t have a CNA or matched germline sample?<a class="anchor" aria-label="anchor" href="#what-if-i-dont-have-a-cna-or-matched-germline-sample"></a>
@@ -159,7 +131,7 @@
 <p>If for any reason, you have changed the output directory structure from previous run, you can initiate CAMDAC by manually passing outputs to <code>CamSample</code> objects. See the vignette <code>vignettes("output")</code> for more information.</p>
 <p>Finally, you can run the <code>cmain_*</code> functions used internally by <code>pipeline</code> directly. These functions are not exported, but can be accessed with <code>:::</code>. For example, to run the deconvolution step, you can call <code>CAMDAC:::cmain_deconvolution</code>.</p>
 <div class="section level3">
-<h3 id="my-cna-solution-was-imperfect--how-can-i-refit-with-different-purity-and-ploidy-values">My CNA solution was imperfect. How can I refit with different purity and ploidy values?<a class="anchor" aria-label="anchor" href="#my-cna-solution-was-imperfect--how-can-i-refit-with-different-purity-and-ploidy-values"></a>
+<h3 id="my-cna-solution-wasnt-right--how-can-i-refit-with-different-purity-and-ploidy-values">My CNA solution wasn’t right. How can I refit with different purity and ploidy values?<a class="anchor" aria-label="anchor" href="#my-cna-solution-wasnt-right--how-can-i-refit-with-different-purity-and-ploidy-values"></a>
 </h3>
 <p>If you want to use an external purity and ploidy solution, simply pass a CNA file that has only the purity and ploidy fields. Additionally, set <code>refit==TRUE</code> in the CamConfig and CAMDAC will use this to refit the sample.</p>
 </div>
@@ -168,9 +140,34 @@
 <h2 id="can-i-limit-my-analysis-to-specific-regions-of-interest">Can I limit my analysis to specific regions of interest?<a class="anchor" aria-label="anchor" href="#can-i-limit-my-analysis-to-specific-regions-of-interest"></a>
 </h2>
 <p>To analyse specific genomic regions, you may pass a BED file to CAMDAC config:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"."</span>, ref<span class="op">=</span><span class="st">"./pipeline_files"</span>, regions<span class="op">=</span><span class="st">"regions.bed"</span><span class="op">)</span></span></code></pre></div>
 <p>CAMDAC will merge any overlapping regions prior to analysis.</p>
+</div>
+<div class="section level2">
+<h2 id="can-i-manually-override-specific-pipeline-outputs">Can I manually override specific pipeline outputs?<a class="anchor" aria-label="anchor" href="#can-i-manually-override-specific-pipeline-outputs"></a>
+</h2>
+<p>If you have outputs from a previous run, you can manually assign them to a CAMDAC object. This overwrites the expected path for that output type, allowing the pipeline to run with this data instead of computing it. Use the <code>attach_output</code> function, passing one of three arguments:</p>
+<ul>
+<li>
+<code>counts</code>: CAMDAC allele counts <code>*.SNP.CpGs.all.sorted.csv.gz</code> file</li>
+<li>
+<code>snps</code>: CAMDAC sample SNP counts <code>*.SNPs.csv.gz</code> file</li>
+<li>
+<code>meth</code>: CAMDAC bulk methylation <code>*.m.csv.gz</code> file</li>
+<li>
+<code>cna</code>: CAMDAC CNA <code>*.cna.txt</code> file</li>
+<li>
+<code>pure</code>: CAMDAC deconvolved methylation <code>*.m.pure.csv.gz</code> file</li>
+</ul>
+<p>For example, to attach a previous counts file to a CAMDAC object:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CAMDAC</span><span class="op">)</span></span>
+<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"T"</span>, sex <span class="op">=</span> <span class="st">"XY"</span>, bam <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, build<span class="op">=</span><span class="st">"hg38"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span><span class="op">)</span></span>
+<span><span class="va">counts_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"test.SNPs.CpGs.all.sorted.csv.gz"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
+<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/attach_output.html">attach_output</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="va">config</span>, <span class="st">"counts"</span>, <span class="va">counts_file</span><span class="op">)</span></span></code></pre></div>
+<p>The CAMDAC pipeline can now access the file in the expected location at <code>config$outdir</code>.</p>
 </div>
   </div>
 

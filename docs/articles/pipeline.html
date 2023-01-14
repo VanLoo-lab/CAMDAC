@@ -96,9 +96,6 @@
 
     
     
-<div class="section level2">
-<h2 id="pipeline">Pipeline<a class="anchor" aria-label="anchor" href="#pipeline"></a>
-</h2>
 <p>To run the CAMDAC pipeline, raw data for each sample is loaded as a <code>CamSample</code> object and passed to the main <code>pipeline</code> function along with the configuration. CAMDAC expects the following <code>CamSample</code> objects:</p>
 <ol style="list-style-type: decimal">
 <li>
@@ -110,9 +107,9 @@
 <li>
 <code>origin</code> (optional) - normal cell type from which the tumour originated for differential methylation calling. These need not be patient-matched.</li>
 </ol>
-<div class="section level3">
-<h3 id="run-the-camdac-pipeline">Run the CAMDAC pipeline<a class="anchor" aria-label="anchor" href="#run-the-camdac-pipeline"></a>
-</h3>
+<div class="section level2">
+<h2 id="run-the-camdac-pipeline">Run the CAMDAC pipeline<a class="anchor" aria-label="anchor" href="#run-the-camdac-pipeline"></a>
+</h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CAMDAC</span><span class="op">)</span></span>
 <span></span>
@@ -123,7 +120,7 @@
 <span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"tumor"</span>, bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
 <span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"normal"</span>, bam<span class="op">=</span><span class="va">b_normal</span><span class="op">)</span></span>
 <span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, ref<span class="op">=</span><span class="st">"./pipeline_files"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>, cores<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div>
-<p>When defining CamSample objects, samples must have a unique <code>id</code> value between runs otherwise data will be overwritten. Alternatively, users may use the <code>patient</code> argument to separate samples the same <code>id</code>.</p>
+<p>When defining <code>CamSample</code> objects, samples must have a unique <code>id</code> value between runs otherwise data will be overwritten. Alternatively, users may use the <code>patient</code> argument to separate samples the same <code>id</code>.</p>
 <p>To run the pipeline:</p>
 <pre><code><span><span class="fu"><a href="../reference/pipeline.html">pipeline</a></span><span class="op">(</span></span>
 <span>    tumor<span class="op">=</span><span class="va">tumor</span>,</span>
@@ -133,9 +130,9 @@
 <span>    config<span class="op">=</span><span class="va">config</span></span>
 <span><span class="op">)</span></span></code></pre>
 </div>
-<div class="section level3">
-<h3 id="using-external-cna-solutions">Using external CNA solutions<a class="anchor" aria-label="anchor" href="#using-external-cna-solutions"></a>
-</h3>
+<div class="section level2">
+<h2 id="using-external-cna-solutions">Using external CNA solutions<a class="anchor" aria-label="anchor" href="#using-external-cna-solutions"></a>
+</h2>
 <p>The germline sample is optional because you may already have an allele-specific CNA solutions for your bulk tumor. For example, from bulk WGS of the same sample where no patient-matched methylation data is available.</p>
 <p>A tab-delimited text file can be provided in the following format:</p>
 <table class="table">
@@ -180,10 +177,7 @@
 <code class="sourceCode R"><span></span>
 <span><span class="va">cna_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"inst/testdata/test_cna.txt"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu">CSample</span><span class="op">(</span></span>
-<span>    id<span class="op">=</span><span class="st">"tumor"</span>,</span>
-<span>    bam<span class="op">=</span><span class="va">b_tumor</span></span>
-<span><span class="op">)</span></span>
+<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"T"</span>,bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/attach_output.html">attach_output</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="va">config</span>, <span class="st">"cna"</span>, <span class="va">cna_file</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/pipeline.html">pipeline</a></span><span class="op">(</span></span>
@@ -194,7 +188,6 @@
 <span>    config<span class="op">=</span><span class="va">config</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Next, see <code>vignettes("output")</code> for a detailed summary of CAMDAC results files.</p>
-</div>
 </div>
   </div>
 

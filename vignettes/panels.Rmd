@@ -56,16 +56,17 @@ To run CAMDAC with your newly created panel, attach your panel to a CamSample ob
 b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
 b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
 
-
+# Setup CAMDAC samples
 tumor <- CamSample(id="tumor", sex="XY", bam=b_tumor)
 normal <- CamSample(id="normal", sex="XY", bam=b_normal)
 config <- CamConfig(outdir="./results", ref="./pipeline_files", bsseq="wgbs", lib="pe", cores=10)
 
-# Setup panel
+# Setup panel sample
 panel <- CamSample(id="panel", sex="XY")
 panel_file <- system.file("testdata", "test_panel.m.csv.gz", package = "CAMDAC")
 attach_output(panel, config, "meth", panel_file)
 
+# Run CAMDAC with panel
 pipeline(
     tumor=tumor,
     germline=normal,

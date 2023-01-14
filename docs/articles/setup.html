@@ -112,6 +112,32 @@
 <code class="sourceCode R"><span><span class="fu">CAMDAC</span><span class="fu">::</span><span class="fu"><a href="../reference/download_pipeline_files.html">download_pipeline_files</a></span><span class="op">(</span><span class="st">"wgbs"</span>, directory<span class="op">=</span><span class="st">"./pipeline_files"</span><span class="op">)</span></span></code></pre></div>
 <p>Now, you’re ready to run CAMDAC! Next, see <code>vignette("preprocessing")</code>.</p>
 </div>
+<div class="section level2">
+<h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
+</h2>
+<div class="section level3">
+<h3 id="are-there-external-dependencies">Are there external dependencies?<a class="anchor" aria-label="anchor" href="#are-there-external-dependencies"></a>
+</h3>
+<p>CAMDAC runs Battenberg to call copy number variants in WGBS mode. This requires requires the <code>java</code> command-line utility to be available in the system path. Otherwise, you can download Java from <a href="https://openjdk.org/" class="external-link">https://openjdk.org/</a>.</p>
+</div>
+<div class="section level3">
+<h3 id="how-does-camdac-find-pipeline-files">How does CAMDAC find pipeline files?<a class="anchor" aria-label="anchor" href="#how-does-camdac-find-pipeline-files"></a>
+</h3>
+<p>CAMDAC searches for pipeline files in the following order:</p>
+<ol style="list-style-type: decimal">
+<li>A directory passed when creating the config object (see <code><a href="../reference/CamConfig.html">CamConfig()</a></code>)</li>
+<li>The location defined by the environment variable CAMDAC_PIPELINE_FILES.</li>
+<li>The current working directory</li>
+</ol>
+<p>We recommend that you set the environment variable <code>CAMDAC_PIPELINE_FILES</code> to the directory where you downloaded the files. This will allow CAMDAC to find the files automatically whenever you load R.</p>
+<p>From a Unix terminal: &gt; echo “CAMDAC_PIPELINE_FILES=$(realpath R)” &gt;&gt; ~/.Renviron</p>
+</div>
+<div class="section level3">
+<h3 id="i-have-an-error-when-downloading-pipeline-files">I have an error when downloading pipeline files<a class="anchor" aria-label="anchor" href="#i-have-an-error-when-downloading-pipeline-files"></a>
+</h3>
+<p>Some instutites setup firewalls for direct donwloads. If the download command fails, please <a href="https://github.com/VanLoo-lab/CAMDAC/issues" class="external-link">raise an issue on github</a> describing the error. You can manually download the files from the endpoints listed in <code>inst/extdata/pipeline_files_urls.txt</code>. The files are stored as tar.gz files, therefore you will need to unpack them with the command <code>tar -xvzf &lt;file&gt;</code>.</p>
+</div>
+</div>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

@@ -18,21 +18,21 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 
 #' Set CAMDAC configuration
 #'
-#' @param outdir A path to save CAMDAC results. The results folder structure follows the format
-#'   PATIENT/DATASET/SAMPLE/.
-#'  @param bsseq Bisulfite sequencing platform. Choose between "wgbs" or "rrbs".
-#'  @param lib Bisulfite sequencing library. Choose "pe" for paired end, "se" for single end.
-#'  @param build Reference genome build. Choose "hg38" or "hg19".
-#'  @param n_cores Number of cores to process CAMDAC data in parallel wherever possible.
-#'  @param regions A BED file with regions to restrict the analysis to
-#'  @param camdac_refs Path to CAMDAC reference files. If this is not given, CAMDAC searched the
-#'    environment variable CAMDAC_PIPELINE_FILES. If this is not set, CAMDAC looks in the current
-#'    working directory.
-#'  @param min_mapq Minimum mapping quality filter used in `cmain_allele_counts()`.
-#'  @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP selection.
-#'  @param overwrite Config to overwrite files if they already exist.
-#'  @param cna_caller The CNA caller to use. "ascat" or "battenberg". Default is "battenberg"
-#'  @export
+#' @param outdir A path to save CAMDAC results. The results folder structure
+#' follows the format PATIENT/DATASET/SAMPLE/.
+#' @param bsseq Bisulfite sequencing platform. Choose between "wgbs" or "rrbs".
+#' @param lib Bisulfite sequencing library. Choose "pe" for paired end, "se" for single end.
+#' @param build Reference genome build. Choose "hg38" or "hg19".
+#' @param n_cores Number of cores to process CAMDAC data in parallel wherever possible.
+#' @param regions A BED file with regions to restrict the analysis to
+#' @param camdac_refs Path to CAMDAC reference files. If this is not given, CAMDAC searched the
+#'   environment variable CAMDAC_PIPELINE_FILES. If this is not set, CAMDAC looks in the current
+#'   working directory.
+#' @param min_mapq Minimum mapping quality filter used in `cmain_allele_counts()`.
+#' @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP selection.
+#' @param overwrite Config to overwrite files if they already exist.
+#' @param cna_caller The CNA caller to use. "ascat" or "battenberg". Default is "battenberg"
+#' @export
 CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, camdac_refs = NULL,
                       min_mapq = 1, min_cov = 3, overwrite = FALSE, cna_caller = "battenberg") {
   # TODO: Validate inputs

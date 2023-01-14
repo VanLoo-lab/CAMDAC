@@ -161,18 +161,3 @@ panel_meth_counts <- function(x, panel_mask) {
   # Filter CG sites by panel mask
   res <- res[panel_mask, ]
 }
-
-#' Attach a methylation panel to a normal sample as it's methylation file
-#'    Overwrites CAMDAC methylation files for the sample object using the panel.
-#' @param sample CAMDAC sample created with `create_camdac_sample`
-#' @param config CAMDAC config object. Used to determine expected output directory
-#' @param panel Methylation panel dataframe built with `panel_meth_from_counts`
-#' @return Sample object with methylation file in expected output directory
-#' @export
-attach_methylation_panel <- function(sample, config, panel) {
-  meth_path <- get_fpath(sample, config, "meth")
-  # Ensure directory exists
-  fs::dir_create(fs::path_dir(meth_path))
-  fwrite(panel, meth_path)
-  return(sample)
-}

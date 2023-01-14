@@ -15,8 +15,6 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Pipeline
-
 To run the CAMDAC pipeline, raw data for each sample is loaded as a `CamSample` object and passed to the main `pipeline` function along with the configuration. CAMDAC expects the following `CamSample` objects:
 
 1. `tumor` - the bulk tumor sample you want to deconvolve
@@ -38,7 +36,7 @@ normal <- CamSample(id="normal", bam=b_normal)
 config <- CamConfig(outdir="./results", ref="./pipeline_files", bsseq="wgbs", lib="pe", cores=10)
 ```
 
-When defining CamSample objects, samples must have a unique `id` value between runs otherwise data will be overwritten. Alternatively, users may use the `patient` argument to separate samples the same `id`.
+When defining `CamSample` objects, samples must have a unique `id` value between runs otherwise data will be overwritten. Alternatively, users may use the `patient` argument to separate samples the same `id`.
 
 To run the pipeline:
 
@@ -75,10 +73,7 @@ Given a CNA solution, you can run CAMDAC without the germline normal sample:
 
 cna_file <- system.file("inst/testdata/test_cna.txt")
 
-tumor <- CSample(
-    id="tumor",
-    bam=b_tumor
-)
+tumor <- CamSample(id="T",bam=b_tumor)
 attach_output(tumor, config, "cna", cna_file)
 
 pipeline(
