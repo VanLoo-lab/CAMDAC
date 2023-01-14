@@ -269,7 +269,7 @@ camdac_to_battenberg_prepare_wgbs <- function(tumour_prefix, normal_prefix, camd
 
 check_callChrXSubclones <- function(TUMOURNAME) {
   # Helper function to check whether we can run callChrX subclones i.e. enough SNPs in non-par regions
-  PCFinput <- data.frame(read_table_generic(paste0(TUMOURNAME, "_mutantLogR_gcCorrected.tab")), stringsAsFactors = F)
+  PCFinput <- data.frame(Battenberg::read_table_generic(paste0(TUMOURNAME, "_mutantLogR_gcCorrected.tab")), stringsAsFactors = F)
   PCFinput <- PCFinput[which(PCFinput$Chromosome == "X" & PCFinput$Position > 2.6e6 & PCFinput$Position < 156e6), ] # get nonPAR
   colnames(PCFinput)[3] <- TUMOURNAME
   nrow(PCFinput) > 0

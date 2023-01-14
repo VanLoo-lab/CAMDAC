@@ -11,7 +11,8 @@ config <- CamConfig(
     build = "hg38",
     lib = "pe",
     regions = regions,
-    n_cores = 10
+    n_cores = 10,
+    min_cov = 1 # Required to capture sufficient SNPs from test
 )
 
 tumor <- CamSample(id = "T", sex = "XY", bam = bam)

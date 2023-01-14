@@ -13,7 +13,9 @@ test_that("attach output function writes files", {
 
   # Get expected file and test that it doesn't exist
   exp <- get_fpath(tumor, config, "counts")
-  testthat::expect_false(file.exists(exp))
+  if (file.exists(exp)) {
+    fs::file_delete(exp)
+  }
 
   # Run attach_output
   counts_file <- system.file("testdata", "test.SNPs.CpGs.all.sorted.csv.gz", package = "CAMDAC")

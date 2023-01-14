@@ -2,6 +2,7 @@
 
 export(CamSample)
 export(attach_methylation_panel)
+export(attach_output)
 export(cmain_bind_snps)
 export(cmain_call_cna)
 export(cmain_call_dmps)
