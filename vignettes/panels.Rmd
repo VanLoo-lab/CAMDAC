@@ -53,8 +53,9 @@ To run CAMDAC with your newly created panel, attach your panel to a CSample obje
 ```{r}
 
 # Load test data
-b_tumor = system.file("inst/testdata/tumor.bam")
-b_normal = system.file("inst/testdata/normal.bam")
+b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
+b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
+
 
 tumor <- CamSample(id="tumor", sex="XY", bam=b_tumor)
 normal <- CamSample(id="normal", sex="XY", bam=b_normal)
