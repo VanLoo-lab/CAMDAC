@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 CAMDAC supports the use of multiple DNA methylation BAM files as a source of the normal infiltrates or normal cell of origin.
 
-To create a panel, you must first process your BAM files with the CAMDAC allele counter:
+To create a panel, process your BAM files with the CAMDAC allele counter:
 
 ```
 library(CAMDAC)
@@ -38,15 +38,17 @@ for(file in c(b_normal1, b_normal2, b_normal3)){
     data = cmain_count_alleles(bam_file)
     data.table::fwrite(data, outfile)
 }
-
-# Create a panel by merging allele counts
-pan_data <- fs::dir_ls(".", glob="*.SNPs.CG.csv.gz")
-panel <- cmain_normal_panel(pan_data)
-data.table::fwrite(panel, "panel.m.csv.gz")
-
 ```
 
-To run CAMDAC with your newly created panel, pass the panel to CSample using the `meth` argument.
+The allele counts files can then be merged into a single file for the panel containing methylation data for deconvolution:
+
+```
+panel_counts <- fs::dir_ls(".", glob="*.SNPs.CG.csv.gz")
+panel <- cmain_normal_panel(panel_counts)
+data.table::fwrite(panel, "panel.m.csv.gz")
+```
+
+To run CAMDAC with your newly created panel, attach your panel to a CSample object using the `meth` argument.
 
 ```{r}
 
@@ -54,13 +56,14 @@ To run CAMDAC with your newly created panel, pass the panel to CSample using the
 b_tumor = system.file("inst/testdata/tumor.bam")
 b_normal = system.file("inst/testdata/normal.bam")
 
-# Load panel
-panel_file <- "panel.m.csv.gz"
-
-tumor <- CamSample(id="tumor", bam=b_tumor)
-normal <- CamSample(id="normal", bam=b_normal)
-panel <- CamSample(id="panel", meth=panel_file)
+tumor <- CamSample(id="tumor", sex="XY", bam=b_tumor)
+normal <- CamSample(id="normal", sex="XY", bam=b_normal)
 config <- CamConfig(outdir="./results", ref="./pipeline_files", bsseq="wgbs", lib="pe", cores=10)
+
+# Setup panel
+panel <- CamSample(id="panel", sex="XY")
+panel_file <- system.file("testdata", "test_panel.m.csv.gz", package = "CAMDAC")
+attach_output(panel, config, "meth", panel_file)
 
 pipeline(
     tumor=tumor,
