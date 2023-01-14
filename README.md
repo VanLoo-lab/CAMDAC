@@ -57,6 +57,8 @@ devtools::document()
 devtools::test()
 # Build readme
 devtools::build_readme()
+# Check package builds
+devtools::check()
 # Build documentation
 pkgdown::build_site(preview=FALSE)
 ```
