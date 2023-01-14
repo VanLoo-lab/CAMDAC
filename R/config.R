@@ -107,9 +107,9 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
         sep = "."
       )
     ),
-    code == "pure_methylation" ~ fs::path(
+    code == "pure" ~ fs::path(
       config$outdir, sample$patient_id, "Methylation", sample$id, paste(
-        sample$patient_id, sample$id, "pure", "qs",
+        sample$patient_id, sample$id, "pure", "csv", "gz",
         sep = "."
       )
     ),

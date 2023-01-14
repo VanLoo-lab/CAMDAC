@@ -346,13 +346,14 @@ cmain_make_methylation_profile <- function(sample, config) {
 cmain_deconvolve_methylation <- function(tumour, normal, config) {
   loginfo("Combining tumour-normal methylation: %s", tumour$patient_id)
   # Load DNAme data and merge (one function)
-  t_meth <- data.table::fread(get_fpath(tumour, config, "methylation"))
-  n_meth <- data.table::fread(get_fpath(normal, config, "methylation"))
+  t_meth <- fread_chrom(get_fpath(tumour, config, "methylation"))
+  n_meth <- fread_chrom(get_fpath(normal, config, "methylation"))
   meth_c <- combine_tumour_normal_methylation(t_meth, n_meth)
 
-  loginfo("Loading CNAs: %s", tumour$patient_id)
+  loginfo("Annotating CNAs: %s", paste0(tumour$id, ":", normal$id))
   # Load copy number data from ascat.output and annotate CGs.
-  meth_c <- annotate_cgs_with_cnas(meth_c, tumour)
+  cna <- fread_chrom(get_fpath(tumour, config, "cna"))
+  meth_c <- annotate_cgs_with_cnas(meth_c, cna)
 
   loginfo("Deconvolving DNAme: %s", tumour$patient_id)
   # Calculate m_t
@@ -362,11 +363,11 @@ cmain_deconvolve_methylation <- function(tumour, normal, config) {
   meth_c <- filter_deconvolved_methylation(meth_c)
 
   loginfo("Calculating pure_tumour HDI: %s", tumour$patient_id)
-  # Calculate m_t HDI # parallel - long-running function
+  # Calculate m_t HDI # parallel, long-running function
   meth_c <- calculate_m_t_hdi(meth_c, config$n_cores)
 
-  outfile <- get_fpath(tumour, config, "pure_methylation")
-  qs::qsave(meth_c, outfile)
+  outfile <- get_fpath(tumour, config, "pure")
+  data.table::fwrite(meth_c, outfile)
 }
 
 #' Call tumor-normal DMPs
@@ -380,10 +381,8 @@ cmain_deconvolve_methylation <- function(tumour, normal, config) {
 cmain_call_dmps <- function(tumour, normal, config) {
   loginfo("Calling DMPs")
   # Call DMPs between tumour and normal
-  pmeth_file <- get_fpath(tumour, config, "pure_methylation")
-  nmeth_file <- get_fpath(normal, config, "methylation")
-  pmeth <- qs::qread(pmeth_file)
-  nmeth <- data.table::fread(nmeth_file)
+  pmeth <- fread_chrom(get_fpath(tumour, config, "pure"))
+  nmeth <- fread_chrom(get_fpath(normal, config, "methylation"))
 
   # Ensure tumour and normal subset to the same CpGs only.
   overlaps <- findOverlaps(

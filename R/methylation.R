@@ -168,14 +168,12 @@ combine_tumour_normal_methylation <- function(t_meth, n_meth) {
   return(meth_c)
 }
 
-annotate_cgs_with_cnas <- function(meth_c, tumour) {
-  cna <- tumour$cna
-  cna$ascna$chrom <- factor(cna$ascna$chrom, levels = c(1:22, "X", "Y"))
-  setkey(cna$ascna, chrom, start, end)
+annotate_cgs_with_cnas <- function(meth_c, cna) {
+  setkey(cna, chrom, start, end)
   # Add additional columns so segments can be referenced elswhere in code
-  cna$ascna$seg_start <- cna$ascna$start
-  cna$ascna$seg_end <- cna$ascna$end
-  meth_cna <- foverlaps(cna$ascna, meth_c, nomatch = 0)
+  cna$seg_start <- cna$start
+  cna$seg_end <- cna$end
+  meth_cna <- foverlaps(cna, meth_c, nomatch = 0)
   meth_cna[, i.start := NULL]
   meth_cna[, i.end := NULL]
 
@@ -201,7 +199,7 @@ annotate_cgs_with_cnas <- function(meth_c, tumour) {
   # TODO: meth_cna <- calculate_cg_cn_norm(meth_cna, patient_sex, reference_genome)
 
   # Add overall tumour purity
-  meth_cna[, p := cna$purity]
+  meth_cna[, p := cna$purity[[1]]]
   return(meth_cna)
 }
 
