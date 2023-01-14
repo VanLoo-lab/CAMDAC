@@ -117,6 +117,11 @@ cmain_make_snps <- function(sample, config) {
 #' @param config A camdac config object
 #' @export
 cmain_bind_snps <- function(tumour, normal, config) {
+  if (is.null(normal)) {
+    loginfo("No germline normal. SNP profile binding for %s", paste0(tumour$id))
+    return(NULL)
+  }
+
   tsnps_output_file <- CAMDAC::get_fpath(tumour, config, "tsnps")
   if (fs::file_exists(tsnps_output_file) & !config$overwrite) {
     loginfo("Skipping SNP profile creation for %s", paste0(tumour$id, "&", normal$id))
@@ -171,13 +176,23 @@ cmain_bind_snps <- function(tumour, normal, config) {
 #' @param config A camdac config object
 #' @export
 cmain_call_cna <- function(tumor, normal, config) {
+  # Skip if file exists and overwrite is false
+  cna_output_name <- get_fpath(tumour, config, "cna")
+  if (fs::file_exists(cna_output_name) & !config$overwrite) {
+    loginfo("CNA Found. Skipping %s analysis for %s", config$cna_caller, tumour$id)
+    return(cna_output_name)
+  }
+
   if (config$cna_caller == "ascat") {
-    cmain_run_ascat(tumor, normal, config)
+    cna <- cmain_run_ascat(tumor, normal, config)
   } else if (config$cna_caller == "battenberg") {
-    cmain_run_battenberg(tumor, normal, config)
+    cna <- cmain_run_battenberg(tumor, normal, config)
   } else {
     stop("Unknown cna caller option in config")
   }
+
+  data.table::fwrite(cna, file = cna_output_name, sep = "\t", col.names = T, quote = F)
+  return(cna_output_name)
 }
 
 #' Run ASCAT.m
@@ -189,13 +204,6 @@ cmain_call_cna <- function(tumor, normal, config) {
 #' @param config A camdac config object
 #' @export
 cmain_run_ascat <- function(tumour, normal, config) {
-  # Skip if file exists and overwrite is false
-  cna_output_name <- get_fpath(tumour, config, "cna")
-  if (fs::file_exists(cna_output_name) & !config$overwrite) {
-    loginfo("Skipping ASCAT analysis for %s", paste0(tumour$id))
-    return(cna_output_name)
-  }
-
   loginfo("Running ASCAT analysis for %s", paste0(tumour$id))
 
   # Setup output object and results directory
@@ -231,9 +239,8 @@ cmain_run_ascat <- function(tumour, normal, config) {
   # Write CNA object to file for ease
 
   cna <- load_cna_data(tumor, config, "ascat")
-  data.table::fwrite(cna, file = cna_output_name, sep = "\t", col.names = T, quote = F)
 
-  return(cna_output_name)
+  return(cna)
 }
 
 #' Run battenberg
@@ -245,12 +252,6 @@ cmain_run_ascat <- function(tumour, normal, config) {
 #' @param config A camdac config object
 #' @export
 cmain_run_battenberg <- function(tumour, normal, config) {
-  cna_output_name <- get_fpath(tumour, config, "cna")
-  if (fs::file_exists(cna_output_name) & !config$overwrite) {
-    loginfo("Skipping Battenberg analysis for %s", paste0(tumour$id))
-    return(cna_output_name)
-  }
-
   # BB operates from within output directory, therefore we switch there to start and leave before ending
   currentwd <- getwd()
   outdir <- fs::dir_create(get_fpath(tumour, config, "battenberg", dir = T))
@@ -323,10 +324,9 @@ cmain_run_battenberg <- function(tumour, normal, config) {
 
   loginfo("Saving results")
   cna <- load_cna_data(tumor, config, "battenberg")
-  data.table::fwrite(cna, file = cna_output_name, sep = "\t", col.names = T, quote = F)
 
   setwd(currentwd) # Return to original directory
-  return(cna_output_name)
+  return(cna)
 }
 
 #' Make methylation

@@ -28,7 +28,7 @@ pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NULL, 
   cmain_call_dmrs(tumor, config)
 
   # Log
-  loginfo("CAMDAC:::pipeline_tumor_normal complete for %s", tumor$patient_id)
+  loginfo("CAMDAC:::pipeline complete for %s", tumor$patient_id)
 }
 
 #' CAMDAC tumor-panel pipeline
@@ -72,6 +72,10 @@ pipeline_tumor_panel <- function(tumor, infiltrates = normal, cell_of_origin = n
 #' @export
 preprocess <- function(sample_list, config) {
   for (s in sample_list) {
+    # Go to next part of loop if its null
+    if (is.null(s)) {
+      next
+    }
     # Count SNP and CpG alleles
     cmain_count_alleles(s, config)
 
