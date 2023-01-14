@@ -18,14 +18,12 @@ knitr::opts_chunk$set(
 
 # CAMDAC
 
-Copy-number Aware Methylation Deconvolution Analysis of Cancer (CAMDAC) is a tool that deconvolves pure tumor methylation from bulk tumor sequencing data ([Larose Cadieux et al., 2022, bioXriv](https://www.biorxiv.org/content/10.1101/2020.11.03.366252v2)).
+Copy-number Aware Methylation Deconvolution Analysis of Cancer (CAMDAC) is an R library for deconvolving pure tumor methylation from bulk tumor sequencing data ([Larose Cadieux et al., 2022, bioXriv](https://www.biorxiv.org/content/10.1101/2020.11.03.366252v2)).
 
-This branch describes CAMDAC for whole genome bisulfite sequencing (WGBS) data. To run CAMDAC on Reduced Representation Bisulfite Sequencing (RRBS) data, visit the [VanLoo-lab/CAMDAC main branch](https://github.com/VanLoo-lab/CAMDAC/tree/main).
+This branch performs CAMDAC analysis for whole genome bisulfite sequencing (WGBS) data. For Reduced Representation Bisulfite Sequencing (RRBS) data analysis, visit the [VanLoo-lab/CAMDAC main branch](https://github.com/VanLoo-lab/CAMDAC/tree/main).
 
 <!-- badges: start -->
 <!-- badges: end -->
-
-## Installation
 
 ## Documentation
 
@@ -44,8 +42,29 @@ To run the tumor-normal deconvolution pipeline with test data:
 
 ```{r example}
 library(CAMDAC)
-tumor = CamConfig("P1_T1", bam_file = "tumor.bam")
-normal = CamConfig("P1_N1", bam_file = "normal.bam")
-config = CamConfig(outdir="./results", bsseq="wgbs", bsseq_lib="pe", build="hg38")
-CamPipeline(tumor, normal, config)
+
+tumor_bam = system.file("testdata", "tumor.bam", package = "CAMDAC")
+normal_bam = system.file("testdata", "normal.bam", package = "CAMDAC")
+
+tumor = CamSample(id="T", sex="XY", bam=tumor_bam)
+normal = CamSample(id="N", sex="XY", bam=normal_bam)
+config = CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38")
+CAMDAC::pipeline(tumor, germline=normal, infiltrates=normal, origin=normal, config)
+```
+
+# Development
+
+```{r}
+library(devtools)
+devtools::install_dev_deps("VanLoo-lab/CAMDAC@wgbs")
+
+# After updating code:
+# Update docs
+devtools::document()
+# Run tests
+devtools::test()
+# Build readme
+devtools::build_readme()
+# Build documentation
+pkgdown::build_site(preview=FALSE)
 ```

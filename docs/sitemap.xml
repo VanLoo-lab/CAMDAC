@@ -10,12 +10,6 @@
     <loc>/articles/background.html</loc>
   </url>
   <url>
-    <loc>/articles/deconvolution.html</loc>
-  </url>
-  <url>
-    <loc>/articles/differential_methylation.html</loc>
-  </url>
-  <url>
     <loc>/articles/index.html</loc>
   </url>
   <url>
@@ -26,12 +20,6 @@
   </url>
   <url>
     <loc>/articles/pipeline.html</loc>
-  </url>
-  <url>
-    <loc>/articles/preprocessing.html</loc>
-  </url>
-  <url>
-    <loc>/articles/purity_ploidy_cna.html</loc>
   </url>
   <url>
     <loc>/articles/questions.html</loc>
@@ -82,6 +70,9 @@
     <loc>/reference/attach_methylation_panel.html</loc>
   </url>
   <url>
+    <loc>/reference/attach_output.html</loc>
+  </url>
+  <url>
     <loc>/reference/bseq_bool.html</loc>
   </url>
   <url>
@@ -95,6 +86,12 @@
   </url>
   <url>
     <loc>/reference/camdac_to_battenberg_prepare_wgbs.html</loc>
+  </url>
+  <url>
+    <loc>/reference/cmain_bind_snps.html</loc>
+  </url>
+  <url>
+    <loc>/reference/cmain_call_cna.html</loc>
   </url>
   <url>
     <loc>/reference/cmain_call_dmps.html</loc>
@@ -113,6 +110,9 @@
   </url>
   <url>
     <loc>/reference/cmain_make_snp_profiles.html</loc>
+  </url>
+  <url>
+    <loc>/reference/cmain_make_snps.html</loc>
   </url>
   <url>
     <loc>/reference/cmain_run_ascat.html</loc>
@@ -166,10 +166,16 @@
     <loc>/reference/panel_meth_from_counts.html</loc>
   </url>
   <url>
+    <loc>/reference/pipeline.html</loc>
+  </url>
+  <url>
     <loc>/reference/pipeline_tumor_normal.html</loc>
   </url>
   <url>
     <loc>/reference/pipeline_tumor_panel.html</loc>
+  </url>
+  <url>
+    <loc>/reference/preprocess.html</loc>
   </url>
   <url>
     <loc>/reference/prob_diff_meth.html</loc>

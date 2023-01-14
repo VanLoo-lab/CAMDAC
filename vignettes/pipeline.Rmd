@@ -1,5 +1,5 @@
 ---
-title: "background"
+title: "pipeline"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{pipeline}
