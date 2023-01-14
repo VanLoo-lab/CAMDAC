@@ -173,6 +173,7 @@ annotate_cgs_with_cnas <- function(meth_c, cna) {
   # Add additional columns so segments can be referenced elswhere in code
   cna$seg_start <- cna$start
   cna$seg_end <- cna$end
+  cna$CN <- cna$nA + cna$nB
   meth_cna <- foverlaps(cna, meth_c, nomatch = 0)
   meth_cna[, i.start := NULL]
   meth_cna[, i.end := NULL]
