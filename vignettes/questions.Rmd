@@ -66,7 +66,7 @@ When calling `pipeline` if you do not give a normal infiltrate or cell of origin
 
 The simplest way is to call `pipeline` with `overwrite=FALSE` in your config, giving the right normal sample for your step. Additionally, you `CamConfig` must run with the same output directory.
 
-If for any reason, you have changed the output directory structure from previous run, you can initiate CAMDAC by manually passing outputs to `CSample` objects. See the vignette `vignettes("output")` for more information.
+If for any reason, you have changed the output directory structure from previous run, you can initiate CAMDAC by manually passing outputs to `CamSample` objects. See the vignette `vignettes("output")` for more information.
 
 Finally, you can run the `cmain_*` functions used internally by `pipeline` directly. These functions are not exported, but can be accessed with `:::`. For example, to run the deconvolution step, you can call `CAMDAC:::cmain_deconvolution`.
 

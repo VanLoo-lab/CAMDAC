@@ -48,7 +48,7 @@ panel <- cmain_normal_panel(panel_counts)
 data.table::fwrite(panel, "panel.m.csv.gz")
 ```
 
-To run CAMDAC with your newly created panel, attach your panel to a CSample object using the `meth` argument.
+To run CAMDAC with your newly created panel, attach your panel to a CamSample object using the `meth` argument.
 
 ```{r}
 
