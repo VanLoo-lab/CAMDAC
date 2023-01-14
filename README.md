@@ -44,10 +44,19 @@ config = CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38")
 CAMDAC::pipeline(tumor, germline=normal, infiltrates=normal, origin=normal, config)
 ```
 
-# Development
+## Development
 
 ``` r
 library(devtools)
 devtools::install_dev_deps("VanLoo-lab/CAMDAC@wgbs")
-# make 
+
+# After updating code:
+# Update docs
+devtools::document()
+# Run tests
+devtools::test()
+# Build readme
+devtools::build_readme()
+# Build documentation
+pkgdown::build_site(preview=FALSE)
 ```

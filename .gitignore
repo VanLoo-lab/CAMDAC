@@ -28,7 +28,6 @@ camdac_paper/
 .here
 .Rprofile
 man/
-docs
 inst/doc
 *.json
 temp/
