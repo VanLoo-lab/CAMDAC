@@ -21,7 +21,7 @@ test_that("Pipeline tumour-normal completes", {
         pipeline(tumor, germline = normal, infiltrates = normal, origin = normal, config)
     )
 
-    expr <- "pipeline_tumor_normal complete"
+    expr <- "pipeline complete"
 
     testthat::expect_true(
         stringr::str_detect(stdout, expr)

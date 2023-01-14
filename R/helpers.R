@@ -380,7 +380,7 @@ validate_cna <- function(cna) {
 
   # Check expected number of columns. Rename and clean as per docs.
   stopifnot(ncol(cna) >= 7)
-  names(cna)[1:7] <- c("chrom", "start", "end", "major_cn", "minor_cn", "purity", "ploidy")
+  names(cna)[1:7] <- c("chrom", "start", "end", "nA", "nB", "purity", "ploidy")
   cna$chrom <- stringr::str_remove(cna$chrom, "chr")
   cna$chrom <- factor(cna$chrom, levels = c(1:22, "X", "Y"))
   cna <- as.data.table(cna)[order(chrom, start)]

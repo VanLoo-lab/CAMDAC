@@ -1,6 +1,6 @@
 test_that("allele counts combine to form panels", {
   # load test allele counts
-  ac_file <- system.file("extdata", "NA18939_test_ac.SNPs.CpGs.all.sorted.csv.gz", package = "CAMDAC")
+  ac_file <- system.file("testdata", "test.SNPs.CpGs.all.sorted.csv.gz", package = "CAMDAC")
   panel <- panel_meth_from_counts(
     ac_files = c(ac_file, ac_file, ac_file),
     min_coverage = 3,
