@@ -2,11 +2,11 @@ pandoc: '2.10'
 pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
-  output: output.html
-  panels: panels.html
-  pipeline: pipeline.html
-  questions: questions.html
   setup: setup.html
+  pipeline: pipeline.html
+  output: output.html
   visualisation: visualisation.html
+  panels: panels.html
+  questions: questions.html
 last_built: 2023-01-14T15:02Z
 
