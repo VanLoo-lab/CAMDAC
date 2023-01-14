@@ -2,18 +2,16 @@
 #' Build CAMDAC sample object
 #' @param id Unique identifier for the sample
 #' @param sex The sex of the patient, "XX" or "XY". Required for CNA calling.
-#' @param bam Sample BAM file
+#' @param bam Sample BAM file. If not given, CAMDAC expects files linked with `attach_output`.
 #' @param patient_id An identifier for the patient
-#' @param cna Optional. A text file with allele-specific copy number data for the tumor sample.
 #' @export
-CamSample <- function(id, sex, bam, patient_id = "P", meth = NULL, counts = NULL, cna = NULL) {
+CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
   return(
     list(
       id = id,
       sex = sex,
       bam = bam,
-      patient_id = patient_id,
-      cna = validate_cna(cna)
+      patient_id = patient_id
     )
   )
 }
@@ -295,25 +293,4 @@ load_loci_for_segment <- function(seg, loci_files) {
 pipeline_files <- function() {
   pf <- Sys.getenv("CAMDAC_PIPELINE_FILES")
   ifelse(pf == "", ".", pf)
-}
-
-validate_cna <- function(cna) {
-  if (is.null(cna)) {
-    return(NULL)
-  }
-
-  names_present <- all(c("purity", "ploidy", "ascna") %in% names(cna))
-  if (!names_present) {
-    logerror("CNA object must have purity, ploidy and ascna fields")
-    stop()
-  }
-  numeric_pp <- all(is.numeric(c(cna$purity, cna$ploidy)))
-  if (!numeric_pp) {
-    logerror("CNA purity and ploidy must be numeric")
-    stop()
-  }
-  if (!is.null(cna$ascna)) {
-    names(cna$ascna)[1:5] <- c("chrom", "start", "end", "nA", "nB")
-  }
-  return(cna)
 }
