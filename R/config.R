@@ -138,7 +138,7 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
       )
     ),
     code == "ascat" ~ fs::path(
-      config$outdir, sample$patient_id, "Copynumber", sample$id, paste(
+      config$outdir, sample$patient_id, "Copynumber", sample$id, "ascat", paste(
         sample$patient_id, sample$id, "ascat", "output", "qs",
         sep = "."
       )

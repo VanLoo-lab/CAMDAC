@@ -459,7 +459,7 @@ run_ascat.m2 <- function(tumour, tsnps, penalty = 200, outdir, rho_manual = NA, 
   gg <- list(germlinegenotypes = matrix(assign_genotypes(ascat.bc$Germline_BAF, as_logical = T)))
   ascat.frag <- ASCAT::ascat.aspcf(ascat.bc,
     ascat.gg = gg, penalty = penalty,
-    out.dir = outdir, out.prefix = sample_prefix
+    out.dir = outdir
   )
 
   # Plot segmented data
@@ -468,8 +468,7 @@ run_ascat.m2 <- function(tumour, tsnps, penalty = 200, outdir, rho_manual = NA, 
 
   # Run ASCAT
   ascat.output <- ASCAT::ascat.runAscat(ascat.frag,
-    gamma = 1, img.dir = outdir, img.prefix = sample_prefix,
-    rho_manual = rho_manual, psi_manual = psi_manual
+    gamma = 1, img.dir = outdir, rho_manual = rho_manual, psi_manual = psi_manual
   )
 
   # Write ACF and ploidy text file. Format adapted from CAMDAC-RRBS

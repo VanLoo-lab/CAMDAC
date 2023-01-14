@@ -163,6 +163,7 @@ load_cna_data_ascat <- function(tumour, config) {
   cna_clean$purity <- purity
   cna_clean$ploidy <- ploidy
   cna_clean$fit <- fit
+  cna_clean$pipeline <- "ascat"
   return(cna_clean)
 }
 
@@ -245,6 +246,7 @@ load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA
   cna_clean$purity <- pp$purity
   cna_clean$ploidy <- pp$ploidy
   cna_clean$fit <- pp$fit
+  cna_clean$pipeline <- "battenberg"
   return(cna_clean)
 }
 

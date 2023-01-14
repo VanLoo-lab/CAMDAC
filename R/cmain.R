@@ -85,6 +85,8 @@ cmain_make_snps <- function(sample, config) {
     return(output_file)
   }
 
+  loginfo("Making SNP profile for %s", paste0(sample$id))
+
   # Load required reference files
   gc_refs <- get_reference_files(config, "gc_per_window")
   repli_ref <- get_reference_files(config, "repli_timing")
@@ -121,13 +123,21 @@ cmain_bind_snps <- function(tumour, normal, config) {
     return(tsnps_output_file)
   }
 
+  # Check previous pipeline steps have been run
+  tsnps_f <- get_fpath(tumour, config, "snps")
+  nsnps_f <- get_fpath(normal, config, "snps")
+  if (!fs::file_exists(tsnps_f) & !fs::file_exists(nsnps_f)) {
+    stop("Tumour and normal SNP profiles must be created before binding")
+  }
+
+  loginfo("Binding SNP profiles for %s", paste0(tumour$id, "&", normal$id))
   # Load required reference files
   gc_refs <- get_reference_files(config, "gc_per_window")
   repli_ref <- get_reference_files(config, "repli_timing")
 
   # Load SNP profiles
-  tsnps <- fread_chrom(get_fpath(tumour, config, "snps"))
-  nsnps <- fread_chrom(get_fpath(normal, config, "snps"))
+  tsnps <- fread_chrom(tsnps_f)
+  nsnps <- fread_chrom(nsnps_f)
 
   # Annotate tumour SNPs
   tsnps <- annotate_normal(tsnps, nsnps, min_cov = config$min_cov)
@@ -168,6 +178,8 @@ cmain_run_ascat <- function(tumour, normal, config) {
     loginfo("Skipping ASCAT analysis for %s", paste0(tumour$id))
     return(cna_output_name)
   }
+
+  loginfo("Running ASCAT analysis for %s", paste0(tumour$id))
 
   # Setup output object and results directory
   out_obj <- get_fpath(tumour, config, "ascat")
@@ -246,11 +258,11 @@ cmain_run_battenberg <- function(tumour, normal, config) {
     min_normal_depth = config$min_cov
   )
 
-  loginfo("Preparing WGBS BAF and logR")
+  loginfo("Preparing WGBS BAF and logR for Battenberg")
   prepare_wgbs_files <- camdac_to_battenberg_prepare_wgbs(tumour_prefix, normal_prefix, camdac_tsnps, outdir)
 
+  loginfo("Running Battenberg for %s", paste0(tumour$id))
   # Define battenberg inputs.
-  loginfo("Setting Battenberg Inputs")
   tumourname <- tumour_prefix
   normalname <- normal_prefix
   ismale <- ifelse(tumour$sex == "XY", TRUE, FALSE)
