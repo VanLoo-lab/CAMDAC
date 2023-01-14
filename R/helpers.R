@@ -325,7 +325,7 @@ chelper_import_pon_meth <- function(tumour, normal_id, config, pon_file) {
   normal_pon_tpid <- CamSample(
     tumour$patient_id, tumour$sex, normal_id, "normal", NA
   )
-  outfile <- get_fpath(normal_pon_tpid, config, "methylation")
+  outfile <- get_fpath(normal_pon_tpid, config, "meth")
   outdir <- fs::path_dir(outfile)
   fs::dir_create(outdir)
   fs::file_copy(pon_file, outfile, overwrite = T)
@@ -353,4 +353,21 @@ fread_chrom <- function(x, ...) {
   x <- data.table::fread(x, ...)
   x$chrom <- as.character(x$chrom)
   return(x)
+}
+
+#' Manually assign output file to CAMDAC sample
+#' @param sample CamSample object
+#' @param config CamConfig object
+#' @param code Code for output file. See `vignettes("output")` for descriptions.
+#' @param file Path to file to copy to expected location
+#' @export
+attach_output <- function(sample, config, code, file) {
+  # Get the expected output file path
+  exp <- get_fpath(sample, config, code)
+
+  # Ensure directory exists
+  fs::dir_create(fs::path_dir(exp))
+
+  # Copy file to expected location
+  fs::file_copy(file, exp, overwrite = TRUE)
 }
