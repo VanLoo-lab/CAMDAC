@@ -4,7 +4,7 @@ test_that("tumor panel pipeline runs with panel of normals", {
   meth_file <- system.file("testdata", "test_panel.m.csv.gz", package = "CAMDAC")
 
   # Setup panel
-  panel <- CamSample(id = "PANEL", sex = "XY", bam = bam2)
+  panel <- CamSample(id = "PANEL", sex = "XY", bam = NULL)
   attach_output(panel, config, "meth", meth_file)
   attach_output(tumor, config, "cna", cna_file)
 
