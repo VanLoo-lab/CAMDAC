@@ -33,9 +33,10 @@ CamSample <- function(id, sex, bam, patient_id = "P", meth = NULL, counts = NULL
 #'  @param min_mapq Minimum mapping quality filter used in `cmain_allele_counts()`.
 #'  @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP selection.
 #'  @param overwrite Config to overwrite files if they already exist.
+#'  @param cna_caller The CNA caller to use. "ascat" or "battenberg". Default is "battenberg"
 #'  @export
-CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
-                      camdac_refs = NULL, min_mapq = 1, min_cov = 3, overwrite = FALSE) {
+CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, camdac_refs = NULL,
+                      min_mapq = 1, min_cov = 3, overwrite = FALSE, cna_caller = "battenberg") {
   # TODO: Validate inputs
   # TODO: Ensure overwrite is used by all cmain* pipeline functions.
 
@@ -68,7 +69,8 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
     min_cov = min_cov,
     overwrite = overwrite,
     beaglejar = bjar,
-    regions = regions
+    regions = regions,
+    cna_caller = cna_caller
   ))
 }
 
@@ -83,10 +85,12 @@ is_ccgg <- function(config) {
 }
 
 # Create/confirm output directories
-
 #' @export
-# Get output directory for function
 get_fpath <- function(sample, config, code, dir = FALSE) {
+  stopifnot(code %in% c(
+    "counts", "meth", "pure", "dmps", "dmrs", "segment_split", "snps",
+    "ascat", "battenberg", "tsnps", "cna"
+  ))
   # Set output file name
   output_name <- dplyr::case_when(
     code == "counts" ~ fs::path(
@@ -101,7 +105,7 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
         sep = "."
       )
     ),
-    code == "methylation" ~ fs::path(
+    code == "meth" ~ fs::path(
       config$outdir, sample$patient_id, "Methylation", sample$id, paste(
         sample$patient_id, sample$id, "m", "csv", "gz",
         sep = "."

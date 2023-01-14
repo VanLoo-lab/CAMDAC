@@ -137,7 +137,7 @@ process_methylation <- function(allele_counts, min_meth_loci_reads = 3) {
 
 
 save_methylation_df <- function(methyl, sample, config) {
-  output_file <- get_fpath(sample, config, "methylation")
+  output_file <- get_fpath(sample, config, "meth")
   data.table::fwrite(methyl, file = output_file)
 }
 
