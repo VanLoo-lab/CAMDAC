@@ -4,6 +4,12 @@
 #' @param config A camac allele object
 #' @export
 cmain_count_alleles <- function(sample, config) {
+  # Skip if no BAM file provided
+  if (is.null(sample$bam)) {
+    loginfo("No BAM. Skipping allele counting for %s", paste0(sample$patient_id, ":", sample$id))
+    return(NULL)
+  }
+
   #  Check if outputs exist and skip if required
   output_filename <- get_fpath(sample, config, "counts")
   if (file.exists(output_filename) && !config$overwrite) {
@@ -64,7 +70,6 @@ cmain_count_alleles <- function(sample, config) {
 
   # Stop parallel workers. When running the pipeline multiple times in an R session,
   # R re-uses workers but does not clear memory. Hence large objects in foreach loops will remain.
-  # TODO: When a single pipeline function has been created, then migrate doParallel calls there.
   doParallel::stopImplicitCluster()
   return(output_filename)
 }
@@ -79,6 +84,13 @@ cmain_count_alleles <- function(sample, config) {
 #' @param config A camdac config object
 #' @export
 cmain_make_snps <- function(sample, config) {
+  # Skip if counts file does not exist
+  ac_file <- get_fpath(sample, config, "counts")
+  if (!fs::file_exists(ac_file)) {
+    loginfo("No counts file. Skipping SNP profile creation for %s", paste0(sample$id))
+    return(NULL)
+  }
+
   output_file <- CAMDAC::get_fpath(sample, config, "snps")
   if (fs::file_exists(output_file) & !config$overwrite) {
     loginfo("Skipping SNP profile creation for %s", paste0(sample$id))
@@ -181,6 +193,11 @@ cmain_call_cna <- function(tumor, normal, config) {
   if (fs::file_exists(cna_output_name) & !config$overwrite) {
     loginfo("CNA Found. Skipping %s analysis for %s", config$cna_caller, tumour$id)
     return(cna_output_name)
+  }
+
+  # Stop if no germline normal
+  if (is.null(normal)) {
+    stop("No germline normal. CNA analysis requires a normal sample.")
   }
 
   if (config$cna_caller == "ascat") {
@@ -337,6 +354,13 @@ cmain_run_battenberg <- function(tumour, normal, config) {
 #' @param config A camdac config object
 #' @export
 cmain_make_methylation_profile <- function(sample, config) {
+  # Skip if methylation file exists for sample
+  output_file <- get_fpath(sample, config, "meth")
+  if (fs::file_exists(output_file)) {
+    loginfo("Methylation profile already exists for %s %s", sample$patient_id, sample$id)
+    return()
+  }
+
   loginfo("Preprocessing methylation data: %s", sample$patient_id)
   allele_counts <- data.table::fread(get_fpath(sample, config, "counts"))
   methylation <- process_methylation(allele_counts, min_meth_loci_reads = config$min_cov)
@@ -348,7 +372,6 @@ cmain_make_methylation_profile <- function(sample, config) {
   rm(hdi)
 
   loginfo("Saving methylation profile: %s %s", sample$patient_id, sample$id)
-  output_file <- get_fpath(sample, config, "meth")
   fs::dir_create(fs::path_dir(output_file))
   data.table::fwrite(methylation, file = output_file)
   return(output_file)

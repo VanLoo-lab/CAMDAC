@@ -152,10 +152,7 @@ load_cna_data_ascat <- function(tumour, config) {
     chrom = factor(seg$chr, levels = c(1:22, "X", "Y")),
     start = as.numeric(as.character(seg$startpos)),
     end = as.numeric(as.character(seg$endpos)),
-    nA = seg$nMajor, nB = seg$nMinor,
-    CN = seg$nMajor + seg$nMinor,
-    seg_min = as.numeric(as.character(seg$startpos)),
-    seg_max = as.numeric(as.character(seg$endpos))
+    nA = seg$nMajor, nB = seg$nMinor
   )
 
   setkeyv(cna_clean, cols = c("chrom", "start", "end"))
@@ -178,10 +175,7 @@ load_cna_data_ascat_wgs <- function(ascat_output_file) {
     chrom = factor(seg$chr, levels = c(1:22, "X", "Y")),
     start = as.numeric(as.character(seg$startpos)),
     end = as.numeric(as.character(seg$endpos)),
-    nA = seg$nMajor, nB = seg$nMinor,
-    CN = seg$nMajor + seg$nMinor,
-    seg_min = as.numeric(as.character(seg$startpos)),
-    seg_max = as.numeric(as.character(seg$endpos))
+    nA = seg$nMajor, nB = seg$nMinor
   )
 
   setkeyv(cna_clean, cols = c("chrom", "start", "end"))
@@ -229,7 +223,6 @@ load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA
   bb_cna[, nB := data.table::fifelse(
     selector, nMin1_A, nMin2_A
   )]
-  bb_cna[, CN := nA + nB]
 
   # Return if raw data required
   if (bb_raw) {
@@ -239,7 +232,7 @@ load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA
   # Finalise data for export
   cna_clean <- bb_cna[, .(
     chrom = factor(chr, levels = c(1:22, "X", "Y")), start = startpos, end = endpos,
-    nA, nB, CN, seg_min = startpos, seg_max = endpos
+    nA, nB
   )]
   setkeyv(cna_clean, cols = c("chrom", "start", "end"))
 
@@ -290,7 +283,7 @@ load_clonal_bb <- function(bb_dir) {
   # Finalise data for export
   cna_clean <- bb_cna[, .(
     chrom = factor(chr, levels = c(1:22, "X", "Y")), start = startpos, end = endpos,
-    nA, nB, CN, seg_min = startpos, seg_max = endpos
+    nA, nB, CN
   )]
   setkeyv(cna_clean, cols = c("chrom", "start", "end"))
 
@@ -362,6 +355,13 @@ fread_chrom <- function(x, ...) {
 #' @param file Path to file to copy to expected location
 #' @export
 attach_output <- function(sample, config, code, file) {
+  # Validate external CNA files before attaching to CAMDAC
+  if (code == "cna") {
+    cna <- validate_cna(data.table::fread(file))
+    file <- tempfile(fileext = ".txt")
+    data.table::fwrite(cna, file)
+  }
+
   # Get the expected output file path
   exp <- get_fpath(sample, config, code)
 
@@ -370,4 +370,19 @@ attach_output <- function(sample, config, code, file) {
 
   # Copy file to expected location
   fs::file_copy(file, exp, overwrite = TRUE)
+}
+
+# Validate CNA object
+validate_cna <- function(cna) {
+  if (is.null(cna)) {
+    return(NULL)
+  }
+
+  # Check expected number of columns. Rename and clean as per docs.
+  stopifnot(ncol(cna) >= 7)
+  names(cna)[1:7] <- c("chrom", "start", "end", "major_cn", "minor_cn", "purity", "ploidy")
+  cna$chrom <- stringr::str_remove(cna$chrom, "chr")
+  cna$chrom <- factor(cna$chrom, levels = c(1:22, "X", "Y"))
+  cna <- as.data.table(cna)[order(chrom, start)]
+  return(cna)
 }
