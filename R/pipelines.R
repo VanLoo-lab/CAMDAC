@@ -76,10 +76,11 @@ preprocess <- function(sample_list, config) {
     if (is.null(s)) {
       next
     }
-    # Count SNP and CpG alleles
+
+    # Count SNP and CpG alleles if a BAM file is provided
     cmain_count_alleles(s, config)
 
-    # Prepare SNP data for CNA calling
+    # Prepare SNP data for CNA calling if allele counts are present
     cmain_make_snps(s, config)
 
     # Format methylation rates for deconvolution
