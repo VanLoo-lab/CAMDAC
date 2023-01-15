@@ -27,17 +27,15 @@ load_camdac_opts_from_input <- function(sample_id, input_file, outdir, refdir) {
   tumour <- CamSample(
     patient_id = opt$patient_id,
     sex = opt$sex,
-    sample_id = "T",
-    sample_type = "tumour",
-    bam_file = opt$tumour_bam
+    id = "T",
+    bam = opt$tumour_bam
   )
 
   normal <- CamSample(
     patient_id = opt$patient_id,
     sex = opt$sex,
-    sample_id = "N",
-    sample_type = "normal",
-    bam_file = opt$normal_bam
+    id = "N",
+    bam = opt$normal_bam
   )
 
   config <- CamConfig(

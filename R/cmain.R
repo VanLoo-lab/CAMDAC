@@ -187,7 +187,7 @@ cmain_bind_snps <- function(tumour, normal, config) {
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_call_cna <- function(tumor, normal, config) {
+cmain_call_cna <- function(tumour, normal, config) {
   # Skip if file exists and overwrite is false
   cna_output_name <- get_fpath(tumour, config, "cna")
   if (fs::file_exists(cna_output_name) & !config$overwrite) {
