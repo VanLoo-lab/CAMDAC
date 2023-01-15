@@ -110,7 +110,7 @@ cmain_make_snps <- function(sample, config) {
   # Ensure SNPs sorted for ASCAT analysis
   snps <- sort_genomic_dt(snps)
 
-  # Save tumor SNPs to output file
+  # Save tumour SNPs to output file
   fs::dir_create(fs::path_dir(output_file))
   data.table::fwrite(snps, file = output_file, compress = "gzip")
 
@@ -122,9 +122,9 @@ cmain_make_snps <- function(sample, config) {
 
 #' Bind SNPs
 #'
-#' Combing tumor-normal SNP file for CNA analysis (ASCAT or BATTENBERG)
+#' Combing tumour-normal SNP file for CNA analysis (ASCAT or BATTENBERG)
 #'
-#' @param tumor A camdac sample object
+#' @param tumour A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
@@ -172,7 +172,7 @@ cmain_bind_snps <- function(tumour, normal, config) {
   # Ensure SNPs sorted for ASCAT analysis
   tsnps <- sort_genomic_dt(tsnps)
 
-  # Save tumor SNPs to output file
+  # Save tumour SNPs to output file
   fs::dir_create(fs::path_dir(tsnps_output_file))
   data.table::fwrite(tsnps, file = tsnps_output_file, compress = "gzip")
 
@@ -183,7 +183,7 @@ cmain_bind_snps <- function(tumour, normal, config) {
 #' Call CNA
 #'
 #' Config determines whether ASCAT or Battenberg is used
-#' @param tumor A camdac sample object
+#' @param tumour A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
@@ -201,9 +201,9 @@ cmain_call_cna <- function(tumour, normal, config) {
   }
 
   if (config$cna_caller == "ascat") {
-    cna <- cmain_run_ascat(tumor, normal, config)
+    cna <- cmain_run_ascat(tumour, normal, config)
   } else if (config$cna_caller == "battenberg") {
-    cna <- cmain_run_battenberg(tumor, normal, config)
+    cna <- cmain_run_battenberg(tumour, normal, config)
   } else {
     stop("Unknown cna caller option in config")
   }
@@ -216,7 +216,7 @@ cmain_call_cna <- function(tumour, normal, config) {
 #'
 #' Expects SNP profiles to have been created using `cmain_make_snp_profiles`
 #'
-#' @param tumor A camdac sample object
+#' @param tumour A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
@@ -255,7 +255,7 @@ cmain_run_ascat <- function(tumour, normal, config) {
 
   # Write CNA object to file for ease
 
-  cna <- load_cna_data(tumor, config, "ascat")
+  cna <- load_cna_data(tumour, config, "ascat")
 
   return(cna)
 }
@@ -264,7 +264,7 @@ cmain_run_ascat <- function(tumour, normal, config) {
 #'
 #' Expects SNP profiles to have been created using `cmain_make_snp_profiles`
 #'
-#' @param tumor A camdac sample object
+#' @param tumour A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
@@ -340,7 +340,7 @@ cmain_run_battenberg <- function(tumour, normal, config) {
   )
 
   loginfo("Saving results")
-  cna <- load_cna_data(tumor, config, "battenberg")
+  cna <- load_cna_data(tumour, config, "battenberg")
 
   setwd(currentwd) # Return to original directory
   return(cna)
@@ -379,7 +379,7 @@ cmain_make_methylation_profile <- function(sample, config) {
 
 #' Deconvolve methylation
 #'
-#' @param tumor A camdac sample object
+#' @param tumour A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
@@ -410,11 +410,11 @@ cmain_deconvolve_methylation <- function(tumour, normal, config) {
   data.table::fwrite(meth_c, outfile)
 }
 
-#' Call tumor-normal DMPs
+#' Call tumour-normal DMPs
 #'
 #' Single-sample DMP calling on CAMDAC-deconvolved data
 #'
-#' @param tumor A camdac sample object
+#' @param tumour A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
@@ -438,11 +438,11 @@ cmain_call_dmps <- function(tumour, normal, config) {
   fst::write_fst(tmeth, tmeth_outfile)
 }
 
-#' Call tumor-normal DMRs
+#' Call tumour-normal DMRs
 #'
 #' Single-sample DMR calling on CAMDAC DMP data
 #'
-#' @param tumor A camdac sample object
+#' @param tumour A camdac sample object
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
