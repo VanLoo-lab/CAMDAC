@@ -17,6 +17,13 @@ cmain_count_alleles <- function(sample, config) {
     return(output_filename)
   }
 
+  # Create temporary directory for allele counts files
+  tempdir <- tempfile(
+    pattern = "counts",
+    tmpdir = fs::path_dir(output_filename)
+  )
+  fs::dir_create(tempdir)
+
   # Load BAM regions to analyse (segments) as a list of GRanges
   if (is.null(config$regions)) {
     # Create segments across entire reference genome
@@ -48,7 +55,7 @@ cmain_count_alleles <- function(sample, config) {
   tmpfiles <- foreach(seg = segments, .combine = "c") %dopar% {
     loci_dt <- load_loci_for_segment(seg, loci_files)
     ac_file <- cwrap_get_allele_counts(bam_file, seg, loci_dt, paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov)
-    tmp <- tempfile()
+    tmp <- tempfile(tmpdir = tempdir, fileext = ".fst")
     fst::write_fst(ac_file, tmp)
     rm(loci_dt, ac_file, seg)
     gc()
@@ -62,11 +69,9 @@ cmain_count_alleles <- function(sample, config) {
   }
 
   # Write to output file
-  format_and_write_output(result, output_filename) # 2 lines, unnecessary function!
+  format_and_write_output(result, output_filename) # 2 lines
   # Delete temporary files
-  foreach(i = tmpfiles) %dopar% {
-    file.remove(i)
-  }
+  fs::dir_delete(tempdir)
 
   # Stop parallel workers. When running the pipeline multiple times in an R session,
   # R re-uses workers but does not clear memory. Hence large objects in foreach loops will remain.
