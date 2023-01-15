@@ -228,7 +228,6 @@ download_pipeline_files <- function(bsseq, directory = NULL) {
   #   If a directory is passed to the function, install there.
   if (!is.null(directory)) {
     location <- fs::path_expand(directory)
-    fs::dir_create(location) # Ensure location exists
   } else {
     #   Else, get pipeline files location from environment variable
     #   The currect directory is used if environment variable is empty
@@ -243,7 +242,7 @@ download_pipeline_files <- function(bsseq, directory = NULL) {
   }
 
   # Download pipeline files and unzip
-  tf <- tempfile()
+  tf <- tempfile(tmpdir = ".")
   download.file(link, destfile = tf, method = "wget")
   untar(tf, exdir = location)
 
