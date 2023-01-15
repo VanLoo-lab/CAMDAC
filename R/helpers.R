@@ -39,7 +39,7 @@ load_camdac_opts_from_input <- function(sample_id, input_file, outdir, refdir) {
   )
 
   config <- CamConfig(
-    camdac_refs = opt$reference_dir,
+    refs = opt$reference_dir,
     outdir = opt$outdir,
     build = "hg38",
     bsseq = "wgbs",
