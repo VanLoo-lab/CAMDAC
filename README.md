@@ -30,17 +30,19 @@ remotes::install_github("VanLoo-lab/CAMDAC@wgbs")
 CAMDAC::download_pipeline_files("wgbs")
 ```
 
-To run the tumor-normal deconvolution pipeline with test data:
+To run the tumor-normal deconvolution pipeline:
 
 ``` r
 library(CAMDAC)
 
+# Get test data
 tumor_bam = system.file("testdata", "tumor.bam", package = "CAMDAC")
 normal_bam = system.file("testdata", "normal.bam", package = "CAMDAC")
 
+# Run pipeline
 tumor = CamSample(id="T", sex="XY", bam=tumor_bam)
 normal = CamSample(id="N", sex="XY", bam=normal_bam)
-config = CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38")
+config = CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
 CAMDAC::pipeline(tumor, germline=normal, infiltrates=normal, origin=normal, config)
 ```
 

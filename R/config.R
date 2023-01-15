@@ -25,7 +25,7 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #' @param build Reference genome build. Choose "hg38" or "hg19".
 #' @param n_cores Number of cores to process CAMDAC data in parallel wherever possible.
 #' @param regions A BED file with regions to restrict the analysis to
-#' @param camdac_refs Path to CAMDAC reference files. If this is not given, CAMDAC searched the
+#' @param refs Path to CAMDAC reference files. If this is not given, CAMDAC searched the
 #'   environment variable CAMDAC_PIPELINE_FILES. If this is not set, CAMDAC looks in the current
 #'   working directory.
 #' @param min_mapq Minimum mapping quality filter used in `cmain_allele_counts()`.
@@ -33,7 +33,7 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #' @param overwrite Config to overwrite files if they already exist.
 #' @param cna_caller The CNA caller to use. "ascat" or "battenberg". Default is "battenberg"
 #' @export
-CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, camdac_refs = NULL,
+CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, refs = NULL,
                       min_mapq = 1, min_cov = 3, overwrite = FALSE, cna_caller = "battenberg") {
   # TODO: Validate inputs
   # TODO: Ensure overwrite is used by all cmain* pipeline functions.
@@ -43,12 +43,12 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, ca
   outdir <- fs::path_real(outdir)
 
   # Set camdac references if not they do not exist
-  refs <- ifelse(is.null(camdac_refs), pipeline_files(), camdac_refs)
+  refs <- ifelse(is.null(refs), pipeline_files(), refs)
 
   # Set beagle jar if it does no exist
   bjar <- get_reference_files(
     list(
-      camdac_refs = refs,
+      refs = refs,
       build = build,
       bsseq = bsseq
     ),
@@ -56,7 +56,7 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, ca
   )
 
   return(list(
-    camdac_refs = refs,
+    refs = refs,
     outdir = outdir,
     build = build,
     bsseq = bsseq,
@@ -197,7 +197,7 @@ get_reference_files <- function(config, type_folder, glob = NULL) {
   )
 
   # Select parent directory based on bsseq and build
-  root <- fs::dir_ls(config$camdac_refs, recurse = T, type = "directory", regexp = paste0(
+  root <- fs::dir_ls(config$refs, recurse = T, type = "directory", regexp = paste0(
     config$bsseq, ".{1}", # File separator
     config$build, "$"
   ))
