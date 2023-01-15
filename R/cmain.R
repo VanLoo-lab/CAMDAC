@@ -365,12 +365,12 @@ cmain_make_methylation_profile <- function(sample, config) {
     return()
   }
 
-  loginfo("Preprocessing methylation data: %s", sample$patient_id)
+  loginfo("Preprocessing methylation data: %s", sample$id)
   allele_counts <- data.table::fread(get_fpath(sample, config, "counts"))
   methylation <- process_methylation(allele_counts, min_meth_loci_reads = config$min_cov)
   rm(allele_counts)
 
-  loginfo("Calculating HDI")
+  loginfo("Calculating HDI: %s", sample$id)
   hdi <- calculate_counts_hdi(methylation$M, methylation$UM, n_cores = config$n_cores)
   methylation <- cbind(methylation, hdi)
   rm(hdi)

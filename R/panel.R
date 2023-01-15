@@ -40,7 +40,10 @@ panel_meth_from_counts <- function(ac_files, min_coverage = 3, min_samples = 1,
 #' @return List of data tables for each allele counts file
 load_panel_ac_files <- function(ac_files) {
   # Set fields to draw from AC files
-  ac_load_fields <- c("chrom", "start", "end", "POS", "ref", "alt", "total_depth", "M", "UM", "m", "total_counts_m", "BAF")
+  ac_load_fields <- c(
+    "chrom", "start", "end", "POS", "ref", "alt",
+    "total_depth", "M", "UM", "m", "total_counts_m", "BAF"
+  )
   # Load ac files as list of data tables
   data <- lapply(ac_files, function(x) {
     v <- data.table::fread(x, select = ac_load_fields)
