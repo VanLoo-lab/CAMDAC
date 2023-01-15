@@ -27,7 +27,7 @@ CAMDAC can be installed from an R console:
 
 ``` r
 remotes::install_github("VanLoo-lab/CAMDAC@wgbs")
-CAMDAC::download_pipeline_files("wgbs")
+CAMDAC::download_pipeline_files("wgbs", directory = "./refs")
 ```
 
 To run the tumor-normal deconvolution pipeline:
@@ -42,7 +42,7 @@ normal_bam = system.file("testdata", "normal.bam", package = "CAMDAC")
 # Run pipeline
 tumor = CamSample(id="T", sex="XY", bam=tumor_bam)
 normal = CamSample(id="N", sex="XY", bam=normal_bam)
-config = CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
+config = CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", refs="./refs", n_cores=10)
 CAMDAC::pipeline(tumor, germline=normal, infiltrates=normal, origin=normal, config)
 ```
 

@@ -25,8 +25,8 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #' @param build Reference genome build. Choose "hg38" or "hg19".
 #' @param n_cores Number of cores to process CAMDAC data in parallel wherever possible.
 #' @param regions A BED file with regions to restrict the analysis to
-#' @param refs Path to CAMDAC reference files. If this is not given, CAMDAC searched the
-#'   environment variable CAMDAC_PIPELINE_FILES. If this is not set, CAMDAC looks in the current
+#' @param refs Path to CAMDAC reference files. If this is not given, CAMDAC searches the
+#'   environment variable CAMDAC_PIPELINE_FILES. If this is not set, CAMDAC searches recursively in the current
 #'   working directory.
 #' @param min_mapq Minimum mapping quality filter used in `cmain_allele_counts()`.
 #' @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP selection.
@@ -36,14 +36,13 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, refs = NULL,
                       min_mapq = 1, min_cov = 3, overwrite = FALSE, cna_caller = "battenberg") {
   # TODO: Validate inputs
-  # TODO: Ensure overwrite is used by all cmain* pipeline functions.
 
   # Create output directory if it doesn't exist and set to absolute path
   fs::dir_create(outdir)
   outdir <- fs::path_real(outdir)
 
   # Set camdac references if not they do not exist
-  refs <- ifelse(is.null(refs), pipeline_files(), refs)
+  refs <- ifelse(is.null(refs), pipeline_files(), fs::path_real(refs))
 
   # Set beagle jar if it does no exist
   bjar <- get_reference_files(
@@ -292,5 +291,5 @@ load_loci_for_segment <- function(seg, loci_files) {
 
 pipeline_files <- function() {
   pf <- Sys.getenv("CAMDAC_PIPELINE_FILES")
-  ifelse(pf == "", ".", pf)
+  ifelse(pf == "", fs::path_real("."), pf)
 }
