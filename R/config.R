@@ -35,8 +35,6 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #' @export
 CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, refs = NULL,
                       min_mapq = 1, min_cov = 3, overwrite = FALSE, cna_caller = "battenberg") {
-  # TODO: Validate inputs
-
   # Create output directory if it doesn't exist and set to absolute path
   fs::dir_create(outdir)
   outdir <- fs::path_real(outdir)
@@ -53,6 +51,15 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, re
     ),
     "beagle_jar"
   )
+
+  # If using battenberg, validate that java is available
+  if (cna_caller == "battenberg") {
+    check_java()
+  }
+  # If using rrbs, CNA caller must be ASCAT
+  if (bsseq == "rrbs") {
+    cna_caller <- "ascat"
+  }
 
   return(list(
     refs = refs,
@@ -292,4 +299,14 @@ load_loci_for_segment <- function(seg, loci_files) {
 pipeline_files <- function() {
   pf <- Sys.getenv("CAMDAC_PIPELINE_FILES")
   ifelse(pf == "", fs::path_real("."), pf)
+}
+
+check_java <- function() {
+  java_found <- system2("java", "-version", stderr = F, stdout = F) == 0
+  if (!java_found) {
+    stop(paste0(
+      "Java not found. Please install Java to use Battenberg,",
+      "otherwise, run set cna_caller to ASCAT and try again."
+    ))
+  }
 }
