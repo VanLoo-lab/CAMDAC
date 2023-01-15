@@ -217,6 +217,7 @@ get_reference_files <- function(config, type_folder, glob = NULL) {
 #' @export
 download_pipeline_files <- function(bsseq, directory = NULL) {
   stopifnot(bsseq %in% c("wgbs", "rrbs", "test"))
+  loginfo("Downloading pipeline files for %s analysis", bsseq)
 
   # Get download URL from CAMDAC index file
   url_index_file <- system.file("extdata", "pipeline_files_urls.txt", package = "CAMDAC")
@@ -246,8 +247,8 @@ download_pipeline_files <- function(bsseq, directory = NULL) {
   download.file(link, destfile = tf, method = "wget")
   untar(tf, exdir = location)
 
-  loginfo("Tempfile unpacked and deleted %s", tf)
   fs::file_delete(tf)
+  loginfo("Tempfile unpacked and deleted %s", tf)
 
   loginfo("Pipeline files for %s downloaded to %s", bsseq, location)
 }
