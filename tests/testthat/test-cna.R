@@ -22,6 +22,7 @@ test_that("ascat and battenberg runs on wgbs samples", {
 
     # Run battenberg
     config$cna_caller <- "battenberg"
-    cmain_call_cna(tumor, normal, config)
+    # Battenberg warnings are function of the test data
+    suppressWarnings(cmain_call_cna(tumor, normal, config))
     testthat::expect_true(fs::file_exists(cna_file))
 })

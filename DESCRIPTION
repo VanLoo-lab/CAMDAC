@@ -65,8 +65,7 @@ Depends:
     gridExtra,
     grid,
     stringr,
-    png,
-    logger
+    png
 Remotes: 
     ASCAT=VanLoo-Lab/ascat/ASCAT@v2.5.3,
     Battenberg=NMNS93/battenberg@dev

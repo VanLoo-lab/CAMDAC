@@ -330,7 +330,6 @@ cmain_run_battenberg <- function(tumour, normal, config) {
   min_normal_depth <- config$min_cov
 
   # Run battenberg
-  loginfo("Running Battenberg")
   #   We could add another (optional) config parameter for battenberg cores?
   battenberg_wgbs_wrapper(tumourname, normalname, imputeinfofile, problemloci, ismale, beaglejar,
     beagleref.template, beagleplink.template,
