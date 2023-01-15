@@ -77,15 +77,23 @@
 
     <div id="arguments">
     <h2>Arguments</h2>
-    <dl><dt>tumor.</dt>
-<dd><p>Tumor sample data built with <code><a href="CamSample.html">CamSample()</a></code>.</p></dd>
+    <dl><dt>tumor</dt>
+<dd><p>Tumor <code>CamSample</code> object for deconvultion.</p></dd>
 
 
-<dt>normal.</dt>
-<dd><p>Normal sample data built with <code><a href="CamSample.html">CamSample()</a></code>.</p></dd>
+<dt>germline</dt>
+<dd><p>Patient-matched normal <code>CamSample</code> object. May be NULL if <code>tumor</code> has CNA calls already.</p></dd>
 
 
-<dt>config.</dt>
+<dt>infiltrates</dt>
+<dd><p>Normal <code>CamSample</code> as a proxy for infiltrating normal methylation.</p></dd>
+
+
+<dt>origin</dt>
+<dd><p>Normal <code>CamSample</code> representing cell of origin for tumor-normal differential methylation.</p></dd>
+
+
+<dt>config</dt>
 <dd><p>Configuration built with <code><a href="CamConfig.html">CamConfig()</a></code>.</p></dd>
 
 </dl></div>

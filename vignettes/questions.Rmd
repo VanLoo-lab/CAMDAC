@@ -41,7 +41,7 @@ The simplest way is to call `pipeline` with `overwrite=FALSE` in your config, gi
 
 If for any reason, you have changed the output directory structure from previous run, you can initiate CAMDAC by manually passing outputs to `CamSample` objects. See the vignette `vignette("output")` for more information.
 
-Finally, you can run the `cmain_*` functions used  by `pipeline()` directly. For example, to run the deconvolution step, you can call `cmain_deconvolution()`.
+Finally, you can run the `cmain_*` functions used  by `pipeline()` directly. For example, to run the deconvolution step, you can call `cmain_deconvolve_methylation()`.
 
 ### My CNA solution wasn't right. How can I refit with different purity and ploidy values?
 

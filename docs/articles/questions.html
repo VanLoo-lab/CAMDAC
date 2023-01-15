@@ -128,7 +128,7 @@
 </h3>
 <p>The simplest way is to call <code>pipeline</code> with <code>overwrite=FALSE</code> in your config, giving the right normal sample for your step. Additionally, you <code>CamConfig</code> must run with the same output directory.</p>
 <p>If for any reason, you have changed the output directory structure from previous run, you can initiate CAMDAC by manually passing outputs to <code>CamSample</code> objects. See the vignette <code><a href="../articles/output.html">vignette("output")</a></code> for more information.</p>
-<p>Finally, you can run the <code>cmain_*</code> functions used by <code><a href="../reference/pipeline.html">pipeline()</a></code> directly. For example, to run the deconvolution step, you can call <code>cmain_deconvolution()</code>.</p>
+<p>Finally, you can run the <code>cmain_*</code> functions used by <code><a href="../reference/pipeline.html">pipeline()</a></code> directly. For example, to run the deconvolution step, you can call <code><a href="../reference/cmain_deconvolve_methylation.html">cmain_deconvolve_methylation()</a></code>.</p>
 </div>
 <div class="section level3">
 <h3 id="my-cna-solution-wasnt-right--how-can-i-refit-with-different-purity-and-ploidy-values">My CNA solution wasn’t right. How can I refit with different purity and ploidy values?<a class="anchor" aria-label="anchor" href="#my-cna-solution-wasnt-right--how-can-i-refit-with-different-purity-and-ploidy-values"></a>
