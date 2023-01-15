@@ -107,7 +107,7 @@
 <div class="section level3">
 <h3 id="i-have-unmatched-normal-samples-from-multiple-patients--can-i-use-camdac-to-merge-them">I have unmatched normal samples from multiple patients. Can I use CAMDAC to merge them?<a class="anchor" aria-label="anchor" href="#i-have-unmatched-normal-samples-from-multiple-patients--can-i-use-camdac-to-merge-them"></a>
 </h3>
-<p>Yes, please follow see the vignette <code>vignettes("panel")</code>.</p>
+<p>Yes, please follow see the vignette <code>vignette("panel")</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="i-want-to-run-camdac-on-something-other-than-hg19-or-hg38">I want to run CAMDAC on something other than hg19 or hg38<a class="anchor" aria-label="anchor" href="#i-want-to-run-camdac-on-something-other-than-hg19-or-hg38"></a>
@@ -128,8 +128,8 @@
 <h2 id="how-do-i-run-individual-steps-of-the-camdac-pipeline">How do I run individual steps of the CAMDAC pipeline?<a class="anchor" aria-label="anchor" href="#how-do-i-run-individual-steps-of-the-camdac-pipeline"></a>
 </h2>
 <p>The simplest way is to call <code>pipeline</code> with <code>overwrite=FALSE</code> in your config, giving the right normal sample for your step. Additionally, you <code>CamConfig</code> must run with the same output directory.</p>
-<p>If for any reason, you have changed the output directory structure from previous run, you can initiate CAMDAC by manually passing outputs to <code>CamSample</code> objects. See the vignette <code>vignettes("output")</code> for more information.</p>
-<p>Finally, you can run the <code>cmain_*</code> functions used internally by <code>pipeline</code> directly. These functions are not exported, but can be accessed with <code>:::</code>. For example, to run the deconvolution step, you can call <code>CAMDAC:::cmain_deconvolution</code>.</p>
+<p>If for any reason, you have changed the output directory structure from previous run, you can initiate CAMDAC by manually passing outputs to <code>CamSample</code> objects. See the vignette <code><a href="../articles/output.html">vignette("output")</a></code> for more information.</p>
+<p>Finally, you can run the <code>cmain_*</code> functions used by <code><a href="../reference/pipeline.html">pipeline()</a></code> directly. For example, to run the deconvolution step, you can call <code>cmain_deconvolution()</code>.</p>
 <div class="section level3">
 <h3 id="my-cna-solution-wasnt-right--how-can-i-refit-with-different-purity-and-ploidy-values">My CNA solution wasn’t right. How can I refit with different purity and ploidy values?<a class="anchor" aria-label="anchor" href="#my-cna-solution-wasnt-right--how-can-i-refit-with-different-purity-and-ploidy-values"></a>
 </h3>

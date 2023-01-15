@@ -52,6 +52,8 @@ config = CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38")
 CAMDAC::pipeline(tumor, germline=normal, infiltrates=normal, origin=normal, config)
 ```
 
+For a more detailed walkthrough, see `vignettes("pipeline")`.
+
 ## Development
 
 ```{r}

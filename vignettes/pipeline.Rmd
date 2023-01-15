@@ -15,12 +15,14 @@ knitr::opts_chunk$set(
 )
 ```
 
-To run the CAMDAC pipeline, raw data for each sample is loaded as a `CamSample` object and passed to the main `pipeline` function along with the configuration. CAMDAC expects the following `CamSample` objects:
+The CAMDAC pipeline accepts raw data for each of the following `CamSample` objects:
 
-1. `tumor` - the bulk tumor sample you want to deconvolve
-2. `germline` (optional) - patient-matched normal for allele-specific copy number calling. Alternatively, see `using external CNA solutions`.
-3. `infiltrates` - the normal infiltrating cells for deconvolution. These need not be patient-matched.
-4. `origin` (optional) - normal cell type from which the tumour originated for differential methylation calling. These need not be patient-matched.
+1. `tumor` - The bulk tumor sample you  to deconvolve
+2. `germline` (optional) - Patient-matched normal data for allele-specific copy number calling. Alternatively, see `using external CNA solutions` below.
+3. `infiltrates` - Bulk methylome representing the normal infiltrating cells for deconvolution. E.g. normal adjacent tissue.
+4. `origin` (optional) - Bulk methylome for differential methylation calling, representing the normal cell type from which the tumour originated.
+
+The same normal sample may be  given as the germline, infiltrates or origin, depending on your experimental design.
 
 ## Run the CAMDAC pipeline
 
@@ -54,7 +56,11 @@ pipeline(
 
 The germline sample is optional because you may already have an allele-specific CNA solutions for your bulk tumor. For example, from bulk WGS of the same sample where no patient-matched methylation data is available.
 
-A tab-delimited text file can be provided in the following format:
+A tab-delimited text file can be provided in the format below, whereby:
+
+- column names are optional
+- purity and ploidy values are taken from the first data row alone as these are sample-wide metrics.
+- chromosome information may be provided without the 'chr' prefix.
 
 | chrom | start | end | major_cn | minor_cn | purity | ploidy |
 | --------- | ---- | ---- | ---- | ---- | ---- | ---- |
@@ -63,19 +69,18 @@ A tab-delimited text file can be provided in the following format:
 
 Please note that:
 
-- column names are optional
-- purity and ploidy values are taken from the first data row alone as these are sample-wide metrics.
-- chromosome information may be provided without the 'chr' prefix.
-
-Given a CNA solution, you can run CAMDAC without the germline normal sample:
+You can run CAMDAC without the germline normal sample by passing a CNA solution file to the `tumor` sample object. For example:
 
 ```{r add_cna}
-
+# Load CNA text file
 cna_file <- system.file("inst/testdata/test_cna.txt")
 
-tumor <- CamSample(id="T",bam=b_tumor)
+# Create CamSample and add CNA solution
+tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
 attach_output(tumor, config, "cna", cna_file)
+normal <- CamSample(id="N", sex="XY", bam=b_normaal)
 
+# Run pipeline without matched normal for cna calling
 pipeline(
     tumor=tumor,
     germline=NULL,
@@ -85,4 +90,4 @@ pipeline(
 )
 ```
 
-Next, see `vignettes("output")` for a detailed summary of CAMDAC results files.
+Next, see `vignette("output")` for a detailed summary of CAMDAC results files.

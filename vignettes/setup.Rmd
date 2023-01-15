@@ -32,9 +32,7 @@ CAMDAC requires pre-made annotation files to run, which you can download by runn
 CAMDAC::download_pipeline_files("wgbs", directory="./pipeline_files")
 ```
 
-Now, you're ready to run CAMDAC! Next, see `vignette("preprocessing")`.
-
-## Setup
+Now, you're ready to run CAMDAC! Next, see `vignette("pipeline")`.
 
 ### Are there external dependencies?
 
@@ -55,4 +53,4 @@ From a Unix terminal:
 
 ### I have an error when downloading pipeline files
 
-Some instutites setup firewalls for direct donwloads. If the download command fails, please [raise an issue on github](https://github.com/VanLoo-lab/CAMDAC/issues) describing the error. You can manually download the files from the endpoints listed in `inst/extdata/pipeline_files_urls.txt`. The files are stored as tar.gz files, therefore you will need to unpack them with the command `tar -xvzf <file>`.
+If the download command fails (e.g. due to a firewall), you can manually download the files from the endpoints listed in `inst/extdata/pipeline_files_urls.txt`. Data are stored as tar.gz files, therefore you will need to unpack them with the command `tar -xvzf <file>`.

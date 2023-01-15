@@ -96,17 +96,18 @@
 
     
     
-<p>To run the CAMDAC pipeline, raw data for each sample is loaded as a <code>CamSample</code> object and passed to the main <code>pipeline</code> function along with the configuration. CAMDAC expects the following <code>CamSample</code> objects:</p>
+<p>The CAMDAC pipeline accepts raw data for each of the following <code>CamSample</code> objects:</p>
 <ol style="list-style-type: decimal">
 <li>
-<code>tumor</code> - the bulk tumor sample you want to deconvolve</li>
+<code>tumor</code> - The bulk tumor sample you to deconvolve</li>
 <li>
-<code>germline</code> (optional) - patient-matched normal for allele-specific copy number calling. Alternatively, see <code>using external CNA solutions</code>.</li>
+<code>germline</code> (optional) - Patient-matched normal data for allele-specific copy number calling. Alternatively, see <code>using external CNA solutions</code> below.</li>
 <li>
-<code>infiltrates</code> - the normal infiltrating cells for deconvolution. These need not be patient-matched.</li>
+<code>infiltrates</code> - Bulk methylome representing the normal infiltrating cells for deconvolution. E.g. normal adjacent tissue.</li>
 <li>
-<code>origin</code> (optional) - normal cell type from which the tumour originated for differential methylation calling. These need not be patient-matched.</li>
+<code>origin</code> (optional) - Bulk methylome for differential methylation calling, representing the normal cell type from which the tumour originated.</li>
 </ol>
+<p>The same normal sample may be given as the germline, infiltrates or origin, depending on your experimental design.</p>
 <div class="section level2">
 <h2 id="run-the-camdac-pipeline">Run the CAMDAC pipeline<a class="anchor" aria-label="anchor" href="#run-the-camdac-pipeline"></a>
 </h2>
@@ -134,7 +135,12 @@
 <h2 id="using-external-cna-solutions">Using external CNA solutions<a class="anchor" aria-label="anchor" href="#using-external-cna-solutions"></a>
 </h2>
 <p>The germline sample is optional because you may already have an allele-specific CNA solutions for your bulk tumor. For example, from bulk WGS of the same sample where no patient-matched methylation data is available.</p>
-<p>A tab-delimited text file can be provided in the following format:</p>
+<p>A tab-delimited text file can be provided in the format below, whereby:</p>
+<ul>
+<li>column names are optional</li>
+<li>purity and ploidy values are taken from the first data row alone as these are sample-wide metrics.</li>
+<li>chromosome information may be provided without the ‘chr’ prefix.</li>
+</ul>
 <table class="table">
 <thead><tr class="header">
 <th>chrom</th>
@@ -167,19 +173,17 @@
 </tbody>
 </table>
 <p>Please note that:</p>
-<ul>
-<li>column names are optional</li>
-<li>purity and ploidy values are taken from the first data row alone as these are sample-wide metrics.</li>
-<li>chromosome information may be provided without the ‘chr’ prefix.</li>
-</ul>
-<p>Given a CNA solution, you can run CAMDAC without the germline normal sample:</p>
+<p>You can run CAMDAC without the germline normal sample by passing a CNA solution file to the <code>tumor</code> sample object. For example:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<code class="sourceCode R"><span><span class="co"># Load CNA text file</span></span>
 <span><span class="va">cna_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"inst/testdata/test_cna.txt"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"T"</span>,bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
+<span><span class="co"># Create CamSample and add CNA solution</span></span>
+<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"T"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/attach_output.html">attach_output</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="va">config</span>, <span class="st">"cna"</span>, <span class="va">cna_file</span><span class="op">)</span></span>
+<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"N"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_normaal</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Run pipeline without matched normal for cna calling</span></span>
 <span><span class="fu"><a href="../reference/pipeline.html">pipeline</a></span><span class="op">(</span></span>
 <span>    tumor<span class="op">=</span><span class="va">tumor</span>,</span>
 <span>    germline<span class="op">=</span><span class="cn">NULL</span>,</span>
@@ -187,7 +191,7 @@
 <span>    origin<span class="op">=</span><span class="va">normal</span>,</span>
 <span>    config<span class="op">=</span><span class="va">config</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Next, see <code>vignettes("output")</code> for a detailed summary of CAMDAC results files.</p>
+<p>Next, see <code><a href="../articles/output.html">vignette("output")</a></code> for a detailed summary of CAMDAC results files.</p>
 </div>
   </div>
 
