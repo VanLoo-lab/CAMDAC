@@ -33,9 +33,9 @@ library(CAMDAC)
 b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
 b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
 
-tumor <- CamSample(id="tumor", bam=b_tumor)
-normal <- CamSample(id="normal", bam=b_normal)
-config <- CamConfig(outdir="./results", ref="./pipeline_files", bsseq="wgbs", lib="pe", cores=10)
+tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
+normal <- CamSample(id="N", sex="XY", bam=b_normal)
+config <- CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
 ```
 
 When defining `CamSample` objects, samples must have a unique `id` value between runs otherwise data will be overwritten. Alternatively, users may use the `patient` argument to separate samples the same `id`.
@@ -52,35 +52,42 @@ pipeline(
 )
 ```
 
-## Using external CNA solutions
+### Use external CNA solutions
 
-The germline sample is optional because you may already have an allele-specific CNA solutions for your bulk tumor. For example, from bulk WGS of the same sample where no patient-matched methylation data is available.
+The germline sample is optional as, in the absence of patient-matched methylation data, you may already have an allele-specific CNA solutions for your bulk tumor. For example, this could be derived from bulk WGS of the same sampl.
 
-A tab-delimited text file can be provided in the format below, whereby:
+You can provide this data in tab-delimited text file as shown below. Importantly,:
 
 - column names are optional
-- purity and ploidy values are taken from the first data row alone as these are sample-wide metrics.
-- chromosome information may be provided without the 'chr' prefix.
+- purity and ploidy values are taken from the first data row alone
+- chromosome names may be given with or without 'chr' prefix
 
 | chrom | start | end | major_cn | minor_cn | purity | ploidy |
 | --------- | ---- | ---- | ---- | ---- | ---- | ---- |
 | chr1 | 1 | 400 | 2 | 1 | 0.67 | 3.5 |
-| chr1 | 400 | 1000 | 1 | 1 | 0.67 | 3.5 |
+| chr1 | 401 | 1000 | 1 | 1 | 0.67 | 3.5 |
 
-Please note that:
-
-You can run CAMDAC without the germline normal sample by passing a CNA solution file to the `tumor` sample object. For example:
+To run CAMDAC with this CNA solution, pass attach the file to the tumor `CamSample()` object:
 
 ```{r add_cna}
-# Load CNA text file
+library(CAMDAC)
+
+# Load test data
+b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
+b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
 cna_file <- system.file("inst/testdata/test_cna.txt")
 
-# Create CamSample and add CNA solution
+# Create tumor object and attach CNA solution
 tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
 attach_output(tumor, config, "cna", cna_file)
-normal <- CamSample(id="N", sex="XY", bam=b_normaal)
 
-# Run pipeline without matched normal for cna calling
+# Define normal object(s) for deconvolution or differential methylation
+normal <- CamSample(id="N", sex="XY", bam=b_normal)
+
+# Set config
+config <- CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
+
+# Run pipeline with CNA solution
 pipeline(
     tumor=tumor,
     germline=NULL,

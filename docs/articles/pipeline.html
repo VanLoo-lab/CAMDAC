@@ -118,9 +118,9 @@
 <span><span class="va">b_tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"tumor.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span><span class="va">b_normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"normal.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"tumor"</span>, bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
-<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"normal"</span>, bam<span class="op">=</span><span class="va">b_normal</span><span class="op">)</span></span>
-<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, ref<span class="op">=</span><span class="st">"./pipeline_files"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>, cores<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"T"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
+<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"N"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_normal</span><span class="op">)</span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>, build<span class="op">=</span><span class="st">"hg38"</span>, n_cores<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 <p>When defining <code>CamSample</code> objects, samples must have a unique <code>id</code> value between runs otherwise data will be overwritten. Alternatively, users may use the <code>patient</code> argument to separate samples the same <code>id</code>.</p>
 <p>To run the pipeline:</p>
 <pre><code><span><span class="fu"><a href="../reference/pipeline.html">pipeline</a></span><span class="op">(</span></span>
@@ -130,16 +130,15 @@
 <span>    origin<span class="op">=</span><span class="va">normal</span>,</span>
 <span>    config<span class="op">=</span><span class="va">config</span></span>
 <span><span class="op">)</span></span></code></pre>
-</div>
-<div class="section level2">
-<h2 id="using-external-cna-solutions">Using external CNA solutions<a class="anchor" aria-label="anchor" href="#using-external-cna-solutions"></a>
-</h2>
-<p>The germline sample is optional because you may already have an allele-specific CNA solutions for your bulk tumor. For example, from bulk WGS of the same sample where no patient-matched methylation data is available.</p>
-<p>A tab-delimited text file can be provided in the format below, whereby:</p>
+<div class="section level3">
+<h3 id="use-external-cna-solutions">Use external CNA solutions<a class="anchor" aria-label="anchor" href="#use-external-cna-solutions"></a>
+</h3>
+<p>The germline sample is optional as, in the absence of patient-matched methylation data, you may already have an allele-specific CNA solutions for your bulk tumor. For example, this could be derived from bulk WGS of the same sampl.</p>
+<p>You can provide this data in tab-delimited text file as shown below. Importantly,:</p>
 <ul>
 <li>column names are optional</li>
-<li>purity and ploidy values are taken from the first data row alone as these are sample-wide metrics.</li>
-<li>chromosome information may be provided without the ‘chr’ prefix.</li>
+<li>purity and ploidy values are taken from the first data row alone</li>
+<li>chromosome names may be given with or without ‘chr’ prefix</li>
 </ul>
 <table class="table">
 <thead><tr class="header">
@@ -163,7 +162,7 @@
 </tr>
 <tr class="even">
 <td>chr1</td>
-<td>400</td>
+<td>401</td>
 <td>1000</td>
 <td>1</td>
 <td>1</td>
@@ -172,18 +171,26 @@
 </tr>
 </tbody>
 </table>
-<p>Please note that:</p>
-<p>You can run CAMDAC without the germline normal sample by passing a CNA solution file to the <code>tumor</code> sample object. For example:</p>
+<p>To run CAMDAC with this CNA solution, pass attach the file to the tumor <code><a href="../reference/CamSample.html">CamSample()</a></code> object:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Load CNA text file</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CAMDAC</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Load test data</span></span>
+<span><span class="va">b_tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"tumor.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
+<span><span class="va">b_normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"normal.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span><span class="va">cna_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"inst/testdata/test_cna.txt"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Create CamSample and add CNA solution</span></span>
+<span><span class="co"># Create tumor object and attach CNA solution</span></span>
 <span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"T"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/attach_output.html">attach_output</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="va">config</span>, <span class="st">"cna"</span>, <span class="va">cna_file</span><span class="op">)</span></span>
-<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"N"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_normaal</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Run pipeline without matched normal for cna calling</span></span>
+<span><span class="co"># Define normal object(s) for deconvolution or differential methylation</span></span>
+<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"N"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_normal</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Set config</span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>, build<span class="op">=</span><span class="st">"hg38"</span>, n_cores<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Run pipeline with CNA solution</span></span>
 <span><span class="fu"><a href="../reference/pipeline.html">pipeline</a></span><span class="op">(</span></span>
 <span>    tumor<span class="op">=</span><span class="va">tumor</span>,</span>
 <span>    germline<span class="op">=</span><span class="cn">NULL</span>,</span>
@@ -192,6 +199,7 @@
 <span>    config<span class="op">=</span><span class="va">config</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Next, see <code><a href="../articles/output.html">vignette("output")</a></code> for a detailed summary of CAMDAC results files.</p>
+</div>
 </div>
   </div>
 

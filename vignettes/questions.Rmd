@@ -57,7 +57,7 @@ CamConfig(outdir=".", ref="./pipeline_files", regions="regions.bed")
 
 CAMDAC will merge any overlapping regions prior to analysis.
 
-### How I manually override specific pipeline outputs?
+### How can I manually replace pipeline outputs?
 
 If you have outputs from a previous run, you can manually assign them to a CAMDAC object. This overwrites the expected path for that output type, allowing the pipeline to run with this data instead of computing it. Use the `attach_output` function, passing one of three arguments:
 
