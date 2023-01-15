@@ -35,7 +35,7 @@ Please raise an issue on GitHub to request files for a new reference genome.
 
 When calling `pipeline` if you do not give a normal infiltrate or cell of origin, the pipeline skips deconvolution and differential methylation respectively. This may be useful to run a quick first-pass to find and refit copy number solutions. When CAMDAC has found a solution and is rerun with the same tumor, config, and normal, the `infiltrates` and `cell_of_origin` arguments will continue the pipeline where it left off. The entire pipeline can be re-run be deleting the output directory or setting `overwrite=TRUE` in the `CamConfig`.
 
-## How do I run individual steps of the CAMDAC pipeline?
+### How do I run individual steps of the CAMDAC pipeline?
 
 The simplest way is to call `pipeline` with `overwrite=FALSE` in your config, giving the right normal sample for your step. Additionally, you `CamConfig` must run with the same output directory.
 
@@ -47,7 +47,7 @@ Finally, you can run the `cmain_*` functions used  by `pipeline()` directly. For
 
 If you want to use an external purity and ploidy solution, simply pass a CNA file that has only the purity and ploidy fields. Additionally, set `refit==TRUE` in the CamConfig and CAMDAC will use this to refit the sample.
 
-## Can I limit my analysis to specific regions of interest?
+### Can I limit my analysis to specific regions of interest?
 
 To analyse specific genomic regions, you may pass a BED file to CAMDAC config:
 
@@ -57,7 +57,7 @@ CamConfig(outdir=".", ref="./pipeline_files", regions="regions.bed")
 
 CAMDAC will merge any overlapping regions prior to analysis.
 
-## Can I manually override specific pipeline outputs?
+### How I manually override specific pipeline outputs?
 
 If you have outputs from a previous run, you can manually assign them to a CAMDAC object. This overwrites the expected path for that output type, allowing the pipeline to run with this data instead of computing it. Use the `attach_output` function, passing one of three arguments:
 
