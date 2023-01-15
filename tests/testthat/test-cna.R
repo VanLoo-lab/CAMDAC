@@ -1,28 +1,38 @@
 test_that("ascat and battenberg runs on wgbs samples", {
-    # Preprocess CpG, SNP and methylation data for all samples
-    preprocess(
-        list(tumor, normal),
-        config
+    # CNA caller test config
+    config_c <- CamConfig(
+        outdir = "./result_cna",
+        bsseq = "wgbs",
+        build = "hg38",
+        lib = "pe",
+        n_cores = 10,
+        min_cov = 1 # Required to capture sufficient SNPs from test
     )
 
-    # Combine tumor-germline SNPs and call CNAs
-    cmain_bind_snps(tumor, normal, config)
+    # Attach tsnps file to tumor
+    tsnps_file <- system.file("testdata", "test_tsnps.csv.gz", package = "CAMDAC")
+    attach_output(tumor, config_c, "tsnps", tsnps_file)
 
-    # Test CNA and expect file exists after ASCAT
-    cna_file <- get_fpath(tumor, config, "cna")
+    # Reset
+    cna_file <- get_fpath(tumor, config_c, "cna")
     if (fs::file_exists(cna_file)) {
         fs::file_delete(cna_file)
     }
-    config$cna_caller <- "ascat"
-    cmain_call_cna(tumor, normal, config)
 
-    # Reset
-    testthat::expect_true(fs::file_exists(cna_file))
+    # Test CNA and expect file exists after ASCAT
+    config_c$cna_caller <- "ascat"
+    cmain_call_cna(tumor, normal, config_c)
+
+    # Test ASCAT
+    tool <- fread(cna_file)$pipeline[[1]]
+    testthat::expect_equal(tool, "ascat")
     fs::file_delete(cna_file)
 
     # Run battenberg
-    config$cna_caller <- "battenberg"
+    config_c$cna_caller <- "battenberg"
     # Battenberg warnings are function of the test data
-    suppressWarnings(cmain_call_cna(tumor, normal, config))
-    testthat::expect_true(fs::file_exists(cna_file))
+    suppressWarnings(cmain_call_cna(tumor, normal, config_c))
+    tool <- fread(cna_file)$pipeline[[1]]
+    testthat::expect_equal(tool, "battenberg")
+    fs::file_delete(cna_file)
 })

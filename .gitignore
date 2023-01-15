@@ -36,5 +36,4 @@ test_*.R
 .lintr
 *.code-workspace
 *dev.md
-*result_test
-*panel_test/
+tests/testthat/result*

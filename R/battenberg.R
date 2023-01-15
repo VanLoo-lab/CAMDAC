@@ -352,34 +352,35 @@ battenberg_wgbs_wrapper <- function(tumourname,
   doParallel::registerDoParallel(cores = nthreads)
   foreach::foreach(i = 1:length(chrom_names), .errorhandling = "remove") %dopar% {
     chrom <- chrom_names[i]
-    log_debug(paste0("Haplotyping chromosome ", chrom))
+    logdebug(paste0("Haplotyping chromosome ", chrom))
 
-    # TODO: Run but suppress std-err from beagle. Use tryCatch to print stderr if error occurs.
-    Battenberg::run_haplotyping(
-      chrom = chrom,
-      tumourname = tumourname[sampleidx],
-      normalname = normalname,
-      ismale = ismale,
-      imputeinfofile = imputeinfofile,
-      problemloci = problemloci,
-      impute_exe = impute_exe,
-      min_normal_depth = min_normal_depth,
-      chrom_names = chrom_names,
-      snp6_reference_info_file = snp6_reference_info_file,
-      heterozygousFilter = heterozygousFilter,
-      usebeagle = usebeagle,
-      beaglejar = beaglejar,
-      beagleref = gsub("CHROMNAME", chrom, beagleref.template),
-      beagleplink = gsub("CHROMNAME", chrom, beagleplink.template),
-      beaglemaxmem = beaglemaxmem,
-      beaglenthreads = beaglenthreads,
-      beaglewindow = beaglewindow,
-      beagleoverlap = beagleoverlap,
-      externalhaplotypeprefix = externalhaplotypeprefix,
-      use_previous_imputation = (sampleidx > 1)
+    suppressMessages(
+      Battenberg::run_haplotyping(
+        chrom = chrom,
+        tumourname = tumourname[sampleidx],
+        normalname = normalname,
+        ismale = ismale,
+        imputeinfofile = imputeinfofile,
+        problemloci = problemloci,
+        impute_exe = impute_exe,
+        min_normal_depth = min_normal_depth,
+        chrom_names = chrom_names,
+        snp6_reference_info_file = snp6_reference_info_file,
+        heterozygousFilter = heterozygousFilter,
+        usebeagle = usebeagle,
+        beaglejar = beaglejar,
+        beagleref = gsub("CHROMNAME", chrom, beagleref.template),
+        beagleplink = gsub("CHROMNAME", chrom, beagleplink.template),
+        beaglemaxmem = beaglemaxmem,
+        beaglenthreads = beaglenthreads,
+        beaglewindow = beaglewindow,
+        beagleoverlap = beagleoverlap,
+        externalhaplotypeprefix = externalhaplotypeprefix,
+        use_previous_imputation = (sampleidx > 1)
+      )
     )
 
-    print(paste0("Battenberg RUN HAPLO COMPLETE for ", chrom))
+    loginfo(paste0("Battenberg RUN HAPLO COMPLETE for ", chrom))
   }
   doParallel::stopImplicitCluster()
 
@@ -389,6 +390,15 @@ battenberg_wgbs_wrapper <- function(tumourname,
     inputfile.postfix = "_heterozygousMutBAFs_haplotyped.txt",
     outputfile = paste(tumourname[sampleidx], "_heterozygousMutBAFs_haplotyped.txt", sep = ""),
     chr_names = chrom_names
+  )
+
+  # Raise error if haplotyping fails to yield tumor BAFs
+  tryCatch(
+    nrow(fread(paste(tumourname[sampleidx], "_heterozygousMutBAFs_haplotyped.txt", sep = ""))),
+    error = function(e) {
+      print("Error: Battenberg haplotyping did not yield Tumor BAF results. Quitting.")
+      stop(e)
+    }
   )
 
   # 3. Segment the phased and haplotyped BAF data
