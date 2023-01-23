@@ -178,7 +178,10 @@
 <span><span class="co"># Load test data</span></span>
 <span><span class="va">b_tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"tumor.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span><span class="va">b_normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"normal.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
-<span><span class="va">cna_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"inst/testdata/test_cna.txt"</span><span class="op">)</span></span>
+<span><span class="va">cna_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"test.cna.txt"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Set config</span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>, build<span class="op">=</span><span class="st">"hg38"</span>, n_cores<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Create tumor object and attach CNA solution</span></span>
 <span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"T"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
@@ -186,9 +189,6 @@
 <span></span>
 <span><span class="co"># Define normal object(s) for deconvolution or differential methylation</span></span>
 <span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"N"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_normal</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Set config</span></span>
-<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>, build<span class="op">=</span><span class="st">"hg38"</span>, n_cores<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Run pipeline with CNA solution</span></span>
 <span><span class="fu"><a href="../reference/pipeline.html">pipeline</a></span><span class="op">(</span></span>
