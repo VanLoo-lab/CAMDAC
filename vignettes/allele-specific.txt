@@ -1,0 +1,32 @@
+---
+title: "allele-specific"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{allele-specific}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+##  Allele-specific deconvolution by SNP phasing
+
+CAMDAC can deconvolve allele-specific methylation (ASM) and call differential ASM. To analyse allele-specific methylation, a tumor and config object must be passed to the `asm_pipeline` function.
+
+The pipeline analyses the data taking the following steps:
+
+1. Count methylation **per SNP-phased CpG site** on tumor and normal
+
+The tumor is expected to have a "snps" slot containing haplotype calls and must have a BAM file. The pipeline will first load the the BAM at these positions, then take reads that have aligned to the SNPs. The reads will be split by haplotype before counting methylation. The result is written in the "asm" folder under "haplocounts".
+
+2. Deconvolve methylation on tumor **per haplotype** using the normal
+3. Assign allele-specific copy number state **per CpG** using the bulk tumor solution
+4. Call allele-specific differential methylation within samples
+5. Call allele-specific differential methylation between samples
+
+##  Allele-specific differential methylation between samples
