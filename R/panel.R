@@ -151,6 +151,9 @@ panel_meth_counts <- function(x, panel_mask) {
   end <- x[[1]]$end
   BAF <- NA
 
+  # Add methylation mean
+  m_mean <- Reduce(cbind, lapply(x, function(o) o$m)) %>% rowMeans(na.rm = T)
+
   res <- data.table(
     chrom = chrom,
     start = start,
@@ -158,9 +161,10 @@ panel_meth_counts <- function(x, panel_mask) {
     M = M,
     UM = UM,
     m = m,
+    m_mean = m_mean,
     cov = total_counts_m
   )
 
   # Filter CG sites by panel mask
-  res <- res[panel_mask, ]
+  res <- res[panel_mask, ] 
 }
