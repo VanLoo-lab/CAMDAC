@@ -37,3 +37,4 @@ test_*.R
 *.code-workspace
 *dev.md
 tests/testthat/result*
+local/
