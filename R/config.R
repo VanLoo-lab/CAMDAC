@@ -42,19 +42,17 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, re
   # Set camdac references if not they do not exist
   refs <- ifelse(is.null(refs), pipeline_files(), fs::path_real(refs))
 
-  # Set beagle jar if it does no exist
-  bjar <- get_reference_files(
-    list(
-      refs = refs,
-      build = build,
-      bsseq = bsseq
-    ),
-    "beagle_jar"
-  )
-
-  # If using battenberg, validate that java is available
+  # If using battenberg, validate that java is available and set beagle jar
   if (cna_caller == "battenberg") {
     check_java()
+    bjar <- get_reference_files(
+      list(
+        refs = refs,
+        build = build,
+        bsseq = bsseq
+      ),
+      "beagle_jar"
+    )
   }
   # If using rrbs, CNA caller must be ASCAT
   if (bsseq == "rrbs") {
