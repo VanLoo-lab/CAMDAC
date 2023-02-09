@@ -33,9 +33,15 @@ get_reads_in_segments <- function(bam_file, segments, min_mapq, paired_end = FAL
     asMates <- TRUE # Adds additional mates column to for filtering. BamFile object only.
   } else {
     flag <- Rsamtools::scanBamFlag()
-    what <- c("qname", "rname", "strand", "pos", "qwidth", "mapq", "seq", "qual")
+    what <- c("qname", "rname", "strand", "pos", "qwidth", "mapq", "seq", "qual", "cigar")
     asMates <- FALSE
   }
+
+  # Set segment chromosome names based on sequence style in BAM
+  # Required to read BAM correctly e.g. hg38 vs GRCh38 contigs
+  is_ucsc = startsWith( seqnames(seqinfo(BamFile(bam_file)))[[1]], "chr" )
+  bamstyle = ifelse(is_ucsc, "UCSC", "NCBI")
+  GenomeInfoDb::seqlevelsStyle(segments) = bamstyle
 
   # Set parameters and read BamFile.
   #    ScanBamParam "whats" options are available via scanBamWhat()
@@ -50,6 +56,11 @@ get_reads_in_segments <- function(bam_file, segments, min_mapq, paired_end = FAL
   bam_dt <- data.table::rbindlist(
     lapply(bam, as.data.frame.list)
   )
+
+  # Format BAM to ucsc format if not already
+  if(!is_ucsc & nrow(bam_dt)>0){
+    bam_dt$rname = paste0("chr", bam_dt$rname)
+  }
 
   # For paired end reads, ensure that only reads with proper mates are returned
   if (paired_end) {
@@ -123,10 +134,10 @@ annotate_bam_with_loci <- function(bam_dt, loci_subset, drop_ccgg = FALSE, paire
   bam_loci_overlap[, strand := i.strand]
   bam_cols <- c(
     "qname", "strand", "chrom", "read.start", "read.end", "POS", "width",
-    "start", "end", "ref", "alt", "seq", "qual", "mq"
+    "start", "end", "ref", "alt", "seq", "qual", "mq", "cigar"
   )
   if (paired_end) {
-    bam_cols <- c(bam_cols, "cigar", "flag", "groupid", "mate_status")
+    bam_cols <- c(bam_cols, "flag", "groupid", "mate_status")
   }
 
   # Filter out rows with no loci data, set expected columns and return
