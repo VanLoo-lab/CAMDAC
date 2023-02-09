@@ -29,7 +29,7 @@ Methylation fractions are obtained by summing M and UM reads across samples"><!-
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -79,6 +79,7 @@ Methylation fractions are obtained by summing M and UM reads across samples</p>
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">panel_meth_from_counts</span><span class="op">(</span></span>
 <span>  <span class="va">ac_files</span>,</span>
+<span>  ac_props <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_coverage <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  min_samples <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  max_sd <span class="op">=</span> <span class="fl">0.1</span>,</span>
@@ -91,6 +92,11 @@ Methylation fractions are obtained by summing M and UM reads across samples</p>
     <h2>Arguments</h2>
     <dl><dt>ac_files</dt>
 <dd><p>Allele count files from CAMDAC</p></dd>
+
+
+<dt>ac_props</dt>
+<dd><p>Proportions of each sample to use in panel. If NULL, samples are weighted by their
+total number of reads, which equals the sum of M and UM counts</p></dd>
 
 
 <dt>min_coverage</dt>
@@ -126,7 +132,7 @@ Methylation fractions are obtained by summing M and UM reads across samples</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.9000.</p>
 </div>
 
       </footer></div>
