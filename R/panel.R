@@ -1,14 +1,15 @@
-
 #' Make CAMDAC methylation panel from allele counts
 #'  Methylation fractions are obtained by summing M and UM reads across samples
 #' @param ac_files Allele count files from CAMDAC
+#' @param ac_props Proportions of each sample to use in panel. If NULL, samples are weighted by their
+#'  total number of reads, which equals the sum of M and UM counts
 #' @param min_coverage Minimum coverage for a sample's site to be included in panel
 #' @param min_samples Minimum number of samples with coverage for a site to be included in panel
 #' @param max_sd Maximum standard deviation of methylation for a site to be included in panel
 #' @param drop_snps Boolean. If TRUE, drop per-sample CG-SNPs (BAF < 0.1 or BAF > 0.9) from panel
 #' @param cores Number of cores to use for calculating HDI
 #' @export
-panel_meth_from_counts <- function(ac_files, min_coverage = 3, min_samples = 1,
+panel_meth_from_counts <- function(ac_files, ac_props = NULL, min_coverage = 3, min_samples = 1,
                                    max_sd = 0.1, drop_snps = FALSE, cores = 5) {
   # Load AC files as list, ordering each sample by the same CpG positions
   # Adds a PASS field for us to track and set sites to NA based on filters
@@ -22,10 +23,15 @@ panel_meth_from_counts <- function(ac_files, min_coverage = 3, min_samples = 1,
   mask_1 <- min_sample_cg_threshold(acl, min_samples)
   mask_2 <- max_sd_threshold(acl, max_sd)
   panel_mask <- mask_1 & mask_2
-  stopifnot(sum(panel_mask) > 0)
+  if (sum(panel_mask) == 0) {
+    stop("No sites meet panel constraints. Try lowering min_samples or increasing max_sd.")
+  }
+
+  # Filter CG sites by panel mask
+  acl <- lapply(acl, function(e) e[panel_mask, ])
 
   # Combine counts to create methylation panel
-  panel <- panel_meth_counts(acl, panel_mask)
+  panel <- panel_meth_counts(acl, ac_props)
 
   # Add methylation HDI to panel
   hdi <- calculate_counts_hdi(panel$M, panel$UM, n_cores = cores)
@@ -127,7 +133,7 @@ max_sd_threshold <- function(x, max_sd) {
   return(bool)
 }
 
-panel_meth_counts <- function(x, panel_mask) {
+panel_meth_counts <- function(x, ac_props = NULL) {
   # x is a list of data tables with the same cpg positions and fields from CAMDAC ac files
   # mask is a boolean for CpG sites to be included in analysis
 
@@ -139,18 +145,43 @@ panel_meth_counts <- function(x, panel_mask) {
     return(o)
   })
 
-  # Create new counts
-  M <- Reduce(cbind, lapply(x, function(o) o$M)) %>% rowSums(na.rm = T)
-  UM <- Reduce(cbind, lapply(x, function(o) o$UM)) %>% rowSums(na.rm = T)
-  m <- M / (M + UM)
-  total_counts_m <- M + UM
-  POS <- NA
-  total_depth <- NA
-  chrom <- x[[1]]$chrom
-  start <- x[[1]]$start
-  end <- x[[1]]$end
-  BAF <- NA
+  # If we have allele count proportions, use them to calculate counts and
+  if (!is.null(ac_props)) {
+    m <- Reduce(
+      cbind,
+      lapply(seq_along(x), function(i) x[[i]]$m * ac_props[i])
+    ) %>% rowSums(na.rm = T)
 
+    total_counts_m <- Reduce(
+      cbind,
+      lapply(seq_along(x), function(i) x[[i]]$total_counts_m) # Get complete counts
+    ) %>% rowSums(na.rm = T)
+
+    M <- round(m * total_counts_m, 0)
+    UM <- total_counts_m - M
+    POS <- NA
+    total_depth <- NA
+    BAF <- NA
+    # We can get chrom start and end from one sample as all CpGs aligned before passing to this function
+    chrom <- x[[1]]$chrom
+    start <- x[[1]]$start
+    end <- x[[1]]$end
+  } else {
+    # Otherwise, sum the counts
+    M <- Reduce(cbind, lapply(x, function(o) o$M)) %>% rowSums(na.rm = T)
+    UM <- Reduce(cbind, lapply(x, function(o) o$UM)) %>% rowSums(na.rm = T)
+    m <- M / (M + UM)
+    total_counts_m <- M + UM
+    POS <- NA
+    total_depth <- NA
+    BAF <- NA
+    chrom <- x[[1]]$chrom
+    start <- x[[1]]$start
+    end <- x[[1]]$end
+  }
+
+
+  # Return panel data
   res <- data.table(
     chrom = chrom,
     start = start,
@@ -161,6 +192,5 @@ panel_meth_counts <- function(x, panel_mask) {
     cov = total_counts_m
   )
 
-  # Filter CG sites by panel mask
-  res <- res[panel_mask, ]
+  return(res)
 }

@@ -44,9 +44,11 @@ The allele counts files can then be merged into a single file for the panel cont
 
 ```
 panel_counts <- fs::dir_ls(".", glob="*.SNPs.CG.csv.gz")
-panel <- cmain_normal_panel(panel_counts)
+panel <- panel_meth_from_counts(panel_counts)
 data.table::fwrite(panel, "panel.m.csv.gz")
 ```
+
+By default, panel counts are merged by summing the methylation read counts for each CpG site. You can customise the proportion of each sample that is used in the panel by specifying the `ac_props` argument in panel_meth_from_counts. To get the mean across each CpG site, simply pass equal proportions for each sample.
 
 To run CAMDAC with your newly created panel, attach your panel to a CamSample object using the `meth` argument.
 

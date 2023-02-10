@@ -3,6 +3,7 @@
 .Rhistory
 .RData*
 .Rproj.user
+archive/
 data/
 docs/example_*
 docs/wgbs.nf

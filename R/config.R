@@ -42,6 +42,12 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, re
   # Set camdac references if not they do not exist
   refs <- ifelse(is.null(refs), pipeline_files(), fs::path_real(refs))
 
+  # Battenberg reference files are not available for hg19. Set ASCAT as caller in this case.
+  if(build=="hg19" && cna_caller=="battenberg"){
+    logging::logwarn("Battenberg.m not yet implemented for hg19 in CAMDAC. Setting ASCAT as CNA caller.")
+    cna_caller="ascat"
+  }
+
   # If using battenberg, validate that java is available and set beagle jar
   if (cna_caller == "battenberg") {
     check_java()
@@ -54,6 +60,7 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, re
       "beagle_jar"
     )
   }
+
   # If using rrbs, CNA caller must be ASCAT
   if (bsseq == "rrbs") {
     cna_caller <- "ascat"
