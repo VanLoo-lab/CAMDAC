@@ -106,7 +106,7 @@ load_loci_as_data_table <- function(loci_file, drop_ccgg = TRUE) {
 
 annotate_bam_with_loci <- function(bam_dt, loci_subset, drop_ccgg = FALSE, paired_end = FALSE) {
   data.table::setkey(loci_subset, chrom, start, end)
-
+  data.table::setkey(bam_dt, chrom, start, end)
   # Depreciated on 210513 as loci already subset to relevant regions upstream
   # First limit loci_subset to regions in BAM to speed up later overlap by ~5x
   # lcgr = reduce(GRanges(seqnames=bam_dt$chrom, ranges=IRanges(bam_dt$start, bam_dt$end)))
@@ -216,7 +216,8 @@ add_loci_read_position_skipCIGAR <- function(bam_dt) {
 
 add_loci_read_position <- function(bam_dt) {
   # Setup data as GRanges and aln object
-  aln <- GAlignments(seqnames = as.character(bam_dt$chrom), pos = bam_dt$read.start, cigar = as.character(bam_dt$cigar), strand = bam_dt$strand, names = as.character(bam_dt$qname))
+  aln <- GAlignments(seqnames = as.character(bam_dt$chrom), pos = bam_dt$read.start,
+  cigar = as.character(bam_dt$cigar), strand = GenomicAlignments::strand(bam_dt$strand), names = as.character(bam_dt$qname))
   gr <- GRanges(seqnames = bam_dt$chrom, ranges = IRanges(bam_dt$start, bam_dt$end))
   # Get loci position in read
   res <- pmapToAlignments(gr, aln)
@@ -265,7 +266,7 @@ add_loci_read_position_legacy <- function(bam_dt, skip_cigar = T) {
   aln <- unique(
     data.table(
       seqnames = as.character(bam_dt$chrom), pos = bam_dt$read.start, cigar = as.character(bam_dt$cigar),
-      strand = bam_dt$strand, names = as.character(bam_dt$qname)
+      strand = GenomicAlignments::strand(bam_dt$strand), names = as.character(bam_dt$qname)
     )
   )
 
