@@ -282,8 +282,9 @@ load_loci_for_segment <- function(seg, loci_files) {
 
   # Load loci files as a single object
   loci_dt <- data.table()
-  for (infile in loci_files) {
+  for (infile in loci_filenames) {
     load(infile) # Brings loci_subset into local environment
+    ol <- findOverlaps(seg, loci_subset)
     loci <- data.frame(loci_subset[
       subjectHits(findOverlaps(seg, loci_subset))
     ])
