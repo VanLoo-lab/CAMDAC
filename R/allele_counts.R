@@ -105,7 +105,9 @@ load_loci_as_data_table <- function(loci_file, drop_ccgg = TRUE) {
 }
 
 annotate_bam_with_loci <- function(bam_dt, loci_subset, drop_ccgg = FALSE, paired_end = FALSE) {
+  loci_subset$chrom = as.character(loci_subset$chrom)
   data.table::setkey(loci_subset, chrom, start, end)
+  bam_dt$chrom = as.character(bam_dt$chrom)
   data.table::setkey(bam_dt, chrom, start, end)
   # Depreciated on 210513 as loci already subset to relevant regions upstream
   # First limit loci_subset to regions in BAM to speed up later overlap by ~5x
@@ -159,18 +161,20 @@ drop_positions_outside_segments <- function(bam_dt, segments) {
   return(bam_dt)
 }
 
-fix_pe_strand_with_flags <- function(bam_dt) {
+fix_pe_strand_with_flags <- function(bam_dt, paired_end=T) {
   # Convert "strand" column to CAMDAC-expected strand using Bismark flags for OT/OB
   #
   #                 |  R1     R2    |  CAMDAC strand column
   # Bismark flag OT | 99(+)  147(-) |       OT = "+"
   # Bismark flag OB | 83(-)  163(+) |       OB = "-"
   # Note, this is the same as viewing in IGV as "first of pair strand".
+  if(paired_end){
   setkey(bam_dt, groupid)
   bam_dt[, strand := data.table::fcase(
     flag %in% c(99, 147), "+",
     flag %in% c(83, 163), "-"
   )]
+  }
   return(bam_dt)
   # TODO: determine when to rename nstrand to strand
 }
