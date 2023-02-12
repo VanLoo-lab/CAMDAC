@@ -9,8 +9,9 @@
 #' @return A list with three slots: stats, qnames and asm_cg. stats describes counts of reads phased,
 #'   qnames determines which SNPs each read was phased to and asm_cg is the data table with read counts
 # Approx 1 minute for 5K SNPs on one core
-cwrap_asm_get_allele_counts <- function(bam_file, snps_gr, loci_dt,
-paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov) {
+cwrap_asm_get_allele_counts <- function(
+    bam_file, snps_gr, loci_dt,
+    paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov) {
     # Ensure only CGs
     loci_dt <- loci_dt[width > 1, ]
 
@@ -35,7 +36,8 @@ paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov) {
     # Count unexpected alleles and split by ref and alt after filtering
     ref_bam <- bam_dt[hap_is_ref == T]
     alt_bam <- bam_dt[hap_is_alt == T]
-    rm(bam_dt);gc(); # Remove bam and free up memory
+    rm(bam_dt)
+    gc() # Remove bam and free up memory
 
     # Get counts for reads phased to each allele
     alt_cg <- asm_bam_to_counts(alt_bam, "alt", loci_dt,
@@ -56,30 +58,30 @@ paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov) {
 
     # Get haplotype data as numeric
     hap_ix <- list(
-        "ref"=haps_as_numeric(asm_cg$ref_hap_cg),
-        "alt"=haps_as_numeric(asm_cg$alt_hap_cg)
+        "ref" = haps_as_numeric(asm_cg$ref_hap_cg),
+        "alt" = haps_as_numeric(asm_cg$alt_hap_cg)
     )
 
     # Complete results object form hap_stats
-    hap_stats$asm_cg = asm_cg
-    hap_stats$hap_ix = hap_ix
+    hap_stats$asm_cg <- asm_cg
+    hap_stats$hap_ix <- hap_ix
 
     return(hap_stats)
 }
 
-haps_as_numeric <- function(v){
+haps_as_numeric <- function(v) {
     # v = c("1234;12", "1", "123;12;1")
-    hap = stringr::str_split(v, ';', simplify=T)
-    hap = as.numeric(hap)
-    hap = hap[!is.na(hap)]
+    hap <- stringr::str_split(v, ";", simplify = T)
+    hap <- as.numeric(hap)
+    hap <- hap[!is.na(hap)]
     return(hap)
 }
 
 # FUTURE: Select based on counts
-select_read_snp_pair <- function(bam_dt){
+select_read_snp_pair <- function(bam_dt) {
     # Reads may map to multiple SNPs.
     # Ensure each read is represented only once.
-    unique(bam_dt, by="qname")
+    unique(bam_dt, by = "qname")
 }
 
 phase_reads_to_snps <- function(bam_dt, snps_gr) {
@@ -161,15 +163,15 @@ assign_het_allele <- function(bseq_strand, ref, alt, call) {
 asm_hap_stats <- function(bam_dt) {
     # Get count of sites that could not be included in counts
     # These represent unexpected nucleotides (e.g. SNV) and sites where bisulfite leaves ambiguous
-    bam_dt[hap_is_ref == F & hap_is_alt == F, hap_unexp:=1]
-    unexp_dt = bam_dt[, .(hap_unexp = sum(hap_unexp, na.rm=T)), by = c("chrom", "hap_ref", "hap_alt", "hap_POS", "hap_id")]
+    bam_dt[hap_is_ref == F & hap_is_alt == F, hap_unexp := 1]
+    unexp_dt <- bam_dt[, .(hap_unexp = sum(hap_unexp, na.rm = T)), by = c("chrom", "hap_ref", "hap_alt", "hap_POS", "hap_id")]
 
     # Select reads that would be taken for downstream analysis
     bam_dt <- bam_dt[hap_is_ref == T | hap_is_alt == T]
 
     # Count reads aligned to input haplotype/SNP
     stats <- bam_dt[, .(hap_BAF = sum(hap_allele == hap_alt) / .N, hap_reads = .N), by = c("chrom", "hap_ref", "hap_alt", "hap_POS", "hap_id")]
-    stats <- merge(stats, unexp_dt, all.x=T)
+    stats <- merge(stats, unexp_dt, all.x = T)
 
     # Ensure BAM chrom field fits expected format for downstream joins
     stats$chrom <- gsub("chr", "", stats$chrom)
@@ -178,29 +180,8 @@ asm_hap_stats <- function(bam_dt) {
     qname_hap_id <- unique(bam_dt[, .(qname, hap_id)])
 
     # Return stats
-    obj <- list(stats=stats, qnames=qname_hap_id)
+    obj <- list(stats = stats, qnames = qname_hap_id)
     return(obj)
-}
-
-
-empty_asm_bam_to_counts <- function(asm_type){
-     # Set empty return value
-    fields <- c("CHR", "chrom", "start", "end", "width", "POS", 
-    "ref", "alt")
-    count_names <- c(
-        "alt_counts", "ref_counts",
-        "total_counts", "BAF", "total_depth", "other_counts", "all_counts",
-        "M", "UM", "total_counts_m", "m", "CCGG"
-    )
-    empty_return <- data.table(matrix(nrow=0, ncol=length(c(fields, count_names))))
-    names(empty_return) = c(fields, paste0(asm_type, "_", count_names))
-
-    # Set field classes for downstream joins
-    empty_return$chrom = as.character(empty_return$chrom)
-    empty_return$ref = as.character(empty_return$ref)
-    empty_return$alt = as.character(empty_return$alt)
-
-    empty_return
 }
 
 asm_bam_to_counts <- function(
@@ -209,7 +190,7 @@ asm_bam_to_counts <- function(
     stopifnot(asm_type %in% c("ref", "alt"))
 
     # Fix hap_id for downstream overlap
-    hap_id_data = asm_dt[, .(qname, hap_id)]
+    hap_id_data <- asm_dt[, .(qname, hap_id)]
 
     # Annotate BAM with CpG-SNP loci
     # As this is the main camdac allele counter annotator,
@@ -222,13 +203,14 @@ asm_bam_to_counts <- function(
     # CpGs may have reads mapped to multiple SNPs,
     # so combine their IDs with ';'
     hap_id_cg <- merge(
-        asm_dt[,.(qname, chrom, start, end)],
+        asm_dt[, .(qname, chrom, start, end)],
         hap_id_data,
-        all.x=T)[, 
-        .(hap_cg=paste0(unique(hap_id), collapse=";")),
-        by=c("chrom", "start", "end")
-        ]
-    hap_id_cg$chrom = gsub("chr", "", hap_id_cg$chrom)
+        all.x = T
+    )[,
+        .(hap_cg = paste0(unique(hap_id), collapse = ";")),
+        by = c("chrom", "start", "end")
+    ]
+    hap_id_cg$chrom <- gsub("chr", "", hap_id_cg$chrom)
 
     if (paired_end) {
         asm_dt <- fix_pe_overlap_at_loci(asm_dt)
@@ -271,12 +253,14 @@ asm_bam_to_counts <- function(
     )]
 
     # Add hap_id so that we can join to haplotype stats
-    result <- merge(result, hap_id_cg, by=c("chrom","start","end"), all.x=T)
+    result <- merge(result, hap_id_cg, by = c("chrom", "start", "end"), all.x = T)
 
-    rename_cols = setdiff(
+    rename_cols <- setdiff(
         names(result),
-        c("CHR", "chrom", "start", "end", "width", "POS", "ref",
-        "alt")
+        c(
+            "CHR", "chrom", "start", "end", "width", "POS", "ref",
+            "alt"
+        )
     )
     # Give ref/alt names to essential columns
     for (n in rename_cols) {
