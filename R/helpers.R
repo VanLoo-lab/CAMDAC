@@ -356,8 +356,6 @@ attach_output <- function(sample, config, code, file) {
   # Validate external CNA files before attaching to CAMDAC
   if (code == "cna") {
     cna <- validate_cna(data.table::fread(file))
-    file <- tempfile(fileext = ".txt")
-    data.table::fwrite(cna, file)
   }
 
   # Get the expected output file path
@@ -384,3 +382,22 @@ validate_cna <- function(cna) {
   cna <- as.data.table(cna)[order(chrom, start)]
   return(cna)
 }
+
+# Get ASM snps as granges
+load_asm_snps_gr <- function(camsample, config) {
+    # Load ASM SNPs from file
+    hets_file <- get_fpath(camsample, config, "asm_snps")
+    snps = data.table::fread(hets_file)
+    snps_gr = GRanges(
+        seqnames = snps$chrom,
+        ranges = IRanges(start = snps$pos, end=snps$pos),
+        strand = "*"
+    )
+    seqlevelsStyle(snps_gr) <- "UCSC"
+    snps_gr$ref = snps$ref
+    snps_gr$alt = snps$alt
+    snps_gr$hap_id = seq(length(snps_gr))
+    
+    return(snps_gr)
+}
+

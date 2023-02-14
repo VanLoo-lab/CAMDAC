@@ -460,3 +460,85 @@ cmain_call_dmrs <- function(tumour, config) {
   tmeth_dmrs_outfile <- get_fpath(tumour, config, "dmrs")
   fst::write_fst(tmeth_dmrs, tmeth_dmrs_outfile)
 }
+
+
+cmain_asm_allele_counts <- function(sample, config) {
+
+  # Skip if no BAM file provided
+  if (is.null(sample$bam)) {
+    loginfo("No BAM. Skipping allele counting for %s", paste0(sample$patient_id, ":", sample$id))
+    return(NULL)
+  }
+
+  #  Check if outputs exist and skip if required
+  outfile <- get_fpath(sample, config, "asm_counts")
+  if (file.exists(outfile) && !config$overwrite) {
+    loginfo("Skipping ASM allele counting for %s", paste0(sample$patient_id, ":", sample$id))
+    return(outfile)
+  }
+
+  loginfo("Calculating ASM allele counts")
+
+  # Create temporary directory for allele counts files
+  # Use tempfile to create unique suffix and avoid overwrites on failed runs
+  tempdir = tempfile(pattern="asm_counts", tmpdir=get_fpath(sample, config, "asm_counts", dir=T))
+  fs::dir_create(tempdir)
+
+  # Get SNP loci as segments to analyse. Parallelised over config$n_seg_split
+  snps_gr <- load_asm_snps_gr(sample, config)
+  snps_grl <- split(snps_gr, seqnames(snps_gr))
+
+  # List files containing SNP and CpG loci for reference genome
+  loci_files <- get_reference_files(config, type = "loci_files")
+
+  # Load sample data
+  bam_file <- sample$bam
+  paired_end <- is_pe(config)
+  drop_ccgg <- is_ccgg(config)
+  min_mapq <- config$min_mapq
+  min_cov <- config$min_cov
+
+  # Initialise parallel workers.
+  doParallel::registerDoParallel(cores = config$n_cores)
+
+  #   Set warn=2 to ensure foreach fails if any of the parallel workers are terminated due to memory.
+  #   without this option, foreach simply returns a warning and software continues
+  options(warn = 2)
+
+  loginfo("ASM allele counting for %s", paste0(sample$patient_id, ":", sample$id))
+  tmpfiles <- foreach(seg = snps_grl, .combine = "c") %dopar% {
+    # Loop over SNPs to phase
+    loci_dt <- load_asm_loci_for_segment(seg, loci_files)
+    ac_file <- cwrap_asm_get_allele_counts(bam_file, seg, loci_dt, paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov)
+    tmp <- tempfile(tmpdir = tempdir, fileext = ".qs")
+    qs::qsave(ac_file, tmp)
+    rm(loci_dt, ac_file, seg)
+    gc()
+    return(tmp)
+  }
+  options(warn = 0)
+
+  # Define function to combine the allele counts objects into a single list
+  bind_asm_obs <- function(x,y){
+      nobj = list()
+      nobj$asm_cg = rbind(x$asm_cg, y$asm_cg)
+      nobj$hap_stats = rbind(x$hap_stats, y$hap_stats)
+      nobj$map = rbind(x$map, y$map)
+      return(nobj)
+  }
+  # Combine temporary files with allele counts results into a single data table
+  result <- foreach(i = tmpfiles, .combine = bind_asm_obs) %dopar% {
+    qs::qread(i)
+  }
+
+  # Write to output(s) file
+  asm_ac_out <- write_asm_counts_output(result, sample, config)
+
+  # Delete temporary files
+  fs::dir_delete(tempdir)
+
+  # Stop parallel workers. When running the pipeline multiple times in an R session,
+  # R re-uses workers but does not clear memory. Hence large objects in foreach loops will remain.
+  doParallel::stopImplicitCluster()
+  return(asm_ac_out)
+}

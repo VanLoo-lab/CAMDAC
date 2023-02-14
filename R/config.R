@@ -98,8 +98,10 @@ is_ccgg <- function(config) {
 get_fpath <- function(sample, config, code, dir = FALSE) {
   stopifnot(code %in% c(
     "counts", "meth", "pure", "dmps", "dmrs", "segment_split", "snps",
-    "ascat", "battenberg", "tsnps", "cna"
+    "ascat", "battenberg", "tsnps", "cna", "asm_snps", "asm_counts", "asm_hap_stats",
+    "asm_phase_map"
   ))
+
   # Set output file name
   output_name <- dplyr::case_when(
     code == "counts" ~ fs::path(
@@ -165,6 +167,36 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
     code == "cna" ~ fs::path(
       config$outdir, sample$patient_id, "Copynumber", sample$id, paste(
         sample$patient_id, sample$id, "cna", "txt",
+        sep = "."
+      )
+    ),
+    code == "asm_counts" ~ fs::path(
+      config$outdir, sample$patient_id, "AlleleSpecific", sample$id, paste(
+        sample$patient_id, sample$id, "asm_counts", "csv", "gz",
+        sep = "."
+      )
+    ),
+    code == "asm_hap_stats" ~ fs::path(
+      config$outdir, sample$patient_id, "AlleleSpecific", sample$id, paste(
+        sample$patient_id, sample$id, "asm_hap_stats", "csv", "gz",
+        sep = "."
+      )
+    ),
+     code == "asm_phase_map" ~ fs::path(
+      config$outdir, sample$patient_id, "AlleleSpecific", sample$id, paste(
+        sample$patient_id, sample$id, "asm_phase_map", "csv", "gz",
+        sep = "."
+      )
+    ),   
+    code == "asm_counts" ~ fs::path(
+      config$outdir, sample$patient_id, "AlleleSpecific", sample$id, paste(
+        sample$patient_id, sample$id, "asm_counts", "csv", "gz",
+        sep = "."
+      )
+    ),
+    code == "asm_snps" ~ fs::path(
+      config$outdir, sample$patient_id, "AlleleSpecific", sample$id, paste(
+        sample$patient_id, sample$id, "asm_snps", "txt",
         sep = "."
       )
     )
