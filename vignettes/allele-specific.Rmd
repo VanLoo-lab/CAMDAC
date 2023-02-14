@@ -1,0 +1,118 @@
+---
+title: "allele-specific"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{allele-specific}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+##  Allele-specific methylation (ASM) analysis
+
+CAMDAC can be used to detect allele-specific methylation (ASM) by phasing reads to known heterozygous SNPs. These bulk ASM calls can then be deconvolved and analysed using the differential ASM module.
+
+This tutorial steps through the ASM analysis pipeline. Briefly:
+- A copy number solution is generated for the tumor sample if not available
+- Allele counting is performed on all samples using SNP loci
+- CpG copy number is inferred from the allele counts and CNA solution
+- Allele-specific methylation rates are deconvolved from the tumor and normal
+- Differential ASM is performed between the tumor and normal, per haplotype
+
+## CAMDAC ASM analysis from BAM files
+
+CAMDAC ASM analysis is run using the CAMDAC `asm_pipeline()` function. This pipeline generates the allele-specific copy number solution and heterozygous SNP loci, before deconvolution and differential ASM analysis:
+
+```{r}
+b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
+b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
+
+tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
+normal <- CamSample(id="N", sex="XY", bam=b_normal)
+config <- CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
+
+asm_pipeline(
+    tumor=tumor,
+    germline=normal,
+    infiltrates=normal,
+    origin=normal,
+    config=config
+)
+```
+
+## ASM analysis results
+
+
+## ASM analysis with external inputs
+
+To run the ASM pipeline with external inputs, CAMDAC requires that:
+- Each CamSample object has SNP loci
+- The tumor CamSample object has an allele-specific CNA solution
+- All CamSample objects have BAM files available for phasing
+
+To analyse allele-specific methylation, CAMDAC requires a file of heterozygous SNP loci to which CpGs must be phased. This is a tab-delimited file with a header containing four fields:
+
+| Field | Description |
+| ---- | ------------ |
+| chrom | Chromosome name |
+| pos | SNP loci position |
+| ref | The reference SNP allele (A/C/T/G) |
+| alt | The reference alternate allele (A/C/T/G) | 
+
+
+## ASM analysis after CAMDAC main pipeline 
+
+## ASM analysis with external inputs
+
+- attach your SNP loci file to the tumor and normal objects with `attach_output()`, then run `asm_pipeline()`:
+```{r}
+# Setup CAMDAC samples
+tumor <- CamSample(id="tumor", sex="XY", bam=b_tumor)
+normal <- CamSample(id="normal", sex="XY", bam=b_normal)
+config <- CamConfig(outdir="./results", ref="./pipeline_files", bsseq="wgbs", lib="pe", cores=10)
+
+# Add SNPs
+asm_snps_file <- system.file("testdata", "test_asm_snps.txt", package = "CAMDAC")
+attach_output(tumor, config, "asm_snps", asm_snps_file)
+attach_output(normal, config, "asm_snps", asm_snps_file)
+```
+
+Next, CAMDAC requires the allele-specific copy number solution 
+
+# Add CNA
+
+# Call pipeline
+asm_pipeline(
+  tumor=tumor,
+  infiltrates=normal,
+  origin=normal,
+  config=config
+)
+```
+
+a tumor and config object must be passed to the `asm_pipeline` function.
+
+The pipeline analyses the data taking the following steps:
+
+1. Count methylation **per SNP-phased CpG site** on tumor and normal
+
+The tumor is expected to have a "snps" slot containing haplotype calls and must have a BAM file. The pipeline will first load the the BAM at these positions, then take reads that have aligned to the SNPs. The reads will be split by haplotype before counting methylation. The result is written in the "allele_specific" folder under "counts".
+
+2. Deconvolve methylation on tumor **per haplotype** using the normal
+3. Assign allele-specific copy number state **per CpG** using the bulk tumor solution
+4. Call allele-specific differential methylation within samples
+5. Call allele-specific differential methylation between samples
+
+
+## Using SNPs called from previous CAMDAC runs
+
+If you have already run the CAMDAC pipeline in tumor-normal mode, then each object's SNP files can be used by default.
+
+First, run `asm_snps_from_bulk()` to generate the SNP file, then attach as you did above:
+(TODO)
