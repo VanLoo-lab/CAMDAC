@@ -12,8 +12,6 @@
 cwrap_asm_get_allele_counts <- function(
     bam_file, snps_gr, loci_dt,
     paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov) {
-    # Ensure only CGs
-    loci_dt <- loci_dt[width > 1, ]
 
     # Read BAM
     bam_dt <- get_reads_in_segments(bam_file, snps_gr, min_mapq, paired_end = paired_end)
@@ -30,8 +28,12 @@ cwrap_asm_get_allele_counts <- function(
     bam_dt[, hap_is_ref := assign_het_allele(hap_bsseq, hap_ref, hap_alt, "ref")]
     bam_dt[, hap_is_alt := assign_het_allele(hap_bsseq, hap_ref, hap_alt, "alt")]
 
-    # Get haplotype stats for downstream analysis
+    # Annotate BAM with loci
+    bam_dt <- annotate_bam_with_loci_asm(bam_dt, loci_dt, drop_ccgg, paired_end)
+
+    # Get haplotype stats and CG:read:hap mapping for output
     hap_stats <- asm_hap_stats(bam_dt)
+    qname_hap_cg <- unique(bam_dt[, .(qname, hap_id, chrom, start, end)])
 
     # Count unexpected alleles and split by ref and alt after filtering
     ref_bam <- bam_dt[hap_is_ref == T]
@@ -55,17 +57,16 @@ cwrap_asm_get_allele_counts <- function(
         ), all = TRUE
     )
 
-
-    # Get haplotype data as numeric
-    hap_ix <- list(
-        "ref" = haps_as_numeric(asm_cg$ref_hap_cg),
-        "alt" = haps_as_numeric(asm_cg$alt_hap_cg)
-    )
+    qname_hap_cg
 
     # Complete results object form hap_stats
-    hap_stats$asm_cg <- asm_cg
-    hap_stats$hap_ix <- hap_ix
-
+    return(
+        list(
+            "asm_cg"=asm_cg,
+            "hap_stats"=hap_stats,
+            "map"=qname_hap_cg
+        )
+    )
     return(hap_stats)
 }
 
@@ -74,6 +75,7 @@ haps_as_numeric <- function(v) {
     hap <- stringr::str_split(v, ";", simplify = T)
     hap <- as.numeric(hap)
     hap <- hap[!is.na(hap)]
+    hap <- unique(hap)
     return(hap)
 }
 
@@ -103,14 +105,14 @@ phase_reads_to_snps <- function(bam_dt, snps_gr) {
         strand = GenomicAlignments::strand(bam_dt$strand),
         names = as.character(bam_dt$qname)
     )
-    gr <- GRanges(seqnames = snps_ph$chrom, ranges = IRanges(snps_ph$POS, snps_ph$POS))
+    gr <- GRanges(seqnames = snps_ph$chrom, ranges = IRanges(snps_ph$start, snps_ph$end))
     rpos <- pmapToAlignments(gr, aln)
 
     # Set haplotype information
     bam_dt$hap_ref <- snps_ph$ref
     bam_dt$hap_alt <- snps_ph$alt
     bam_dt$hap_id <- snps_ph$hap_id
-    bam_dt$hap_POS <- snps_ph$POS
+    bam_dt$hap_POS <- snps_ph$start
     bam_dt$hap_allele <- substr(bam_dt$seq, start(rpos), end(rpos))
     bam_dt$hap_qual <- substr(bam_dt$qual, start(rpos), end(rpos))
     bam_dt$hap_bsseq <- paste0(bam_dt$hap_allele, bam_dt$strand)
@@ -176,41 +178,14 @@ asm_hap_stats <- function(bam_dt) {
     # Ensure BAM chrom field fits expected format for downstream joins
     stats$chrom <- gsub("chr", "", stats$chrom)
 
-    # Get selection of qname to hap_id mapping (1 to 1 for each read)
-    qname_hap_id <- unique(bam_dt[, .(qname, hap_id)])
-
     # Return stats
-    obj <- list(stats = stats, qnames = qname_hap_id)
-    return(obj)
+    return(stats)
 }
 
 asm_bam_to_counts <- function(
     asm_dt, asm_type, loci_dt, drop_ccgg = FALSE,
     paired_end = FALSE, min_mapq = 0) {
     stopifnot(asm_type %in% c("ref", "alt"))
-
-    # Fix hap_id for downstream overlap
-    hap_id_data <- asm_dt[, .(qname, hap_id)]
-
-    # Annotate BAM with CpG-SNP loci
-    # As this is the main camdac allele counter annotator,
-    # the hap_id field is removed by default
-    asm_dt <- annotate_bam_with_loci(asm_dt, loci_dt,
-        drop_ccgg = drop_ccgg, paired_end = paired_end
-    )
-
-    # Combine the BAM:CpG mappings with the BAM:hap_id map
-    # CpGs may have reads mapped to multiple SNPs,
-    # so combine their IDs with ';'
-    hap_id_cg <- merge(
-        asm_dt[, .(qname, chrom, start, end)],
-        hap_id_data,
-        all.x = T
-    )[,
-        .(hap_cg = paste0(unique(hap_id), collapse = ";")),
-        by = c("chrom", "start", "end")
-    ]
-    hap_id_cg$chrom <- gsub("chr", "", hap_id_cg$chrom)
 
     if (paired_end) {
         asm_dt <- fix_pe_overlap_at_loci(asm_dt)
@@ -252,9 +227,6 @@ asm_bam_to_counts <- function(
         other_counts, all_counts, M, UM, total_counts_m, m, CCGG
     )]
 
-    # Add hap_id so that we can join to haplotype stats
-    result <- merge(result, hap_id_cg, by = c("chrom", "start", "end"), all.x = T)
-
     rename_cols <- setdiff(
         names(result),
         c(
@@ -267,4 +239,51 @@ asm_bam_to_counts <- function(
         setnames(result, n, paste0(asm_type, "_", n))
     }
     return(result)
+}
+
+write_asm_counts_output <- function(result, sample, config){
+  cg_outfile <- get_fpath(sample, config, "asm_counts")
+  data.table::fwrite(result$asm_cg, outfile)
+
+  phase_outfile <- get_fpath(sample, config, "asm_phase_map")
+  data.table::fwrite(result$map, phase_outfile) 
+  
+  stats_outfile <- get_fpath(sample, config, "asm_hap_stats")
+  data.table::fwrite(result$hap_stats, stats_outfile)
+
+  return(cg_outfile)
+}
+
+annotate_bam_with_loci_asm <- function(bam_dt, loci_subset, drop_ccgg=F, paired_end=F){
+    # Set keys for join
+    loci_subset$chrom = as.character(loci_subset$chrom)
+    data.table::setkey(loci_subset, chrom, start, end)
+    bam_dt$chrom = as.character(bam_dt$chrom)
+    data.table::setkey(bam_dt, chrom, start, end)
+
+    # Filter CCGG loci if WGBS
+    if (drop_ccgg) {
+    loci_subset <- loci_subset[width != 4]
+    }
+
+    # Overlap
+    bam_loci_overlap <- data.table::foverlaps(bam_dt, loci_subset)
+
+    # Rename read fields
+    setnames(bam_loci_overlap, "i.start", "read.start")
+    setnames(bam_loci_overlap, "i.end", "read.end")
+    setnames(bam_loci_overlap, "mapq", "mq")
+    bam_loci_overlap[, strand := i.strand] # Set strand as previous
+
+    # Filter out rows with no loci data, set expected columns and return
+    bam_loci_overlap <- bam_loci_overlap[!is.na(width), ]
+
+    return(bam_loci_overlap)
+}
+
+load_asm_loci_for_segment <- function(snps_gr, loci_files){
+    snps_region = reduce(snps_gr+1000) # Get regions in 1kb non-overlapping regions around SNPs
+    loci_dt <- load_loci_for_segment(snps_region, loci_files)
+    loci_dt <- loci_dt[width > 1, ] # Ensure only CG sites are mapped for ASM 
+    return(loci_dt)
 }
