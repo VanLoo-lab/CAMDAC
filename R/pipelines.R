@@ -54,3 +54,63 @@ preprocess <- function(sample_list, config) {
     cmain_make_methylation_profile(s, config)
   }
 }
+
+#' Run allele-specific methylation analysis pipeline
+#' @param tumor. CamSample object for tumor sample.
+#' @param germline. CamSample object for germline sample. Used for CNA calling.
+#' @param infiltrates. CamSample object for infiltrating normal sample. Used for deconvolution.
+#' @param origin. CamSample object for cell of origin sample. Used for differential methylation.
+#' @param config. CamConfig object.
+asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NULL, config){
+  # Log
+  loginfo("CAMDAC:::asm_pipeline start for %s", tumor$patient_id)
+
+  # Preprocess CpG, SNP and methylation data for all samples
+  preprocess_asm(
+    list(tumor, germline, infiltrates, origin),
+    config
+  )
+
+  # Combine tumor-germline SNPs and call CNAs
+  cmain_bind_snps(tumor, germline, config)
+  cmain_call_cna(tumor, germline, config)
+
+  # Run ASM allele counter and methylation cleaner
+  preprocess_asm(
+    list(tumor, germline, infiltrates, origin),
+    config
+  )
+
+  # Assign ASM CNA to per-allele CG sites
+  cmain_fit_asm_cna(tumor, config)
+
+  # Run ASM deconvolution
+  cmain_asm_deconvolve(tumor, infiltrates, config)
+
+  # Run ASM differential methylation
+    cmain_asm_dmps(tumor, origin, config)
+    cmain_asm_dmrs(tumor, config)
+
+  # Log complete
+  loginfo("CAMDAC:::asm_pipeline complete for %s", tumor$patient_id)
+}
+
+
+#' Preprocess a list of CamSample objects for ASM analysis
+#' @param sample_list. List of CamSample objects.
+#' @param config. CamConfig object.
+#' @export
+preprocess_asm <- function(sample_list, config) {
+  for (s in sample_list) {
+    # Go to next part of loop if its null
+    if (is.null(s)) {
+      next
+    }
+
+    # Count SNP and CpG alleles if a BAM file is provided
+    cmain_asm_allele_count(s, config)
+
+    # Format methylation rates for ASM
+    cmain_make_asm_methylation(s, config)
+  }
+}
