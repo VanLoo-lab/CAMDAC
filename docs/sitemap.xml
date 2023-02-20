@@ -67,6 +67,9 @@
     <loc>/reference/ascat.plotSegmentedData.RRBS.html</loc>
   </url>
   <url>
+    <loc>/reference/asm_pipeline.html</loc>
+  </url>
+  <url>
     <loc>/reference/attach_methylation_panel.html</loc>
   </url>
   <url>
@@ -130,6 +133,9 @@
     <loc>/reference/create_camdac_sample.html</loc>
   </url>
   <url>
+    <loc>/reference/cwrap_asm_get_allele_counts.html</loc>
+  </url>
+  <url>
     <loc>/reference/download_pipeline_files.html</loc>
   </url>
   <url>
@@ -163,6 +169,9 @@
     <loc>/reference/max_consec_dmp.html</loc>
   </url>
   <url>
+    <loc>/reference/panel_meth_from_beta.html</loc>
+  </url>
+  <url>
     <loc>/reference/panel_meth_from_counts.html</loc>
   </url>
   <url>
@@ -176,6 +185,9 @@
   </url>
   <url>
     <loc>/reference/preprocess.html</loc>
+  </url>
+  <url>
+    <loc>/reference/preprocess_asm.html</loc>
   </url>
   <url>
     <loc>/reference/prob_diff_meth.html</loc>

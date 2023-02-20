@@ -1,6 +1,6 @@
 pandoc: '2.10'
-pkgdown: 2.0.6.9000
-pkgdown_sha: 956f076f661eb2de9413f64ea24a580cf444466d
+pkgdown: 2.0.7
+pkgdown_sha: ~
 articles:
   output: output.html
   panels: panels.html
@@ -8,5 +8,5 @@ articles:
   questions: questions.html
   setup: setup.html
   visualisation: visualisation.html
-last_built: 2023-02-09T21:03Z
+last_built: 2023-02-20T10:25Z
 

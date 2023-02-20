@@ -42,7 +42,7 @@ for(file in c(b_normal1, b_normal2, b_normal3)){
 
 The allele counts files can then be merged into a single file for the panel containing methylation data for deconvolution:
 
-```
+```{r}
 panel_counts <- fs::dir_ls(".", glob="*.SNPs.CG.csv.gz")
 panel <- panel_meth_from_counts(panel_counts)
 data.table::fwrite(panel, "panel.m.csv.gz")
