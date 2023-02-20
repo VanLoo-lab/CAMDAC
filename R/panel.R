@@ -2,7 +2,8 @@
 #'  Methylation fractions are obtained by summing M and UM reads across samples
 #' @param ac_files Allele count files from CAMDAC
 #' @param ac_props Proportions of each sample to use in panel. If NULL, samples are weighted by their
-#'  total number of reads, which equals the sum of M and UM counts
+#'  total number of reads, which equals the sum of M and UM counts. If samples are NA, then
+#'  proportions are redistributed.
 #' @param min_coverage Minimum coverage for a sample's site to be included in panel
 #' @param min_samples Minimum number of samples with coverage for a site to be included in panel
 #' @param max_sd Maximum standard deviation of methylation for a site to be included in panel
@@ -145,28 +146,42 @@ panel_meth_counts <- function(x, ac_props = NULL) {
     return(o)
   })
 
-  # If we have allele count proportions, use them to calculate counts and
+  # If we have been given count proportions, use them to weight methylation rates
   if (!is.null(ac_props)) {
+    # Get methylation rates as matrix
     m <- Reduce(
       cbind,
-      lapply(seq_along(x), function(i) x[[i]]$m * ac_props[i])
-    ) %>% rowSums(na.rm = T)
+      lapply(seq_along(x), function(i) x[[i]]$m)
+    )
+    m <- as.matrix(m)
 
-    total_counts_m <- Reduce(
-      cbind,
-      lapply(seq_along(x), function(i) x[[i]]$total_counts_m) # Get complete counts
-    ) %>% rowSums(na.rm = T)
+    # Recalculate, weighting by proportions of present data
+    pmat = matrix(rep(ac_props, nrow(m)), byrow=T, ncol=length(ac_props))
+
+    # Adjust proportions where beta is NA
+    pmat[is.na(m)] = 0
+    pmat = pmat/rowSums(pmat)
+    m[is.na(m)] = 0 # Allows us to multiply safely with pmat
+
+  # Get new beta based on linear combination of new proportions
+  m <- as.numeric(rowSums(m*pmat))
+
+  total_counts_m <- Reduce(
+    cbind,
+    lapply(seq_along(x), function(i) x[[i]]$total_counts_m) # Get complete counts
+  ) %>% rowSums(na.rm = T)
 
     M <- round(m * total_counts_m, 0)
     UM <- total_counts_m - M
     POS <- NA
     total_depth <- NA
     BAF <- NA
+    
     # We can get chrom start and end from one sample as all CpGs aligned before passing to this function
     chrom <- x[[1]]$chrom
     start <- x[[1]]$start
     end <- x[[1]]$end
-  } else {
+      } else {
     # Otherwise, sum the counts
     M <- Reduce(cbind, lapply(x, function(o) o$M)) %>% rowSums(na.rm = T)
     UM <- Reduce(cbind, lapply(x, function(o) o$UM)) %>% rowSums(na.rm = T)
@@ -180,7 +195,6 @@ panel_meth_counts <- function(x, ac_props = NULL) {
     end <- x[[1]]$end
   }
 
-
   # Return panel data
   res <- data.table(
     chrom = chrom,
@@ -193,4 +207,63 @@ panel_meth_counts <- function(x, ac_props = NULL) {
   )
 
   return(res)
+}
+
+#' Make CAMDAC methylation panel from a matrix of beta values
+#' @param mat Matrix of beta values. Rows are CpGs, columns are samples
+#' @param chrom Vector of chromosome names
+#' @param start Vector of CpG start positions
+#' @param end Vector of CpG end positions
+#' @param cov Vector of coverage values to give all CpG sites. Required for downstream analysis,
+#'    reflecting confidence in read counts. Recommend median coverage of all samples.
+#' @param max_sd Maximum standard deviation of methylation for a site to be included in panel/
+#' @param cores Number of cores to use for calculating HDI
+#' @export
+panel_meth_from_beta <- function(
+  mat, chrom , start, end, cov, props, min_samples, max_sd, cores=5
+){
+  # Format chromosome as expected
+  chrom = gsub("chr", "", chrom)
+
+  # Get expected formats
+  stopifnot(length(props)==ncol(mat))
+  mat = as.matrix(mat)
+
+  # Apply min sample filter to CpG sites
+  mask_min_samples <- rowSums(!is.na(mat))>=min_samples
+  mat = mat[mask_min_samples,]
+
+  # Apply max sd filter to CpG sites
+  mask_max_sd <- rowSds(mat, na.rm=T) <= max_sd
+  mask_max_sd[is.na(mask_max_sd)] <- TRUE
+  mat = mat[mask_max_sd,]
+
+  # Set proportions as matrix
+  pmat = matrix(rep(props, nrow(mat)), byrow=T, ncol=length(props))
+
+  # Adjust proportions where beta is NA
+  pmat[is.na(mat)] = 0
+  pmat = pmat/rowSums(pmat)
+  mat[is.na(mat)] = 0 # Allows us to multiply safely with pmat
+
+  # Get new beta based on linear combination of new proportions
+  nbeta <- as.numeric(rowSums(mat*pmat))
+  M <- round(cov*nbeta, 0)
+  UM <- cov-M
+  
+  # Set panel
+  panel <- data.table(
+    chrom = chrom,
+    start = start,
+    end = end,
+    M = M,
+    UM = UM,
+    m = nbeta,
+    cov = cov
+  )
+  # Add methylation HDI to panel
+  hdi <- calculate_counts_hdi(panel$M, panel$UM, n_cores = cores)
+  panel <- cbind(panel, hdi)
+
+  return(panel)
 }

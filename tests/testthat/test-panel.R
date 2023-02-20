@@ -4,7 +4,7 @@ test_that("allele counts combine to form panels given sample proportions", {
   #   sample 1 has a methylation of 1 and will be present at 20%
   #   sample 2 has a methylation of 0.5 and will be present at 80%
   #   expected pnael methylation at this site should be 0.6
-  #   expected panel coverage for this site should be 20% reads from sample 1 and 80$ counts from sample 2
+  #   expected panel coverage for this site should be 20% from sample 1 and 80% from sample 2
   ac_sample1 <- system.file("testdata", "test.SNPs.CpGs.all.sorted.csv.gz", package = "CAMDAC")
   ac_sample2 <- system.file("testdata", "test_prop.SNPs.CpGs.all.sorted.csv.gz", package = "CAMDAC")
 
@@ -46,4 +46,27 @@ test_that("allele counts combine to form panels given sample proportions", {
   expect_equal(test_cg2$M, 8)
   expect_equal(test_cg2$UM, 4)
   expect_equal(test_cg2$m, (8 / (8 + 4)))
+
+# Test panel can be built from a matrix of beta values
+data <- data.table::fread(
+  system.file("testdata", "test_panel_from_beta.csv", package = "CAMDAC")
+)
+mat = data[, 4:ncol(data)]
+
+panel_beta <- panel_meth_from_beta(
+  mat = mat,
+  chrom = data$chrom,
+  start = data$start,
+  end = data$end, 
+  cov = 100, # Single value for coverage given to all CpGs.
+  props = c(0.1, 0.8, 0.1),
+  min_samples = 1,
+  max_sd = 1
+)
+  test_cg3 <- panel_beta[chrom == "13" & start == 18231437 & end == 18231438, ]
+  expect_equal(round(test_cg3$m, 2), 0.24) # Expect linear combination of three betas
+  expect_equal(test_cg3$M + test_cg3$UM, 100) # Expect cg cov to meet input value
+  test_cg4 <- panel_beta[chrom == "13" & start == 18173666 & end == 18173667, ]
+  expect_equal(round(test_cg4$m, 2), 0.15)
+
 })
