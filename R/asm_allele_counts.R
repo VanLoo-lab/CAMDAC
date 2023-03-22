@@ -17,22 +17,24 @@ cwrap_asm_get_allele_counts <- function(
     bam_dt <- get_reads_in_segments(bam_file, snps_gr, min_mapq, paired_end = paired_end)
     bam_dt <- format_bam_for_loci_overlap(bam_dt, paired_end = paired_end)
 
+    # Early strand adjustment for paired end: strands now reflect Watson/Crick strand (directional lib)
+    bam_dt <- fix_pe_strand_with_flags(bam_dt, paired_end)
+
     # Overlap with SNP loci
     bam_dt <- phase_reads_to_snps(bam_dt, snps_gr)
     bam_dt <- select_read_snp_pair(bam_dt)
-
-    # Early strand adjustment for paired end: strands now reflect Watson/Crick strand (directional lib)
-    bam_dt <- fix_pe_strand_with_flags(bam_dt, paired_end)
 
     # Assign alleles using CAMDAC rules
     bam_dt[, hap_is_ref := assign_het_allele(hap_bsseq, hap_ref, hap_alt, "ref")]
     bam_dt[, hap_is_alt := assign_het_allele(hap_bsseq, hap_ref, hap_alt, "alt")]
 
+    # Get haplotype stats
+    hap_stats <- asm_hap_stats(bam_dt)
+
     # Annotate BAM with loci
     bam_dt <- annotate_bam_with_loci_asm(bam_dt, loci_dt, drop_ccgg, paired_end)
 
-    # Get haplotype stats and CG:read:hap mapping for output
-    hap_stats <- asm_hap_stats(bam_dt)
+    # Get qname to cpg mapping
     qname_hap_cg <- unique(bam_dt[, .(qname, hap_id, chrom, start, end)])
 
     # Count unexpected alleles and split by ref and alt after filtering
@@ -56,8 +58,6 @@ cwrap_asm_get_allele_counts <- function(
             "width", "POS", "ref", "alt"
         ), all = TRUE
     )
-
-    qname_hap_cg
 
     # Complete results object form hap_stats
     return(
