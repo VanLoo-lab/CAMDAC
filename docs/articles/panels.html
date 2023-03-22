@@ -43,7 +43,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -119,9 +119,10 @@
 <span>    <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html" class="external-link">fwrite</a></span><span class="op">(</span><span class="va">data</span>, <span class="va">outfile</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre>
 <p>The allele counts files can then be merged into a single file for the panel containing methylation data for deconvolution:</p>
-<pre><code><span><span class="va">panel_counts</span> <span class="op">&lt;-</span> <span class="fu">fs</span><span class="fu">::</span><span class="fu"><a href="https://fs.r-lib.org/reference/dir_ls.html" class="external-link">dir_ls</a></span><span class="op">(</span><span class="st">"."</span>, glob<span class="op">=</span><span class="st">"*.SNPs.CG.csv.gz"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">panel_counts</span> <span class="op">&lt;-</span> <span class="fu">fs</span><span class="fu">::</span><span class="fu"><a href="https://fs.r-lib.org/reference/dir_ls.html" class="external-link">dir_ls</a></span><span class="op">(</span><span class="st">"."</span>, glob<span class="op">=</span><span class="st">"*.SNPs.CG.csv.gz"</span><span class="op">)</span></span>
 <span><span class="va">panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/panel_meth_from_counts.html">panel_meth_from_counts</a></span><span class="op">(</span><span class="va">panel_counts</span><span class="op">)</span></span>
-<span><span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html" class="external-link">fwrite</a></span><span class="op">(</span><span class="va">panel</span>, <span class="st">"panel.m.csv.gz"</span><span class="op">)</span></span></code></pre>
+<span><span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fwrite.html" class="external-link">fwrite</a></span><span class="op">(</span><span class="va">panel</span>, <span class="st">"panel.m.csv.gz"</span><span class="op">)</span></span></code></pre></div>
 <p>By default, panel counts are merged by summing the methylation read counts for each CpG site. You can customise the proportion of each sample that is used in the panel by specifying the <code>ac_props</code> argument in panel_meth_from_counts. To get the mean across each CpG site, simply pass equal proportions for each sample.</p>
 <p>To run CAMDAC with your newly created panel, attach your panel to a CamSample object using the <code>meth</code> argument.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -148,6 +149,69 @@
 <span>    config<span class="op">=</span><span class="va">config</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
+<div class="section level3">
+<h3 id="create-a-methylation-panel-from-a-matrix-of-beta-values">Create a methylation panel from a matrix of beta values<a class="anchor" aria-label="anchor" href="#create-a-methylation-panel-from-a-matrix-of-beta-values"></a>
+</h3>
+<p>If you have not started from BAM files, you can create a panel using a matrix of beta values:</p>
+<table class="table">
+<thead><tr class="header">
+<th>sample1</th>
+<th>sample2</th>
+<th>sample3</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>0.5</td>
+<td>0.6</td>
+<td>0.7</td>
+</tr>
+<tr class="even">
+<td>0.4</td>
+<td>0.5</td>
+<td>0.6</td>
+</tr>
+</tbody>
+</table>
+<p>Additionally, a data frame specifying the positions of each CpG site in the beta value matrix is required. Here, start and end refer to the C and G of the CpG site respectively:</p>
+<table class="table">
+<thead><tr class="header">
+<th>chrom</th>
+<th>start</th>
+<th>end</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>chr1</td>
+<td>100</td>
+<td>101</td>
+</tr>
+<tr class="even">
+<td>chr1</td>
+<td>200</td>
+<td>201</td>
+</tr>
+</tbody>
+</table>
+<p>The matrix and CpG locations can be passed directly to the <code><a href="../reference/panel_meth_from_beta.html">panel_meth_from_beta()</a></code> function, along with settings.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Load beta values and chromosome positions</span></span>
+<span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"test_panel_from_beta.csv"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/fread.html" class="external-link">fread</a></span><span class="op">(</span><span class="va">ex</span><span class="op">)</span></span>
+<span><span class="va">mat</span> <span class="op">=</span> <span class="va">data</span><span class="op">[</span>, <span class="fl">4</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">]</span> <span class="co"># Beta value matrix with 3 samples</span></span>
+<span></span>
+<span><span class="co"># Create panel from beta values</span></span>
+<span><span class="va">panel_beta</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/panel_meth_from_beta.html">panel_meth_from_beta</a></span><span class="op">(</span></span>
+<span>  mat <span class="op">=</span> <span class="va">mat</span>,</span>
+<span>  chrom <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">chrom</span>,</span>
+<span>  start <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">start</span>,</span>
+<span>  end <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">end</span>, </span>
+<span>  cov <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  props <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.8</span>, <span class="fl">0.1</span><span class="op">)</span>, <span class="co"># Proportions of each sample in panel</span></span>
+<span>  min_samples <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  max_sd <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>As CAMDAC requires coverage at each CpG site to estimate uncertainty, the <code>cov</code> value is given to all CpG sites when building a panel from beta values. Additionally, if any beta values are missing from a sample, proportions are redistributed evenly among the remaining samples as this is the only information available to build the panel for that site.</p>
+</div>
 </div>
   </div>
 
@@ -168,7 +232,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.9000.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>

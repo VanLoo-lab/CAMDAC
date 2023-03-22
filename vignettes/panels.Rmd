@@ -42,7 +42,7 @@ for(file in c(b_normal1, b_normal2, b_normal3)){
 
 The allele counts files can then be merged into a single file for the panel containing methylation data for deconvolution:
 
-```
+```{r}
 panel_counts <- fs::dir_ls(".", glob="*.SNPs.CG.csv.gz")
 panel <- panel_meth_from_counts(panel_counts)
 data.table::fwrite(panel, "panel.m.csv.gz")
@@ -76,3 +76,42 @@ pipeline(
     config=config
 )
 ```
+
+## Create a methylation panel from a matrix of beta values
+
+If you have not started from BAM files, you can create a panel using a matrix of beta values:
+
+| sample1 | sample2 | sample3 |
+|---------|---------|---------|
+| 0.5     | 0.6     | 0.7     |
+| 0.4     | 0.5     | 0.6     |
+
+Additionally, a data frame specifying the positions of each CpG site in the beta value matrix is required. Here, start and end refer to the C and G of the CpG site respectively:
+
+| chrom | start | end |
+|-------|-------|-----|
+| chr1  | 100   | 101 |
+| chr1  | 200   | 201 |
+
+The matrix and CpG locations can be passed directly to the `panel_meth_from_beta()` function, along with settings.
+
+```{r}
+# Load beta values and chromosome positions
+ex <- system.file("testdata", "test_panel_from_beta.csv", package = "CAMDAC")
+data <- data.table::fread(ex)
+mat = data[, 4:ncol(data)] # Beta value matrix with 3 samples
+
+# Create panel from beta values
+panel_beta <- panel_meth_from_beta(
+  mat = mat,
+  chrom = data$chrom,
+  start = data$start,
+  end = data$end, 
+  cov = 100,
+  props = c(0.1, 0.8, 0.1), # Proportions of each sample in panel
+  min_samples = 1,
+  max_sd = 1
+)
+```
+
+As CAMDAC requires coverage at each CpG site to estimate uncertainty, the `cov` value is given to all CpG sites when building a panel from beta values. Additionally, if any beta values are missing from a sample, proportions are redistributed evenly among the remaining samples as this is the only information available to build the panel for that site.
