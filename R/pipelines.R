@@ -65,17 +65,11 @@ asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NU
   # Log
   loginfo("CAMDAC:::asm_pipeline start for %s", tumor$patient_id)
 
-  # Preprocess CpG, SNP and methylation data for all samples
-  preprocess_asm(
-    list(tumor, germline, infiltrates, origin),
-    config
-  )
-
   # Combine tumor-germline SNPs and call CNAs
-  cmain_bind_snps(tumor, germline, config)
-  cmain_call_cna(tumor, germline, config)
+  #cmain_bind_snps(tumor, germline, config)
+  #cmain_call_cna(tumor, germline, config)
 
-  # Run ASM allele counter and methylation cleaner
+  # Preprocess CpG, SNP and methylation data for all samples
   preprocess_asm(
     list(tumor, germline, infiltrates, origin),
     config
@@ -87,9 +81,14 @@ asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NU
   # Run ASM deconvolution
   cmain_asm_deconvolve(tumor, infiltrates, config)
 
-  # Run ASM differential methylation
-    cmain_asm_dmps(tumor, origin, config)
-    cmain_asm_dmrs(tumor, config)
+  # Run ASM differential methylation within-sample
+  cmain_asm_ss_dmps(tumor, config)
+  cmain_asm_ss_dmps(normal, config)
+
+  # Run ASM differential methylation between samples
+  cmain_asm_dmps(tumor, origin, config)
+
+  #cmain_asm_dmrs(tumor, config) -- is this possible?
 
   # Log complete
   loginfo("CAMDAC:::asm_pipeline complete for %s", tumor$patient_id)
@@ -111,6 +110,6 @@ preprocess_asm <- function(sample_list, config) {
     cmain_asm_allele_count(s, config)
 
     # Format methylation rates for ASM
-    cmain_make_asm_methylation(s, config)
+    cmain_asm_make_methylation(s, config)
   }
 }
