@@ -331,6 +331,7 @@ cmain_run_battenberg <- function(tumour, normal, config) {
 
   # Limit number of cores to 6 to avoid battenberg memory errors.
   # TODO: Allele counts with 10 cores worked but battenberg with 10 gave OOM error. Setting nthreads to 5 for now.
+  log_warn("Battenberg is currently limited to 6 cores to avoid memory errors.")
   bb_cores <- ifelse(config$n_cores <= 6, config$n_cores, 6)
   min_normal_depth <- config$min_cov
 
@@ -541,4 +542,22 @@ cmain_asm_allele_counts <- function(sample, config) {
   # R re-uses workers but does not clear memory. Hence large objects in foreach loops will remain.
   doParallel::stopImplicitCluster()
   return(asm_ac_out)
+}
+
+cmain_asm_make_methylation <- function(sample, config){
+  
+  # Load DNA methylation object for asm
+  asm_counts <- fread_chrom(get_fpath(sample, config, "asm_counts"))
+
+  # Select DNA methylation fields
+  asm_meth <- asm_counts[
+    width==2,
+    .(chrom, start, end, alt_total_counts_m, ref_total_counts_m, alt_m, ref_m)
+    ]
+
+  # Save ASM methylation
+  asm_meth_outfile <- get_fpath(sample, config, "asm_meth")
+  data.table::fwrite(asm_meth, asm_meth_outfile)
+
+  return(asm_meth_outfile)
 }
