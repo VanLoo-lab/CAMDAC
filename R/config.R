@@ -99,7 +99,7 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
   stopifnot(code %in% c(
     "counts", "meth", "pure", "dmps", "dmrs", "segment_split", "snps",
     "ascat", "battenberg", "tsnps", "cna", "asm_snps", "asm_counts", "asm_hap_stats",
-    "asm_phase_map"
+    "asm_phase_map", "asm_meth"
   ))
 
   # Set output file name
@@ -197,6 +197,12 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
     code == "asm_snps" ~ fs::path(
       config$outdir, sample$patient_id, "AlleleSpecific", sample$id, paste(
         sample$patient_id, sample$id, "asm_snps", "txt",
+        sep = "."
+      )
+    ),
+      code == "asm_meth" ~ fs::path(
+      config$outdir, sample$patient_id, "Methylation", sample$id, paste(
+        sample$patient_id, sample$id, "asm_meth", "csv", "gz",
         sep = "."
       )
     )
