@@ -29,7 +29,8 @@ Results from this pipeline are found in the results directory under 'PATIENT/All
 - *asm_counts.csv.gz - The number of reads supporting each allele at each CpG
 - *asm_hap_stats.csv.gz - Summary statistics for each phased SNP
 - *asm_phase_map.csv.gz - A mapping if read-CpG-SNP phasing
-- *asm_snps.csv - The heterozygous SNP loci input for ASM analysis 
+- *snps.txt - The heterozygous SNP loci input for ASM analysis 
+- *cna.csv - The tumor allele-specific copy number solution. See format in `vignettes("pipeline")`.
 - *asm_cg_cn.csv - Phased CpG copy number state
 - *asm_m.csv - Phased CpG bulk methylatio
 - *asm_m_pure.csv - Phased CpG pure methylation
