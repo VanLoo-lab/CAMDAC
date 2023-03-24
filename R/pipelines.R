@@ -65,16 +65,20 @@ asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NU
   # Log
   loginfo("CAMDAC:::asm_pipeline start for %s", tumor$patient_id)
 
-  # Combine tumor-germline SNPs and call CNAs
-  #cmain_bind_snps(tumor, germline, config)
-  #cmain_call_cna(tumor, germline, config)
+  # Checks that ASM SNPs file is available, otherwise, creates from bulk allele counts on germline
+  cmain_asm_make_snps(tumor, germline, config)
+
+  # Check that ASM CNA file is available, otherwise, create from CAMDAC CNA calls
+  cmain_asm_call_cna(tumor, germline, config)
 
   # Preprocess CpG, SNP and methylation data for all samples
+  loginfo("Preprocessing ASM data")
   preprocess_asm(
     list(tumor, germline, infiltrates, origin),
     config
   )
 
+  stop()
   # Assign ASM CNA to per-allele CG sites
   cmain_fit_asm_cna(tumor, config)
 
@@ -107,7 +111,7 @@ preprocess_asm <- function(sample_list, config) {
     }
 
     # Count SNP and CpG alleles if a BAM file is provided
-    cmain_asm_allele_count(s, config)
+    cmain_asm_allele_counts(s, config)
 
     # Format methylation rates for ASM
     cmain_asm_make_methylation(s, config)
