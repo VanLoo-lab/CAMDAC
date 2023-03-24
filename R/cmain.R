@@ -474,7 +474,7 @@ cmain_asm_allele_counts <- function(sample, config) {
   #  Check if outputs exist and skip if required
   outfile <- get_fpath(sample, config, "asm_counts")
   if (file.exists(outfile) && !config$overwrite) {
-    loginfo("Skipping ASM allele counting for %s", paste0(sample$patient_id, ":", sample$id))
+    logwarn("Skipping ASM allele counting for %s", paste0(sample$patient_id, ":", sample$id))
     return(outfile)
   }
 
@@ -545,9 +545,16 @@ cmain_asm_allele_counts <- function(sample, config) {
 }
 
 cmain_asm_make_methylation <- function(sample, config){
-  
+
+  # Skip if asm_counts_file doesn't exist
+  asm_counts_file <- get_fpath(sample, config, "asm_counts")
+  if (!file.exists(asm_counts_file)) {
+    logwarn("No ASM allele counts. Skipping ASM methylation for %s", paste0(sample$patient_id, ":", sample$id))
+    return(NULL)
+  }
+
   # Load DNA methylation object for asm
-  asm_counts <- fread_chrom(get_fpath(sample, config, "asm_counts"))
+  asm_counts <- fread_chrom(asm_counts_file)
 
   # Select DNA methylation fields
   asm_meth <- asm_counts[
@@ -560,4 +567,59 @@ cmain_asm_make_methylation <- function(sample, config){
   data.table::fwrite(asm_meth, asm_meth_outfile)
 
   return(asm_meth_outfile)
+}
+
+
+cmain_asm_make_snps <- function(tumor, germline, config){
+  # Check that ASM snps file is availabe for tumor. If so, return NULL
+  asm_snps_file <- get_fpath(tumor, config, "asm_snps")
+  if (file.exists(asm_snps_file)) {
+    loginfo("ASM snps file found for tumor.")
+    return(NULL)
+  }
+
+  # If ASM snps are not available for the tumor, run bulk allele-counts on germline and extract SNPs
+  loginfo("ASM snps file not found for tumor. Extracting SNPs from germline for {tumor$patient_id}.")
+  cmain_count_alleles(germline, config)
+  cmain_make_snps(germline, config)
+  nsnps_f <- get_fpath(germline, config, "snps")
+  n_snp <- fread_chrom(nsnps_f)
+
+  # Save ASM snps
+  n_snp <- n_snp[ dplyr::between(BAF, 0.1, 0.9), .(chrom, pos=POS, ref, alt, BAF)]
+  fs::dir_create(fs::path_dir(asm_snps_file))
+  data.table::fwrite(n_snp, asm_snps_file)
+  loginfo("ASM SNPS file created from germline for: {tumor$patient_id}:{tumor$id}")
+
+  # Else, raise an error if germline is NULL
+  stop(paste0(
+    "No ASM snps file available for tumor. Germline sample is required to extract SNPs from,",
+    "or ASM snps file must be provided for tumor object."
+  ))
+
+}
+
+cmain_asm_call_cna <- function(tumor, germline, config){
+
+  # Check that CNA file is available for the tumor
+  asm_cna_file <- get_fpath(tumor, config, "asm_cna")
+  if(fs::file_exists(cna_file)){
+    loginfo("CNA file found for tumor. Attaching to ASM_cna.")
+    attach_output(tumor, config, "asm_cna", asm_cna_file)
+    return(NULL)
+  }
+
+  # Preprocess CpG, SNP and methylation data for all samples
+  preprocess(
+    list(tumor, germline, origin),
+    config
+  )
+
+  # Combine tumor-germline SNPs and call CNAs
+  cmain_bind_snps(tumor, germline, config)
+  cmain_call_cna(tumor, germline, config)
+  cna_file <- get_fpath(tumor, config, "cna")
+  attach_output(tumor, config, "asm_cna", cna_file)
+  loginfo("CNA file created for tumor: {tumor$patient_id}:{tumor$id}")
+
 }
