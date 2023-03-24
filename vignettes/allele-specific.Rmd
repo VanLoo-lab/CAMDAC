@@ -19,15 +19,27 @@ knitr::opts_chunk$set(
 CAMDAC can be used to detect allele-specific methylation (ASM) by phasing CpGs to heterozygous SNPs and deconvolving bulk methylation rates per allele. 
 
 This tutorial steps through the ASM analysis pipeline. Briefly:
-- A copy number solution is generated for the tumor sample if not available
-- Bulk allele-specific methylation rates are inferred on samples using SNP loci
-- CpG copy number is inferred from BAF rates
-- Allele-specific methylation rates are deconvolved from the tumor sample
-- Differential ASM is called within and between samples
+1. Count CpG methylation on tumor and normal at sites phased to SNP loci.
+2. Deconvolve methylation on tumor **per haplotype** using the normal
+3. Assign allele-specific copy number state **per CpG** using the bulk tumor solution
+4. Call allele-specific differential methylation within samples
+5. Call allele-specific differential methylation between samples
+
+Results from this pipeline are found in the results directory under 'PATIENT/AlleleSpecific'. The following files are generated:
+- *asm_counts.csv.gz - The number of reads supporting each allele at each CpG
+- *asm_hap_stats.csv.gz - Summary statistics for each phased SNP
+- *asm_phase_map.csv.gz - A mapping if read-CpG-SNP phasing
+- *asm_snps.csv - The heterozygous SNP loci input for ASM analysis 
+- *asm_cg_cn.csv - Phased CpG copy number state
+- *asm_m.csv - Phased CpG bulk methylatio
+- *asm_m_pure.csv - Phased CpG pure methylation
+- *asm_m_within_diff.csv - Within-sample differential methylation
+- *asm_m_between_diff.csv - Between-sample differential methylation
+- *asm_meta.csv - Description of all input parameters for CAMDAC ASM run.
 
 ## CAMDAC-ASM from BAM files
 
-CAMDAC ASM analysis is run using the CAMDAC `asm_pipeline()` function. This pipeline generates the allele-specific copy number solution and heterozygous SNP loci, before deconvolution and differential ASM analysis:
+The `asm_pipeline()` function runs CAMDAC-ASM analysis by generates the allele-specific copy number solution and heterozygous SNP loci, followesd by deconvolution and differential ASM analysis:
 
 ```{r}
 b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
@@ -46,7 +58,8 @@ asm_pipeline(
 )
 ```
 
-The ASM results directory contains the following files. [TODO]
+The ASM results are placed in a PATIENT/AlleleSpecific directory with the following files:
+- 
 
 ## TODO: CAMDAC-ASM from external inputs
 
@@ -98,14 +111,6 @@ asm_pipeline(
   config=config
 )
 ```
-
-Results from this pipeline are found in the results directory under 'AlleleSpecific'. `The pipeline analyses data with the following steps:
-
-1. Count CpG methylation on tumor and normal at sites phased to SNP loci.
-2. Deconvolve methylation on tumor **per haplotype** using the normal
-3. Assign allele-specific copy number state **per CpG** using the bulk tumor solution
-4. Call allele-specific differential methylation within samples
-5. Call allele-specific differential methylation between samples
 
 ## Using SNPs called from previous CAMDAC runs
 
