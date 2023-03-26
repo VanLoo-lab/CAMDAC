@@ -78,13 +78,13 @@ asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NU
     config
   )
 
-  stop()
   # Assign ASM CNA to per-allele CG sites
-  cmain_fit_asm_cna(tumor, config)
+  cmain_fit_meth_cna(tumor, config)
 
   # Run ASM deconvolution
   cmain_asm_deconvolve(tumor, infiltrates, config)
 
+  stop()
   # Run ASM differential methylation within-sample
   cmain_asm_ss_dmps(tumor, config)
   cmain_asm_ss_dmps(normal, config)
