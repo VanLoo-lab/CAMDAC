@@ -207,6 +207,11 @@ asm_bam_to_counts <- function(
     pileup_summary <- flatten_pileup_to_counts(asm_dt)
     rm(asm_dt)
 
+    # Empty data return
+    if(nrow(pileup_summary) == 0) {
+        return(data.table())
+    }
+
     # Apply CADMAC rules to get allele counts, methylation rates and BAFs
     pileup_summary <- get_snp_allele_counts(pileup_summary)
     pileup_summary <- get_methylation_counts(pileup_summary, min_cov)
@@ -243,7 +248,7 @@ asm_bam_to_counts <- function(
 
 write_asm_counts_output <- function(result, sample, config){
   cg_outfile <- get_fpath(sample, config, "asm_counts")
-  data.table::fwrite(result$asm_cg, outfile)
+  data.table::fwrite(result$asm_cg, cg_outfile)
 
   phase_outfile <- get_fpath(sample, config, "asm_phase_map")
   data.table::fwrite(result$map, phase_outfile) 
