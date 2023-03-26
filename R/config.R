@@ -59,6 +59,8 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, re
       ),
       "beagle_jar"
     )
+  } else {
+    bjar = NULL
   }
 
   # If using rrbs, CNA caller must be ASCAT
