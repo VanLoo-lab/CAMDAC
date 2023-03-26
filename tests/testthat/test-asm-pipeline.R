@@ -4,7 +4,8 @@ test_that("ASM pipeline runs", {
 
   tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
   normal <- CamSample(id="N", sex="XY", bam=b_normal)
-  config <- CamConfig(outdir="./result_asm_full", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
+  config <- CamConfig(
+    outdir="./result_asm_full", bsseq="wgbs", lib="pe", build="hg38", n_cores=10, min_cov=1)
 
   asm_pipeline(
       tumor=tumor,
