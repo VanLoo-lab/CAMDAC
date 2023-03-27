@@ -187,6 +187,12 @@ asm_bam_to_counts <- function(
     paired_end = FALSE, min_mapq = 0) {
     stopifnot(asm_type %in% c("ref", "alt"))
 
+    # Set minimal columns for output. Enables merge downstream even if empty
+    default_cols <-  c(
+            "CHR", "chrom", "start", "end", "width", "POS", "ref",
+            "alt"
+        )
+
     if (paired_end) {
         asm_dt <- fix_pe_overlap_at_loci(asm_dt)
         # N.B. pe strand fixed earlier in pipeline
@@ -209,7 +215,9 @@ asm_bam_to_counts <- function(
 
     # Empty data return
     if(nrow(pileup_summary) == 0) {
-        return(data.table())
+        empty_out <- data.table(matrix(nrow=0, ncol=length(default_cols)))
+        names(empty_out) = default_cols
+        return(empty_out)
     }
 
     # Apply CADMAC rules to get allele counts, methylation rates and BAFs
@@ -234,15 +242,13 @@ asm_bam_to_counts <- function(
 
     rename_cols <- setdiff(
         names(result),
-        c(
-            "CHR", "chrom", "start", "end", "width", "POS", "ref",
-            "alt"
-        )
+        default_cols
     )
     # Give ref/alt names to essential columns
     for (n in rename_cols) {
         setnames(result, n, paste0(asm_type, "_", n))
     }
+    
     return(result)
 }
 
