@@ -21,7 +21,16 @@ cmain_asm_allele_counts <- function(sample, config) {
 
     # Get SNP loci as segments to analyse. Parallelised over config$n_seg_split
     snps_gr <- load_asm_snps_gr(sample, config)
+    # If regions to analyse are given, limit SNPs to regions
+    if (!is.null(config$regions)) {
+        segments <- read_segments_bed(config$regions)
+        seg_gr <- Reduce(c, segments)
+        snps_gr <- subsetByOverlaps(snps_gr, seg_gr)
+    }
+
+    # Split by chromosome for parallelisation
     snps_grl <- split(snps_gr, seqnames(snps_gr))
+
 
     # List files containing SNP and CpG loci for reference genome
     loci_files <- get_reference_files(config, type = "loci_files")
