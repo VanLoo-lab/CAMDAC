@@ -55,9 +55,9 @@ cmain_asm_allele_counts <- function(sample, config) {
     # Define function to combine the allele counts objects into a single list
     bind_asm_obs <- function(x, y) {
         nobj <- list()
-        nobj$asm_cg <- rbind(x$asm_cg, y$asm_cg)
-        nobj$hap_stats <- rbind(x$hap_stats, y$hap_stats)
-        nobj$map <- rbind(x$map, y$map)
+        nobj$asm_cg <- rbind(x$asm_cg, y$asm_cg, fill = T)
+        nobj$hap_stats <- rbind(x$hap_stats, y$hap_stats, fill = T)
+        nobj$map <- rbind(x$map, y$map, fill = T)
         return(nobj)
     }
     # Combine temporary files with allele counts results into a single data table
@@ -196,11 +196,12 @@ cmain_fit_meth_cna <- function(tumor, config) {
     asm_meth <- fread_chrom(get_fpath(tumor, config, "asm_meth"))
 
     # Overlap three datasets. For each CpG, return asm, BAF, cna and methylation.
-    ol <- overlap_meth_cna(asm_meth, cna, hap_stats, phase_map)
+    asm_hap <- merge_asm_hap(asm_meth, hap_stats, phase_map)
+    asm_hap_cna <- overlap_meth_cna(asm_hap, cna)
 
     # TODO: Use battenberg phasing where available
     # Assign each phased CpG to a CNA state
-    amc <- assign_asm_cna(ol)
+    amc <- assign_asm_cna(asm_hap_cna)
 
     # Save file to system in expected location
     fs::dir_create(fs::path_dir(asm_meth_cna))
@@ -224,7 +225,7 @@ cmain_asm_deconvolve <- function(tumor, infiltrates, config) {
     # Deconvolve ref and alt
     meth_c <- deconvolve_asm_methylation(meth_c)
 
-    # Filter: CN=0 
+    # Filter: CN=0
     # Bulk filters not yet implemented: effective cov_t>= 3, is.na(mt-raw)
     meth_c <- meth_c %>% dplyr::filter(nA + nB != 0)
 
@@ -274,10 +275,9 @@ deconvolve_asm_methylation <- function(meth_c) {
 }
 
 calculate_asm_m_t_hdi <- function(meth_c, n_cores, itersplit = 1e5) {
-
     logerror("Cannot currently calculate ASM HDI on test data.")
     return(meth_c)
-    # M, UM, M_n and UM_n should not be NA for HDI calculation
+    #  M, UM, M_n and UM_n should not be NA for HDI calculation
     # Need a way to find index of those that are eligible for calc. This is a start:s
     # apply(seq_along(M), function(i) all(!is.na(M[i]), !is.na(UM[i]), !is.na(M_n), !is.na(UM_n)))
 
