@@ -66,7 +66,6 @@ cmain_asm_allele_counts <- function(sample, config) {
     }
 
     # Write to output(s) file
-    qs::qsave(result, "~/Documents/work/CAMDAC/result_test.qs")
     asm_ac_out <- write_asm_counts_output(result, sample, config)
 
     # Delete temporary files
@@ -129,7 +128,7 @@ cmain_asm_make_snps <- function(tumor, germline, config) {
     }
 
     # If ASM snps are not available for the tumor, run bulk allele-counts on germline and extract SNPs
-    loginfo("ASM snps file not found for tumor. Extracting SNPs from germline for {tumor$patient_id}.")
+    loginfo("ASM snps file not found for tumor. Extracting SNPs from germline for tumor.")
     cmain_count_alleles(germline, config)
     cmain_make_snps(germline, config)
 
@@ -160,7 +159,7 @@ cmain_asm_call_cna <- function(tumor, germline, config) {
 
     # Preprocess CpG, SNP and methylation data for all samples
     preprocess(
-        list(tumor, germline, origin),
+        list(tumor, germline),
         config
     )
 
