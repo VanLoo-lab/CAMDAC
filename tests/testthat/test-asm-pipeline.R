@@ -1,18 +1,20 @@
 test_that("ASM pipeline runs", {
-  b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
-  b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
 
-  tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
-  normal <- CamSample(id="N", sex="XY", bam=b_normal)
-  config <- CamConfig(
+  # Setup config
+  asm_config <- CamConfig(
     outdir="./result_asm_full", bsseq="wgbs", lib="pe",
     build="hg38", n_cores=3, min_cov=1, cna_caller="ascat")
+
+  # Add ASM CNA caller
+  attach_output(tumor, asm_config, "asm_cna", system.file("testdata", "tumor.cna.txt", package="CAMDAC"))
+  attach_output(tumor, asm_config, "asm_snps", system.file("testdata", "test_het_snps.tsv", package="CAMDAC"))
+  attach_output(normal, asm_config, "asm_snps", system.file("testdata", "test_het_snps.tsv", package="CAMDAC"))
 
   asm_pipeline(
       tumor=tumor,
       germline=normal,
       infiltrates=normal,
       origin=normal,
-      config=config
+      config=asm_config
   )
 })
