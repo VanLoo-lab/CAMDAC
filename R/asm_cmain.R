@@ -151,7 +151,7 @@ cmain_asm_make_snps <- function(tumor, germline, config) {
 cmain_asm_call_cna <- function(tumor, germline, config) {
     # Check that CNA file is available for the tumor
     asm_cna_file <- get_fpath(tumor, config, "asm_cna")
-    if (fs::file_exists(cna_file)) {
+    if (fs::file_exists(asm_cna_file)) {
         loginfo("CNA file found for tumor. Attaching to ASM_cna.")
         attach_output(tumor, config, "asm_cna", asm_cna_file)
         return(NULL)
