@@ -12,7 +12,6 @@
 cwrap_asm_get_allele_counts <- function(
     bam_file, snps_gr, loci_dt,
     paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov) {
-
     # Read BAM
     bam_dt <- get_reads_in_segments(bam_file, snps_gr, min_mapq, paired_end = paired_end)
     bam_dt <- format_bam_for_loci_overlap(bam_dt, paired_end = paired_end)
@@ -45,26 +44,32 @@ cwrap_asm_get_allele_counts <- function(
 
     # Get counts for reads phased to each allele
     alt_cg <- asm_bam_to_counts(alt_bam, "alt", loci_dt,
-        drop_ccgg = drop_ccgg, paired_end = paired_end, min_cov=min_cov
+        drop_ccgg = drop_ccgg, paired_end = paired_end, min_cov = min_cov
     )
     ref_cg <- asm_bam_to_counts(ref_bam, "ref", loci_dt,
         drop_ccgg = drop_ccgg, paired_end = paired_end, min_cov = min_cov
     )
 
     # Combine counts
-    asm_cg <- merge(alt_cg, ref_cg,
-        by = c(
-            "CHR", "chrom", "start", "end",
-            "width", "POS", "ref", "alt"
-        ), all = TRUE
-    )
+    if (nrow(alt_cg) == 0) {
+        asm_cg <- ref_cg
+    } else if (nrow(ref_cg) == 0) {
+        asm_cg <- alt_cg
+    } else {
+        asm_cg <- merge(alt_cg, ref_cg,
+            by = c(
+                "CHR", "chrom", "start", "end",
+                "width", "POS", "ref", "alt"
+            ), all = TRUE
+        )
+    }
 
     # Complete results object form hap_stats
     return(
         list(
-            "asm_cg"=asm_cg,
-            "hap_stats"=hap_stats,
-            "map"=qname_hap_cg
+            "asm_cg" = asm_cg,
+            "hap_stats" = hap_stats,
+            "map" = qname_hap_cg
         )
     )
     return(hap_stats)
@@ -184,14 +189,14 @@ asm_hap_stats <- function(bam_dt) {
 
 asm_bam_to_counts <- function(
     asm_dt, asm_type, loci_dt, drop_ccgg = FALSE,
-    paired_end = FALSE, min_mapq = 0, min_cov=0) {
+    paired_end = FALSE, min_mapq = 0, min_cov = 0) {
     stopifnot(asm_type %in% c("ref", "alt"))
 
     # Set minimal columns for output. Enables merge downstream even if empty
-    default_cols <-  c(
-            "CHR", "chrom", "start", "end", "width", "POS", "ref",
-            "alt"
-        )
+    default_cols <- c(
+        "CHR", "chrom", "start", "end", "width", "POS", "ref",
+        "alt"
+    )
 
     if (paired_end) {
         asm_dt <- fix_pe_overlap_at_loci(asm_dt)
@@ -214,9 +219,9 @@ asm_bam_to_counts <- function(
     rm(asm_dt)
 
     # Empty data return
-    if(nrow(pileup_summary) == 0) {
-        empty_out <- data.table(matrix(nrow=0, ncol=length(default_cols)))
-        names(empty_out) = default_cols
+    if (nrow(pileup_summary) == 0) {
+        empty_out <- data.table(matrix(nrow = 0, ncol = length(default_cols)))
+        names(empty_out) <- default_cols
         return(empty_out)
     }
 
@@ -248,33 +253,33 @@ asm_bam_to_counts <- function(
     for (n in rename_cols) {
         setnames(result, n, paste0(asm_type, "_", n))
     }
-    
+
     return(result)
 }
 
-write_asm_counts_output <- function(result, sample, config){
-  cg_outfile <- get_fpath(sample, config, "asm_counts")
-  data.table::fwrite(result$asm_cg, cg_outfile)
+write_asm_counts_output <- function(result, sample, config) {
+    cg_outfile <- get_fpath(sample, config, "asm_counts")
+    data.table::fwrite(result$asm_cg, cg_outfile)
 
-  phase_outfile <- get_fpath(sample, config, "asm_phase_map")
-  data.table::fwrite(result$map, phase_outfile) 
-  
-  stats_outfile <- get_fpath(sample, config, "asm_hap_stats")
-  data.table::fwrite(result$hap_stats, stats_outfile)
+    phase_outfile <- get_fpath(sample, config, "asm_phase_map")
+    data.table::fwrite(result$map, phase_outfile)
 
-  return(cg_outfile)
+    stats_outfile <- get_fpath(sample, config, "asm_hap_stats")
+    data.table::fwrite(result$hap_stats, stats_outfile)
+
+    return(cg_outfile)
 }
 
-annotate_bam_with_loci_asm <- function(bam_dt, loci_subset, drop_ccgg=F, paired_end=F){
+annotate_bam_with_loci_asm <- function(bam_dt, loci_subset, drop_ccgg = F, paired_end = F) {
     # Set keys for join
-    loci_subset$chrom = as.character(loci_subset$chrom)
+    loci_subset$chrom <- as.character(loci_subset$chrom)
     data.table::setkey(loci_subset, chrom, start, end)
-    bam_dt$chrom = as.character(bam_dt$chrom)
+    bam_dt$chrom <- as.character(bam_dt$chrom)
     data.table::setkey(bam_dt, chrom, start, end)
 
     # Filter CCGG loci if WGBS
     if (drop_ccgg) {
-    loci_subset <- loci_subset[width != 4]
+        loci_subset <- loci_subset[width != 4]
     }
 
     # Overlap
@@ -292,9 +297,9 @@ annotate_bam_with_loci_asm <- function(bam_dt, loci_subset, drop_ccgg=F, paired_
     return(bam_loci_overlap)
 }
 
-load_asm_loci_for_segment <- function(snps_gr, loci_files){
-    snps_region = reduce(snps_gr+1000) # Get regions in 1kb non-overlapping regions around SNPs
+load_asm_loci_for_segment <- function(snps_gr, loci_files) {
+    snps_region <- reduce(snps_gr + 1000) # Get regions in 1kb non-overlapping regions around SNPs
     loci_dt <- load_loci_for_segment(snps_region, loci_files)
-    loci_dt <- loci_dt[width > 1, ] # Ensure only CG sites are mapped for ASM 
+    loci_dt <- loci_dt[width > 1, ] # Ensure only CG sites are mapped for ASM
     return(loci_dt)
 }
