@@ -63,10 +63,42 @@ panel_beta <- panel_meth_from_beta(
   min_samples = 1,
   max_sd = 1
 )
-  test_cg3 <- panel_beta[chrom == "13" & start == 18231437 & end == 18231438, ]
-  expect_equal(round(test_cg3$m, 2), 0.24) # Expect linear combination of three betas
-  expect_equal(test_cg3$M + test_cg3$UM, 100) # Expect cg cov to meet input value
-  test_cg4 <- panel_beta[chrom == "13" & start == 18173666 & end == 18173667, ]
-  expect_equal(round(test_cg4$m, 2), 0.15)
+
+test_cg3 <- panel_beta[chrom == "13" & start == 18231437 & end == 18231438, ]
+expect_equal(round(test_cg3$m, 2), 0.24) # Expect linear combination of three betas
+expect_equal(test_cg3$M + test_cg3$UM, 100) # Expect cg cov to meet input value
+test_cg4 <- panel_beta[chrom == "13" & start == 18173666 & end == 18173667, ]
+expect_equal(round(test_cg4$m, 2), 0.15)
+
+# Test panel can be created from a matrix of beta values and a vector 
+data <- data.table::fread(
+  system.file("testdata", "test_panel_from_beta.csv", package = "CAMDAC")
+)[1:5,]
+mat = data[, 4:ncol(data)]
+
+panel_cov <- panel_meth_from_beta(
+  mat = mat,
+  chrom = data$chrom,
+  start = data$start,
+  end = data$end, 
+  cov = c(10, 1, 10, 1, 10), # Single value for coverage given to all CpGs.
+  props = c(0.1, 0.8, 0.1),
+  min_samples = 1,
+  max_sd = 1
+)
+
+panel_cov2 <- panel_meth_from_beta(
+  mat = mat,
+  chrom = data$chrom,
+  start = data$start,
+  end = data$end, 
+  cov = matrix(30, nrow=5, ncol=3), # Single value for coverage given to all CpGs.
+  props = c(0.1, 0.8, 0.1),
+  min_samples = 1,
+  max_sd = 1
+)
+
+expect_equal(panel_cov$cov, c(10, 1, 10, 1, 10))
+expect_equal(panel_cov2$cov, c(30, 30, 30, 30, 30))
 
 })

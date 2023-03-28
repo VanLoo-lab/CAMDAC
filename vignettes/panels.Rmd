@@ -114,7 +114,7 @@ panel_beta <- panel_meth_from_beta(
 )
 ```
 
-As CAMDAC requires coverage at each CpG site to estimate uncertainty, the `cov` value is given to all CpG sites when building a panel from beta values. Additionally, if any beta values are missing from a sample, proportions are redistributed evenly among the remaining samples as this is the only information available to build the panel for that site.
+As CAMDAC requires coverage at each CpG site to estimate uncertainty, the `cov` value is given to all CpG sites when building a panel from beta values. Additionally, if any beta values are missing from a sample, proportions are recalculated among the remaining samples as this is the only information available to build the panel for that site.
 
 There are two experimental arguments that can be set to filter CpG sites from the panel:
 

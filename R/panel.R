@@ -214,8 +214,7 @@ panel_meth_counts <- function(x, ac_props = NULL) {
 #' @param chrom Vector of chromosome names
 #' @param start Vector of CpG start positions
 #' @param end Vector of CpG end positions
-#' @param cov Vector of coverage values to give all CpG sites. Required for downstream analysis,
-#'    reflecting confidence in read counts. Recommend median coverage of all samples.
+#' @param cov Vector of coverage values to give each CpG site. If a matrix is provided, coverage is calculated as the sum of reads for each site.
 #' @param cores Number of cores to use for calculating HDI
 #' @param min_samples Minimum number of samples that must have a non-NA value for a CpG site to be included in panel
 #' @param max_sd Maximum standard deviation of methylation for a site to be included in panel.
@@ -239,6 +238,20 @@ panel_meth_from_beta <- function(
   mask_max_sd[is.na(mask_max_sd)] <- TRUE
   mat = mat[mask_max_sd,]
 
+  # Apply filter to coverage depending on whether it is a single value, vector or matrix
+  if(is.null(dim(cov))){
+
+    if(length(cov)==1){
+      pass
+    }else{
+      cov = cov[ mask_min_samples | mask_max_sd]
+    }
+
+  } else {
+    cov = cov[ mask_min_samples | mask_max_sd,]
+    cov = rowMeans(cov, na.rm=T)
+  }
+
   # Set proportions as matrix
   pmat = matrix(rep(props, nrow(mat)), byrow=T, ncol=length(props))
 
@@ -249,6 +262,7 @@ panel_meth_from_beta <- function(
 
   # Get new beta based on linear combination of new proportions
   nbeta <- as.numeric(rowSums(mat*pmat))
+  # Get new counts based on coverage
   M <- round(cov*nbeta, 0)
   UM <- cov-M
   
