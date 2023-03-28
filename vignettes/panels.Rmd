@@ -115,3 +115,9 @@ panel_beta <- panel_meth_from_beta(
 ```
 
 As CAMDAC requires coverage at each CpG site to estimate uncertainty, the `cov` value is given to all CpG sites when building a panel from beta values. Additionally, if any beta values are missing from a sample, proportions are redistributed evenly among the remaining samples as this is the only information available to build the panel for that site.
+
+There are two experimental arguments that can be set to filter CpG sites from the panel:
+
+* min_samples: The minimum number of samples that have to have a beta value for a CpG to be included in the panel. The idea here is if you have sparse data, you can skip sites where you aren’t confident in the panel. Set this to 1 to use any sample.
+
+* max_sd: Maximum standard deviation of beta values across samples a CpG must have to be included in the panel. The idea here is that when combining many bulk methylomes from the same tissue, sites with high variability reflect sample-specific differences and their averages are less reliable for use in a methylation panel.

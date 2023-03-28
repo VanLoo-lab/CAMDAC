@@ -216,11 +216,12 @@ panel_meth_counts <- function(x, ac_props = NULL) {
 #' @param end Vector of CpG end positions
 #' @param cov Vector of coverage values to give all CpG sites. Required for downstream analysis,
 #'    reflecting confidence in read counts. Recommend median coverage of all samples.
-#' @param max_sd Maximum standard deviation of methylation for a site to be included in panel/
 #' @param cores Number of cores to use for calculating HDI
+#' @param min_samples Minimum number of samples that must have a non-NA value for a CpG site to be included in panel
+#' @param max_sd Maximum standard deviation of methylation for a site to be included in panel.
 #' @export
 panel_meth_from_beta <- function(
-  mat, chrom , start, end, cov, props, min_samples, max_sd, cores=5
+  mat, chrom , start, end, cov, props, cores, min_samples=1, max_sd=1
 ){
   # Format chromosome as expected
   chrom = gsub("chr", "", chrom)
