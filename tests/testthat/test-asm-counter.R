@@ -1,10 +1,10 @@
 test_that("ASM allele counter runs", {
   # Load hets
   # Attach SNPs to tumor and normal objects
-  hets_file <- system.file("testdata", "test_het_snps.tsv", package="CAMDAC")
+  hets_file <- system.file("testdata", "test_het_snps.tsv", package = "CAMDAC")
 
   asm_config <- CamConfig(
-    outdir = "./result_asm",
+    outdir = "./result_asm_counter",
     bsseq = "wgbs",
     build = "hg38",
     lib = "pe",
