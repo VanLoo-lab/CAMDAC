@@ -45,10 +45,10 @@ cwrap_asm_get_allele_counts <- function(
 
     # Get counts for reads phased to each allele
     alt_cg <- asm_bam_to_counts(alt_bam, "alt", loci_dt,
-        drop_ccgg = drop_ccgg, paired_end = paired_end
+        drop_ccgg = drop_ccgg, paired_end = paired_end, min_cov=min_cov
     )
     ref_cg <- asm_bam_to_counts(ref_bam, "ref", loci_dt,
-        drop_ccgg = drop_ccgg, paired_end = paired_end
+        drop_ccgg = drop_ccgg, paired_end = paired_end, min_cov = min_cov
     )
 
     # Combine counts
@@ -184,7 +184,7 @@ asm_hap_stats <- function(bam_dt) {
 
 asm_bam_to_counts <- function(
     asm_dt, asm_type, loci_dt, drop_ccgg = FALSE,
-    paired_end = FALSE, min_mapq = 0) {
+    paired_end = FALSE, min_mapq = 0, min_cov=0) {
     stopifnot(asm_type %in% c("ref", "alt"))
 
     # Set minimal columns for output. Enables merge downstream even if empty
