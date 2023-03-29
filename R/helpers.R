@@ -343,6 +343,7 @@ fread_chrom <- function(x, ...) {
   # Used for counts and snp files where X and Y are missing
   x <- data.table::fread(x, ...)
   x$chrom <- as.character(x$chrom)
+  x$chrom <- gsub("chr", "", x$chrom)
   return(x)
 }
 
