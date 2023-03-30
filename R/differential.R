@@ -1,4 +1,3 @@
-
 # Notes:
 # Is it worth implementing other DMR detection methods?
 # - https://scholar.google.com/scholar?hl=en&as_sdt=0%2C5&q=differential+methylation+analysis&btnG=s
@@ -35,49 +34,16 @@ calc_prob_dmp <- function(M_n, UM_n, M, UM, itersplit = 5e5, ncores = 5) {
   }
   doParallel::stopImplicitCluster()
 
+  # Format values
+  prob <- data.table::fcase(
+    is.na(prob), 0.5,
+    prob > 1, 1,
+    prob < 0, 0,
+    rep_len(TRUE, length(prob)), prob # Otherwise return value
+  )
+
   return(prob)
 }
-
-#' Call DMPs returns the CAMDAC DMP dataframe
-# m_b_diff <- m_b - m_n
-# m_t_diff <- m_t - m_n
-# call_dmps <- function(tmeth, effect_size=0.2, prob=0.99, itersplit=5e5, ncores=5){
-#
-#   # Set variables
-#   M_n = tmeth$M_n
-#   UM_n = tmeth$UM_n
-#   M = tmeth$M
-#   UM = tmeth$UM
-#   m = tmeth$m
-#   m_b_diff = tmeth$m -tmeth$m_n
-#   m_t_diff = tmeth$m_t - tmeth$m_n
-#
-#   phypo = calc_prob_dmp(M_n, UM_n, M, UM, ncores=ncores, itersplit=itersplit)
-#   phypo = data.table::fcase(
-#     is.na(phypo), 0.5,
-#     phypo>1, 1,
-#     phypo<0, 0,
-#     rep_len(TRUE, length(phypo)), phypo # Otherwise return value
-#   )
-#   prob_DMP = data.table::fifelse(m_t_diff > 0 , 1-phypo, phypo) # I.e. if bulk is greater than normal then it's a hyper DMP
-#   rm(phypo)
-#
-#   DMP_b = data.table::fcase(
-#     prob_DMP >= prob & m_b_diff >= effect_size, "hyper",
-#     prob_DMP >= prob & m_b_diff <= (-effect_size), "hypo"
-#     )
-#
-#   DMP_t = data.table::fcase(
-#     prob_DMP >= prob & m_t_diff >= effect_size, "hyper",
-#     prob_DMP >= prob & m_t_diff <= (-effect_size), "hypo"
-#   )
-#
-#   res = cbind(tmeth,
-#               data.table(prob_DMP,DMP_b,DMP_t)
-#   )
-#
-#   return(res)
-# }
 
 #' Call differentially methylated positions
 #' @keywords internal
@@ -94,12 +60,7 @@ call_dmps <- function(pmeth, nmeth, effect_size = 0.2, prob = 0.99, itersplit = 
   m_t_diff <- pmeth$m_t - nmeth$m
 
   phypo <- calc_prob_dmp(M_n, UM_n, M, UM, ncores = ncores, itersplit = itersplit)
-  phypo <- data.table::fcase(
-    is.na(phypo), 0.5,
-    phypo > 1, 1,
-    phypo < 0, 0,
-    rep_len(TRUE, length(phypo)), phypo # Otherwise return value
-  )
+
   prob_DMP <- data.table::fifelse(m_t_diff > 0, 1 - phypo, phypo) # I.e. if bulk is greater than normal then it's a hyper DMP
   rm(phypo)
 
