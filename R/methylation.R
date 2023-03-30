@@ -355,7 +355,24 @@ vec_HDIofMCMC_mt <- function(...) {
   vf <- Vectorize(HDIofMCMC_mt) # Accepts vectors with dim(y,0)
   result <- vf(...) # Returns a matrix with dim(x ,y)
   # Transpose result to return rows corresponding to original data: dim(y,x)
-  return(t(result))
+
+  # Vectorize will return a matrix, however if there are sufficiently large rows,
+  # the matrix is returned as a list of vectors. This is a workaround to ensure that the
+  # result is always a matrix.
+  if (class(result) == "list") {
+    # Unfortunately, sites with no result are returned simply as numeric(0).
+    # Set these to appropriate NA values before reducing, otherwise they are dropped by R.
+    z <- sapply(result, length) != 2
+    result[z] <- list(c(NA, NA))
+    out <- Reduce(rbind, result)
+    return(out)
+  } else {
+    # If the result is not a list, it is a matrix
+    # The matrix must be transposed
+    out <- t(result)
+  }
+
+  return(out)
 }
 
 # TODO: Calculate HDI and annotate data table.
