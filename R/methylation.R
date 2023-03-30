@@ -1,20 +1,5 @@
 #' Pre-process CAMDAC methylation data
 
-# Working knowledge
-## In the below exampls, PX is the patient ID and R1 is the tumour region
-# dt_sample_v_normal_m.RData - No longer created in latest version, in favour of dt_tumour_and_normal_m.
-# dt_tumour_m.RData - Base bulk methylation data: with columns: chromosome,start,end,M_b,UM_b,m_b,cov_b,SNP_b.
-#   No longer output in latest CAMDAC version (run_methylation_data...*.R)
-# dt_normal_m.RData - This has the same data as the dt_tumour_m but includes HDI for later merging.
-#   I keep things consistent by including.
-# purified_tumour_DMP_calls.RData
-# purified_tumour.RData
-# PX1.R1.DMPs.txt - summary stats for the number of DMPs and tumour-normal differential methylation data
-# PX1_R1_methylation_rate_summary.pdf
-# Rplots.pdf
-
-#
-
 # Code ----
 
 #' Calculate HDI interval width
