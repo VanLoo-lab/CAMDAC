@@ -1,4 +1,3 @@
-
 # TODO: Better to accept columns to sort by alongside e.g. POS or start, end
 #' @export
 sort_genomic_dt <- function(dt, with_chr = F) {
@@ -343,7 +342,9 @@ fread_chrom <- function(x, ...) {
   # Used for counts and snp files where X and Y are missing
   x <- data.table::fread(x, ...)
   x$chrom <- as.character(x$chrom)
-  x$chrom <- gsub("chr", "", x$chrom)
+  if (stringr::str_starts(x$chrom[[1]], "chr")) {
+    x$chrom <- gsub("chr", "", x$chrom)
+  }
   return(x)
 }
 
@@ -386,19 +387,18 @@ validate_cna <- function(cna) {
 
 # Get ASM snps as granges
 load_asm_snps_gr <- function(camsample, config) {
-    # Load ASM SNPs from file
-    hets_file <- get_fpath(camsample, config, "asm_snps")
-    snps = data.table::fread(hets_file)
-    snps_gr = GRanges(
-        seqnames = snps$chrom,
-        ranges = IRanges(start = snps$pos, end=snps$pos),
-        strand = "*"
-    )
-    seqlevelsStyle(snps_gr) <- "UCSC"
-    snps_gr$ref = snps$ref
-    snps_gr$alt = snps$alt
-    snps_gr$hap_id = seq(length(snps_gr))
-    
-    return(snps_gr)
-}
+  # Load ASM SNPs from file
+  hets_file <- get_fpath(camsample, config, "asm_snps")
+  snps <- data.table::fread(hets_file)
+  snps_gr <- GRanges(
+    seqnames = snps$chrom,
+    ranges = IRanges(start = snps$pos, end = snps$pos),
+    strand = "*"
+  )
+  seqlevelsStyle(snps_gr) <- "UCSC"
+  snps_gr$ref <- snps$ref
+  snps_gr$alt <- snps$alt
+  snps_gr$hap_id <- seq(length(snps_gr))
 
+  return(snps_gr)
+}
