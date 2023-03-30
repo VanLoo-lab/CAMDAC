@@ -156,32 +156,32 @@ panel_meth_counts <- function(x, ac_props = NULL) {
     m <- as.matrix(m)
 
     # Recalculate, weighting by proportions of present data
-    pmat = matrix(rep(ac_props, nrow(m)), byrow=T, ncol=length(ac_props))
+    pmat <- matrix(rep(ac_props, nrow(m)), byrow = T, ncol = length(ac_props))
 
     # Adjust proportions where beta is NA
-    pmat[is.na(m)] = 0
-    pmat = pmat/rowSums(pmat)
-    m[is.na(m)] = 0 # Allows us to multiply safely with pmat
+    pmat[is.na(m)] <- 0
+    pmat <- pmat / rowSums(pmat)
+    m[is.na(m)] <- 0 # Allows us to multiply safely with pmat
 
-  # Get new beta based on linear combination of new proportions
-  m <- as.numeric(rowSums(m*pmat))
+    # Get new beta based on linear combination of new proportions
+    m <- as.numeric(rowSums(m * pmat))
 
-  total_counts_m <- Reduce(
-    cbind,
-    lapply(seq_along(x), function(i) x[[i]]$total_counts_m) # Get complete counts
-  ) %>% rowSums(na.rm = T)
+    total_counts_m <- Reduce(
+      cbind,
+      lapply(seq_along(x), function(i) x[[i]]$total_counts_m) # Get complete counts
+    ) %>% rowSums(na.rm = T)
 
     M <- round(m * total_counts_m, 0)
     UM <- total_counts_m - M
     POS <- NA
     total_depth <- NA
     BAF <- NA
-    
+
     # We can get chrom start and end from one sample as all CpGs aligned before passing to this function
     chrom <- x[[1]]$chrom
     start <- x[[1]]$start
     end <- x[[1]]$end
-      } else {
+  } else {
     # Otherwise, sum the counts
     M <- Reduce(cbind, lapply(x, function(o) o$M)) %>% rowSums(na.rm = T)
     UM <- Reduce(cbind, lapply(x, function(o) o$UM)) %>% rowSums(na.rm = T)
@@ -219,53 +219,50 @@ panel_meth_counts <- function(x, ac_props = NULL) {
 #' @param min_samples Minimum number of samples that must have a non-NA value for a CpG site to be included in panel
 #' @param max_sd Maximum standard deviation of methylation for a site to be included in panel.
 #' @export
-panel_meth_from_beta <- function(
-  mat, chrom , start, end, cov, props, cores, min_samples=1, max_sd=1
-){
+panel_meth_from_beta <- function(mat, chrom, start, end, cov, props, cores, min_samples = 1, max_sd = 1) {
   # Format chromosome as expected
-  chrom = gsub("chr", "", chrom)
+  chrom <- gsub("chr", "", chrom)
 
   # Get expected formats
-  stopifnot(length(props)==ncol(mat))
-  mat = as.matrix(mat)
+  stopifnot(length(props) == ncol(mat))
+  mat <- as.matrix(mat)
 
   # Apply min sample filter to CpG sites
-  mask_min_samples <- rowSums(!is.na(mat))>=min_samples
-  mat = mat[mask_min_samples,]
+  mask_min_samples <- rowSums(!is.na(mat)) >= min_samples
+  mat <- mat[mask_min_samples, ]
 
   # Apply max sd filter to CpG sites
-  mask_max_sd <- rowSds(mat, na.rm=T) <= max_sd
+  mask_max_sd <- rowSds(mat, na.rm = T) <= max_sd
   mask_max_sd[is.na(mask_max_sd)] <- TRUE
-  mat = mat[mask_max_sd,]
+  mat <- mat[mask_max_sd, ]
 
   # Apply filter to coverage depending on whether it is a single value, vector or matrix
-  if(is.null(dim(cov))){
-
-    if(length(cov)==1){
-      pass
-    }else{
-      cov = cov[ mask_min_samples | mask_max_sd]
+  if (is.null(dim(cov))) {
+    if (length(cov) == 1) {
+      # Do nothing
+      cov <- cov
+    } else {
+      cov <- cov[mask_min_samples | mask_max_sd]
     }
-
   } else {
-    cov = cov[ mask_min_samples | mask_max_sd,]
-    cov = rowMeans(cov, na.rm=T)
+    cov <- cov[mask_min_samples | mask_max_sd, ]
+    cov <- rowMeans(cov, na.rm = T)
   }
 
   # Set proportions as matrix
-  pmat = matrix(rep(props, nrow(mat)), byrow=T, ncol=length(props))
+  pmat <- matrix(rep(props, nrow(mat)), byrow = T, ncol = length(props))
 
   # Adjust proportions where beta is NA
-  pmat[is.na(mat)] = 0
-  pmat = pmat/rowSums(pmat)
-  mat[is.na(mat)] = 0 # Allows us to multiply safely with pmat
+  pmat[is.na(mat)] <- 0
+  pmat <- pmat / rowSums(pmat)
+  mat[is.na(mat)] <- 0 # Allows us to multiply safely with pmat
 
   # Get new beta based on linear combination of new proportions
-  nbeta <- as.numeric(rowSums(mat*pmat))
+  nbeta <- as.numeric(rowSums(mat * pmat))
   # Get new counts based on coverage
-  M <- round(cov*nbeta, 0)
-  UM <- cov-M
-  
+  M <- round(cov * nbeta, 0)
+  UM <- cov - M
+
   # Set panel
   panel <- data.table(
     chrom = chrom,
