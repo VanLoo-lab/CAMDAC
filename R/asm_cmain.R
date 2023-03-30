@@ -203,11 +203,14 @@ cmain_fit_meth_cna <- function(tumor, config) {
     # Get allele-specific bulk methylation
     asm_meth <- fread_chrom(get_fpath(tumor, config, "asm_meth"))
 
-    # Overlap three datasets. For each CpG, return asm, BAF, cna and methylation.
+    # Overlap three datasets from ASM counter. For each CpG, return asm, BAF, cna and methylation.
+    # TODO: Consider asm_hap as main output of asm counter alongside three source datasets.
     asm_hap <- merge_asm_hap(asm_meth, hap_stats, phase_map)
+    # Overlap DNA methylation.
     asm_hap_cna <- overlap_meth_cna(asm_hap, cna)
 
     # TODO: Use battenberg phasing where available
+    # TODO: Explain CpGs where ref_CN > alt_CN but ref_m is NA
     # Assign each phased CpG to a CNA state
     amc <- assign_asm_cna(asm_hap_cna)
 
@@ -231,19 +234,21 @@ cmain_asm_deconvolve <- function(tumor, infiltrates, config) {
     meth_c <- merge(t_meth, n_meth, all.x = T)
 
     # Deconvolve ref and alt
+    loginfo("Deconvolving ASM")
     meth_c <- deconvolve_asm_methylation(meth_c)
 
     # Filter: CN=0
     # Bulk filters not yet implemented: effective cov_t>= 3, is.na(mt-raw)
-    meth_c <- meth_c %>% dplyr::filter(nA + nB != 0)
+    meth_c <- meth_c[nA + nB != 0, ]
 
-    loginfo("Calculating pure_tumour HDI: %s", tumor$patient_id)
+    loginfo("Calculating ASM HDI")
     # Calculate m_t HDI # parallel, long-running function
     meth_c <- calculate_asm_m_t_hdi(meth_c, config$n_cores)
 
     outfile <- get_fpath(tumor, config, "asm_meth_pure")
     fs::dir_create(fs::path_dir(outfile))
     data.table::fwrite(meth_c, outfile)
+    return(outfile)
 }
 
 # Helper functions ----
@@ -283,47 +288,78 @@ deconvolve_asm_methylation <- function(meth_c) {
 }
 
 calculate_asm_m_t_hdi <- function(meth_c, n_cores, itersplit = 1e5) {
-    logerror("Cannot currently calculate ASM HDI on test data.")
-    return(meth_c)
-    #  M, UM, M_n and UM_n should not be NA for HDI calculation
-    # Need a way to find index of those that are eligible for calc. This is a start:s
-    # apply(seq_along(M), function(i) all(!is.na(M[i]), !is.na(UM[i]), !is.na(M_n), !is.na(UM_n)))
-
+    # Split into tables of length given by itersplit for parallel processing
     inp_len <- nrow(meth_c)
     split_factor <- make_split_factor(inp_len, itersplit)
-
     msplit <- iterators::isplit(meth_c, split_factor)
 
-    # Calculate HDI for ref allele
+    # Calculate HDI for both alleles
     doParallel::registerDoParallel(cores = n_cores)
-    hdi_ref <- foreach(v = msplit, .combine = "rbind") %dopar% {
-        x <- v$value
-        M <- round(meth_c$ref_total_counts_m * meth_c$ref_m_t, 0)
-        UM <- meth_c$ref_total_counts_m - M
-        M_n <- round(meth_c$ref_total_counts_m_i * meth_c$ref_m_i, 0)
-        UM_n <- meth_c$ref_total_counts_m_i - M_n
-        hdi <- vec_HDIofMCMC_mt(M, UM, M_n, UM_n, meth_c$purity, meth_c$ref_CN, credMass = 0.99)
-        colnames(hdi) <- c("ref_m_t_low", "ref_m_t_high")
-        return(hdi)
+    hdi <- foreach(x = msplit, .combine = "rbind") %dopar% {
+        v <- x$value
+
+        # Set empty data table to store results
+        res <- data.frame(
+            matrix(nrow = nrow(v), ncol = 0)
+        )
+
+        # Get table of only meth_c values eligible for HDI calculation (i.e. counts present)
+        ix_asm_hdi <- sel_asm_hdi_pass(v, "ref") # Select sites eligible for HDI
+        ref_hdi <- calculate_asm_hdi(v[ix_asm_hdi, ], "ref") # Calculate HDI
+        res[ix_asm_hdi, colnames(ref_hdi)] <- data.frame(ref_hdi) # Assign HDI at eligible sites
+
+        # Repeat as above for alt allele
+        ix_asm_hdi <- sel_asm_hdi_pass(v, "alt") # Select sites eligible for HDI
+        alt_hdi <- calculate_asm_hdi(v[ix_asm_hdi, ], "alt") # Calculate HDI
+        res[ix_asm_hdi, colnames(alt_hdi)] <- data.frame(alt_hdi) # Assign HDI at eligible sites
+
+        # Return result for binding
+        return(res)
     }
     doParallel::stopImplicitCluster()
 
-    # Calculate HDi for alt allele
-    doParallel::registerDoParallel(cores = n_cores)
-    hdi_alt <- foreach(v = msplit, .combine = "rbind") %dopar% {
-        x <- v$value
-        M <- round(meth_c$alt_total_counts_m * meth_c$alt_m_t, 0)
-        UM <- meth_c$alt_total_counts_m - M
-        M_n <- round(meth_c$alt_total_counts_m_i * meth_c$alt_m_i, 0)
-        UM_n <- meth_c$alt_total_counts_m_i - M_n
-        hdi <- vec_HDIofMCMC_mt(M, UM, M_n, UM_n, meth_c$purity, meth_c$alt_CN, credMass = 0.99)
-        colnames(hdi) <- c("alt_m_t_low", "alt_m_t_high")
-        return(hdi)
-    }
-    doParallel::stopImplicitCluster()
-
-    meth_c <- cbind(meth_c, hdi_ref)
-    meth_c <- cbind(meth_c, hdi_alt)
+    meth_c <- cbind(meth_c, hdi)
 
     return(meth_c)
+}
+
+sel_asm_hdi_pass <- function(x, allele) {
+    # Helper function to select sites eligible for HDI calculation for a signle allele
+
+    # Return TRUE if allele field has counts, pure, count_i, meth_i and CN data present, otherwise return false
+    # Use complete.cases function to streamline
+    col_prefix <- ifelse(allele == "ref", "ref_", "alt_")
+    fields <- paste0(
+        col_prefix,
+        c("total_counts_m", "m_t", "total_counts_m_i", "m_i", "CN")
+    )
+    complete.cases(x[, ..fields])
+}
+
+calculate_asm_hdi <- function(meth_c, allele) {
+    # Helper function to calculate HDI for a single allele
+    # Set fields based on allele
+    col_prefix <- ifelse(allele == "ref", "ref_", "alt_")
+    counts <- paste0(col_prefix, "total_counts_m")
+    pure <- paste0(col_prefix, "m_t")
+    counts_i <- paste0(col_prefix, "total_counts_m_i")
+    meth_i <- paste0(col_prefix, "m_i")
+    CN <- paste0(col_prefix, "CN")
+
+    # Generate inputs for HDI calculation
+    M <- round(meth_c[[counts]] * meth_c[[pure]], 0)
+    UM <- meth_c[[counts]] - M
+    M_n <- round(meth_c[[counts_i]] * meth_c[[meth_i]], 0)
+    UM_n <- meth_c[[counts_i]] - M_n
+    hdi <- vec_HDIofMCMC_mt(M, UM, M_n, UM_n, meth_c[["purity"]], meth_c[[CN]], credMass = 0.95)
+    colnames(hdi) <- paste0(col_prefix, c("m_t_low", "m_t_high"))
+    return(hdi)
+}
+
+cmain_asm_ss_dmps <- function(sample, config) {
+    #  Calculate AS-DMP within-sample using CAMDAC where available
+}
+
+cmain_asm_ss_dmps <- function(sample, origin, config) {
+    #  Calculate AS-DMP between-samples using CAMDAC where available
 }

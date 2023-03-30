@@ -52,4 +52,6 @@ assign_asm_cna <- function(ol) {
         ref_CN = nB,
         alt_CN = nA
     )]
+
+    return(ol)
 }
