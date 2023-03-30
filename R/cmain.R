@@ -331,7 +331,7 @@ cmain_run_battenberg <- function(tumour, normal, config) {
 
   # Limit number of cores to 6 to avoid battenberg memory errors.
   # TODO: Allele counts with 10 cores worked but battenberg with 10 gave OOM error. Setting nthreads to 5 for now.
-  log_warn("Battenberg is currently limited to 6 cores to avoid memory errors.")
+  logwarn("Battenberg is currently limited to 6 cores to avoid memory errors.")
   bb_cores <- ifelse(config$n_cores <= 6, config$n_cores, 6)
   min_normal_depth <- config$min_cov
 
