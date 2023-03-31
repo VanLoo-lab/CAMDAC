@@ -384,42 +384,19 @@ cmain_asm_ss_dmps <- function(sample, config) {
     M_ref <- round(dt[["ref_total_counts_m"]] * dt[["ref_m"]], 0)
     UM_ref <- dt[["ref_total_counts_m"]] - M_ref
 
-    # Make DMP calls
-    phypo <- calc_prob_dmp(M_alt, UM_alt, M_ref, UM_ref, ncores = ncores, itersplit = itersplit)
-    prob_DMP <- data.table::fifelse(asm_b_diff > 0, 1 - phypo, phypo) # I.e. if ref is greater than alt then it's a ref hyper DMP
-
-    # Calculate bulk and pure DMPs
-    asm_DMP_b <- data.table::fcase(
-        prob_DMP >= prob & asm_b_diff >= effect_size, "hyper",
-        prob_DMP >= prob & asm_b_diff <= (-effect_size), "hypo"
-    )
-
-    # Return if no pure data is available (normal only)
-    if ("ref_m_t" %in% colnames(dt) == FALSE) {
-        dt <- cbind(dt, data.table(prob_DMP, asm_b_diff, asm_DMP_b))
-        # Return data
-        ss_dmp_out <- get_fpath(sample, config, "asm_ss_dmp")
-        data.table::fwrite(dt, ss_dmp_out, quote = FALSE, na = "NA")
-        return(ss_dmp_out)
+    if ("ref_m_t" %in% colnames(dt)) {
+        asm_t_diff <- dt[["ref_m_t"]] - dt[["alt_m_t"]]
+    } else {
+        asm_t_diff <- NULL
     }
 
-    # Otherwise, calculate DMPs from pure data and return
-    # Calculate DMP probability from pure data if available
-    asm_t_diff <- dt[["ref_m_t"]] - dt[["alt_m_t"]]
-    prob_DMP <- data.table::fifelse(asm_t_diff > 0, 1 - phypo, phypo) # I.e. if ref is greater than alt then it's a ref hyper DMP
+    # Make DMP call
+    dmp_call <- dmp_call_pipe(asm_b_diff, M_ref, UM_ref, M_alt, UM_alt, asm_t_diff, effect_size, prob, itersplit)
 
-    asm_DMP_b <- data.table::fcase(
-        prob_DMP >= prob & asm_b_diff >= effect_size, "hyper",
-        prob_DMP >= prob & asm_b_diff <= (-effect_size), "hypo"
-    )
-
-    asm_DMP_t <- data.table::fcase(
-        prob_DMP >= prob & asm_t_diff >= effect_size, "hyper",
-        prob_DMP >= prob & asm_t_diff <= (-effect_size), "hypo"
-    )
-
-    # Bind new calls
-    dt <- cbind(dt, data.table(prob_DMP, asm_b_diff, asm_DMP_b, asm_t_diff, asm_DMP_t))
+    # Reformat and merge
+    asm_names <- c("prob_DMP", "asm_b_diff", "asm_DMP_b", "asm_t_diff", "asm_DMP_t")
+    names(dmp_call) <- asm_names[1:ncol(dmp_call)]
+    dt <- cbind(dt, dmp_call)
 
     # Return data
     ss_dmp_out <- get_fpath(sample, config, "asm_ss_dmp")
@@ -427,15 +404,59 @@ cmain_asm_ss_dmps <- function(sample, config) {
     return(ss_dmp_out)
 }
 
-cmain_asm_bs_dmps <- function(sample, origin, config) {
+cmain_asm_dmps <- function(sample, origin, config) {
     # Calculate AS-DMP between-samples
     asm_file <- get_fpath(sample, config, "asm_meth_pure")
     origin_file <- get_fpath(origin, config, "asm_meth")
     loginfo("Running ASM DMP calls for %s against %s", sample$id, origin$id)
 
+    # TODO: move to config
+    effect_size <- 0.2
+    prob <- 0.99
+    itersplit <- 1e5
+
     #  Calculate AS-DMP within-sample, including CAMDAC where available
     abb <- fread_chrom(asm_file)
     ori <- fread_chrom(origin_file)
+    # Rename non chrom start end names with dplyr
+    ori <- dplyr::rename_with(ori, ~ paste0(.x, "_o"), .cols = !matches("chrom|start|end"))
 
-    #
+    # Overlap datasets
+    setkey(abb, chrom, start, end)
+    dt <- merge(abb, ori, by = c("chrom", "start", "end"), all.x = TRUE)
+
+    # Run DMP callin for ref allele
+    mbdiff <- dt[["ref_m"]] - dt[["ref_m_o"]]
+    M <- round(dt[["ref_total_counts_m_o"]] * dt[["ref_m_o"]], 0)
+    UM <- dt[["ref_total_counts_m_o"]] - M
+    M_n <- round(dt[["ref_total_counts_m"]] * dt[["ref_m"]], 0)
+    UM_n <- dt[["ref_total_counts_m"]] - M_n
+    mtdiff <- dt[["ref_m_t"]] - dt[["ref_m_o"]]
+
+    # Make ref DMP call and merge
+    loginfo("ASM: Calling tumor-normal REF DMPs")
+    dmp_call <- dmp_call_pipe(mbdiff, M, UM, M_n, UM_n, mtdiff, effect_size, prob, itersplit)
+    asm_names <- c("prob_ref_DMP", "ref_m_diff", "ref_DMP_b", "ref_m_t_diff", "ref_DMP_t")
+    names(dmp_call) <- asm_names[1:ncol(dmp_call)]
+    dt <- cbind(dt, dmp_call)
+
+    # Run DMP calling for alt allele
+    mbdiff <- dt[["alt_m"]] - dt[["alt_m_o"]]
+    M <- round(dt[["alt_total_counts_m_o"]] * dt[["alt_m_o"]], 0)
+    UM <- ori[["alt_total_counts_m"]] - M
+    M_n <- round(dt[["alt_total_counts_m"]] * dt[["alt_m"]], 0)
+    UM_n <- dt[["alt_total_counts_m"]] - M_n
+    mtdiff <- dt[["alt_m_t"]] - dt[["alt_m_o"]]
+
+    # Make alt DMP calla nd merge
+    loginfo("ASM: Calling tumor-normal ALT DMPs")
+    dmp_call <- dmp_call_pipe(mbdiff, M, UM, M_n, UM_n, mtdiff, effect_size, prob, itersplit)
+    asm_names <- c("prob_alt_DMP", "alt_m_diff", "alt_DMP_b", "alt_m_t_diff", "alt_DMP_t")
+    names(dmp_call) <- asm_names[1:ncol(dmp_call)]
+    dt <- cbind(dt, dmp_call)
+
+    # Save data
+    dmp_out <- get_fpath(sample, config, "asm_dmp")
+    data.table::fwrite(dt, dmp_out, quote = FALSE, na = "NA")
+    return(dmp_out)
 }
