@@ -8,6 +8,11 @@
 # a draw from a beta dist is greater than another
 # Takes counts and methylation fractions for normal and bulk
 prob_diff_meth <- function(M_n, UM_n, M, UM) {
+  # Return NA when counts are not given
+  if (any(is.na(c(M_n, UM_n, M, UM)))) {
+    return(NA)
+  }
+
   # TODO: Why are psuedocounts of 0.5 added? Is this part of evan miller's solution?
   M_n <- M_n + 1
   UM_n <- UM_n + 1
