@@ -363,6 +363,13 @@ cmain_asm_ss_dmps <- function(sample, config) {
         asm_file <- get_fpath(sample, config, "asm_meth")
     }
 
+    # Skip if output file exists
+    out_file <- get_fpath(sample, config, "asm_ss_dmps")
+    if (file.exists(out_file)) {
+        loginfo("Skipping %s", sample$id)
+        return()
+    }
+    
     # TODO: refactor function
     loginfo("Running ASM DMP calls for %s", sample$id)
     #  Calculate AS-DMP within-sample, including CAMDAC where available
@@ -408,6 +415,14 @@ cmain_asm_dmps <- function(sample, origin, config) {
     # Calculate AS-DMP between-samples
     asm_file <- get_fpath(sample, config, "asm_meth_pure")
     origin_file <- get_fpath(origin, config, "asm_meth")
+
+    # Skip if output file exists
+    out_file <- get_fpath(sample, config, "asm_dmp")
+    if (file.exists(out_file)) {
+        loginfo("Skipping ASM DMP calls for %s against %s", sample$id, origin$id)
+        return(out_file)
+    }
+
     loginfo("Running ASM DMP calls for %s against %s", sample$id, origin$id)
 
     # TODO: move to config
