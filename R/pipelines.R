@@ -64,6 +64,7 @@ preprocess <- function(sample_list, config) {
 asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NULL, config) {
   # Log
   loginfo("CAMDAC:::asm_pipeline start for %s", tumor$patient_id)
+  sample_list <- list(tumor, germline, infiltrates, origin)
 
   # Checks that ASM SNPs file is available, otherwise, creates from bulk allele counts on germline
   cmain_asm_make_snps(tumor, germline, config)
@@ -74,7 +75,7 @@ asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NU
   # Preprocess CpG, SNP and methylation data for all samples
   loginfo("Preprocessing ASM data")
   preprocess_asm(
-    list(tumor, germline, infiltrates, origin),
+    sample_list,
     config
   )
 
@@ -86,8 +87,11 @@ asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NU
 
   # TODO: How are CG-SNPs handled at allele counting stage for ASM?
   # Run ASM differential methylation within-sample
-  cmain_asm_ss_dmps(tumor, config)
-  cmain_asm_ss_dmps(normal, config)
+  for (s in sample_list) {
+    if (!is.null(s)) {
+      cmain_asm_ss_dmps(s, config)
+    }
+  }
 
   # Run ASM differential methylation between samples
   cmain_asm_dmps(tumor, origin, config)
