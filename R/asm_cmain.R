@@ -357,9 +357,85 @@ calculate_asm_hdi <- function(meth_c, allele) {
 }
 
 cmain_asm_ss_dmps <- function(sample, config) {
-    #  Calculate AS-DMP within-sample using CAMDAC where available
+    # Get pure methylation if it exists, else get bulk methylation
+    asm_file <- get_fpath(sample, config, "asm_meth_pure")
+    if (!file.exists(asm_file)) {
+        asm_file <- get_fpath(sample, config, "asm_meth")
+    }
+
+    # TODO: refactor function
+    loginfo("Running ASM DMP calls for %s", sample$id)
+    #  Calculate AS-DMP within-sample, including CAMDAC where available
+    dt <- fread_chrom(asm_file)
+
+    # Params
+    # TODO: Move to config
+    itersplit <- 1e5
+    effect_size <- 0.2
+    prob <- 0.99
+
+    # Calculate differential methylation given effect size
+    asm_b_diff <- dt[["ref_m"]] - dt[["alt_m"]]
+
+    # Calculate DMP probability from bulk data
+    # Probabilities are calculated on bulk counts
+    M_alt <- round(dt[["alt_total_counts_m"]] * dt[["alt_m"]], 0)
+    UM_alt <- dt[["alt_total_counts_m"]] - M_alt
+    M_ref <- round(dt[["ref_total_counts_m"]] * dt[["ref_m"]], 0)
+    UM_ref <- dt[["ref_total_counts_m"]] - M_ref
+
+    # Make DMP calls
+    phypo <- calc_prob_dmp(M_alt, UM_alt, M_ref, UM_ref, ncores = ncores, itersplit = itersplit)
+    prob_DMP <- data.table::fifelse(asm_b_diff > 0, 1 - phypo, phypo) # I.e. if ref is greater than alt then it's a ref hyper DMP
+
+    # Calculate bulk and pure DMPs
+    asm_DMP_b <- data.table::fcase(
+        prob_DMP >= prob & asm_b_diff >= effect_size, "hyper",
+        prob_DMP >= prob & asm_b_diff <= (-effect_size), "hypo"
+    )
+
+    # Return if no pure data is available (normal only)
+    if ("ref_m_t" %in% colnames(dt) == FALSE) {
+        dt <- cbind(dt, data.table(prob_DMP, asm_b_diff, asm_DMP_b))
+        # Return data
+        ss_dmp_out <- get_fpath(sample, config, "asm_ss_dmp")
+        data.table::fwrite(dt, ss_dmp_out, quote = FALSE, na = "NA")
+        return(ss_dmp_out)
+    }
+
+    # Otherwise, calculate DMPs from pure data and return
+    # Calculate DMP probability from pure data if available
+    asm_t_diff <- dt[["ref_m_t"]] - dt[["alt_m_t"]]
+    prob_DMP <- data.table::fifelse(asm_t_diff > 0, 1 - phypo, phypo) # I.e. if ref is greater than alt then it's a ref hyper DMP
+
+    asm_DMP_b <- data.table::fcase(
+        prob_DMP >= prob & asm_b_diff >= effect_size, "hyper",
+        prob_DMP >= prob & asm_b_diff <= (-effect_size), "hypo"
+    )
+
+    asm_DMP_t <- data.table::fcase(
+        prob_DMP >= prob & asm_t_diff >= effect_size, "hyper",
+        prob_DMP >= prob & asm_t_diff <= (-effect_size), "hypo"
+    )
+
+    # Bind new calls
+    dt <- cbind(dt, data.table(prob_DMP, asm_b_diff, asm_DMP_b, asm_t_diff, asm_DMP_t))
+
+    # Return data
+    ss_dmp_out <- get_fpath(sample, config, "asm_ss_dmp")
+    data.table::fwrite(dt, ss_dmp_out, quote = FALSE, na = "NA")
+    return(ss_dmp_out)
 }
 
-cmain_asm_ss_dmps <- function(sample, origin, config) {
-    #  Calculate AS-DMP between-samples using CAMDAC where available
+cmain_asm_bs_dmps <- function(sample, origin, config) {
+    # Calculate AS-DMP between-samples
+    asm_file <- get_fpath(sample, config, "asm_meth_pure")
+    origin_file <- get_fpath(origin, config, "asm_meth")
+    loginfo("Running ASM DMP calls for %s against %s", sample$id, origin$id)
+
+    #  Calculate AS-DMP within-sample, including CAMDAC where available
+    abb <- fread_chrom(asm_file)
+    ori <- fread_chrom(origin_file)
+
+    #
 }
