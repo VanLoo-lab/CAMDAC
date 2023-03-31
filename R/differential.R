@@ -69,15 +69,9 @@ call_dmps <- function(pmeth, nmeth, effect_size = 0.2, prob = 0.99, itersplit = 
   prob_DMP <- data.table::fifelse(m_t_diff > 0, 1 - phypo, phypo) # I.e. if bulk is greater than normal then it's a hyper DMP
   rm(phypo)
 
-  DMP_b <- data.table::fcase(
-    prob_DMP >= prob & m_b_diff >= effect_size, "hyper",
-    prob_DMP >= prob & m_b_diff <= (-effect_size), "hypo"
-  )
+  DMP_b <- prob_to_call(prob_DMP, m_b_diff, effect_size = effect_size, prob = prob)
+  DMP_t <- prob_to_call(prob_DMP, m_t_diff, effect_size = effect_size, prob = prob)
 
-  DMP_t <- data.table::fcase(
-    prob_DMP >= prob & m_t_diff >= effect_size, "hyper",
-    prob_DMP >= prob & m_t_diff <= (-effect_size), "hypo"
-  )
 
   res <- cbind(
     pmeth,
@@ -92,6 +86,12 @@ call_dmps <- function(pmeth, nmeth, effect_size = 0.2, prob = 0.99, itersplit = 
   return(res)
 }
 
+prob_to_call <- function(p, mdiff, effect_size = 0.2, prob = 0.99) {
+  data.table::fcase(
+    p >= prob & mdiff >= effect_size, "hyper",
+    p >= prob & mdiff <= (-effect_size), "hypo"
+  )
+}
 
 #' Add CAMDAC region annotations to dt.
 #' DT must have chrom, start, end
@@ -241,4 +241,24 @@ call_dmrs <- function(tmeth_dmps, regions_annotations, itersplit = 3e5, min_DMP_
   doParallel::stopImplicitCluster()
 
   return(dmrs)
+}
+
+# Note: mbdiff and mtdiff are calculated tumor - normal
+dmp_call_pipe <- function(mbdiff, M_n, UM_n, M, UM, mtdiff = NULL, effect_size = 0.2, prob = 0.99, itersplit = 1e5) {
+  # Calculate bulk DMP probability from counts
+  phypo <- calc_prob_dmp(M_n, UM_n, M, UM, ncores = ncores, itersplit = itersplit)
+
+  # Run bulk calculation if no pure given
+  if (is.null(mtdiff)) {
+    # If tumor is greater than normal then it's a hyper DMP
+    prob_DMP <- data.table::fifelse(mbdiff > 0, 1 - phypo, phypo)
+    DMP_b <- prob_to_call(prob_DMP, mbdiff, effect_size, prob)
+    return(data.table(prob_DMP, mbdiff, DMP_b))
+  } else {
+    # Otherwise, run pure calculation and get DMP for bulk and pure
+    prob_DMP <- data.table::fifelse(mtdiff > 0, 1 - phypo, phypo)
+    DMP_b <- prob_to_call(prob_DMP, mbdiff, effect_size, prob)
+    DMP_t <- prob_to_call(prob_DMP, mtdiff, effect_size, prob)
+    return(data.table(prob_DMP, mbdiff, DMP_b, mtdiff, DMP_t))
+  }
 }
