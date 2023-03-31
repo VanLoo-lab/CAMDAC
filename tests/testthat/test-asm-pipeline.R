@@ -17,4 +17,8 @@ test_that("ASM pipeline runs", {
     origin = normal,
     config = asm_config
   )
+
+  # Confirm that final output file is created
+  asm_out <- get_fpath(tumor, asm_config, "asm_dmp")
+  expect_true(file.exists(asm_out))
 })
