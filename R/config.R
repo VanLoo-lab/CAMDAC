@@ -1,4 +1,3 @@
-
 #' Build CAMDAC sample object
 #' @param id Unique identifier for the sample
 #' @param sex The sex of the patient, "XX" or "XY". Required for CNA calling.
@@ -43,9 +42,9 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, re
   refs <- ifelse(is.null(refs), pipeline_files(), fs::path_real(refs))
 
   # Battenberg reference files are not available for hg19. Set ASCAT as caller in this case.
-  if(build=="hg19" && cna_caller=="battenberg"){
+  if (build == "hg19" && cna_caller == "battenberg") {
     logging::logwarn("Battenberg.m not yet implemented for hg19 in CAMDAC. Setting ASCAT as CNA caller.")
-    cna_caller="ascat"
+    cna_caller <- "ascat"
   }
 
   # If using battenberg, validate that java is available and set beagle jar
@@ -60,7 +59,7 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, re
       "beagle_jar"
     )
   } else {
-    bjar = NULL
+    bjar <- NULL
   }
 
   # If using rrbs, CNA caller must be ASCAT
@@ -101,7 +100,7 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
   stopifnot(code %in% c(
     "counts", "meth", "pure", "dmps", "dmrs", "segment_split", "snps",
     "ascat", "battenberg", "tsnps", "cna", "asm_snps", "asm_counts", "asm_hap_stats",
-    "asm_phase_map", "asm_meth", "asm_cna", "asm_meth_cna", "asm_meth_pure"
+    "asm_phase_map", "asm_meth", "asm_cna", "asm_meth_cna", "asm_meth_pure", "asm_ss_dmp"
   ))
 
   # Set output file name
@@ -184,12 +183,12 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
         sep = "."
       )
     ),
-     code == "asm_phase_map" ~ fs::path(
+    code == "asm_phase_map" ~ fs::path(
       config$outdir, sample$patient_id, "AlleleSpecific", sample$id, paste(
         sample$patient_id, sample$id, "asm_phase_map", "csv", "gz",
         sep = "."
       )
-    ),   
+    ),
     code == "asm_counts" ~ fs::path(
       config$outdir, sample$patient_id, "AlleleSpecific", sample$id, paste(
         sample$patient_id, sample$id, "asm_counts", "csv", "gz",
@@ -202,27 +201,33 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
         sep = "."
       )
     ),
-      code == "asm_meth" ~ fs::path(
+    code == "asm_meth" ~ fs::path(
       config$outdir, sample$patient_id, "Methylation", sample$id, paste(
         sample$patient_id, sample$id, "asm_meth", "csv", "gz",
         sep = "."
       )
     ),
-      code == "asm_cna" ~ fs::path(
+    code == "asm_cna" ~ fs::path(
       config$outdir, sample$patient_id, "Methylation", sample$id, paste(
         sample$patient_id, sample$id, "asm_cna", "txt",
         sep = "."
       )
     ),
-      code == "asm_meth_cna" ~ fs::path(
+    code == "asm_meth_cna" ~ fs::path(
       config$outdir, sample$patient_id, "Methylation", sample$id, paste(
         sample$patient_id, sample$id, "asm_meth_cna", "csv", "gz",
         sep = "."
       )
     ),
-      code == "asm_meth_pure" ~ fs::path(
+    code == "asm_meth_pure" ~ fs::path(
       config$outdir, sample$patient_id, "Methylation", sample$id, paste(
         sample$patient_id, sample$id, "asm_meth_pure", "csv", "gz",
+        sep = "."
+      )
+    ),
+    code == "asm_ss_dmp" ~ fs::path(
+      config$outdir, sample$patient_id, "Methylation", sample$id, paste(
+        sample$patient_id, sample$id, "asm_ss_dmp", "csv", "gz",
         sep = "."
       )
     )
