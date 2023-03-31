@@ -61,7 +61,7 @@ preprocess <- function(sample_list, config) {
 #' @param infiltrates. CamSample object for infiltrating normal sample. Used for deconvolution.
 #' @param origin. CamSample object for cell of origin sample. Used for differential methylation.
 #' @param config. CamConfig object.
-asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NULL, config){
+asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NULL, config) {
   # Log
   loginfo("CAMDAC:::asm_pipeline start for %s", tumor$patient_id)
 
@@ -84,15 +84,13 @@ asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NU
   # Run ASM deconvolution
   cmain_asm_deconvolve(tumor, infiltrates, config)
 
-  stop()
+  # TODO: How are CG-SNPs handled at allele counting stage for ASM?
   # Run ASM differential methylation within-sample
   cmain_asm_ss_dmps(tumor, config)
   cmain_asm_ss_dmps(normal, config)
 
   # Run ASM differential methylation between samples
   cmain_asm_dmps(tumor, origin, config)
-
-  #cmain_asm_dmrs(tumor, config) -- is this possible?
 
   # Log complete
   loginfo("CAMDAC:::asm_pipeline complete for %s", tumor$patient_id)
