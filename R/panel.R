@@ -45,18 +45,18 @@ panel_meth_from_counts <- function(ac_files, ac_props = NULL, min_coverage = 3, 
 #' Load allele count files
 #' @param ac_files Allele count files from CAMDAC
 #' @return List of data tables for each allele counts file
-load_panel_ac_files <- function(ac_files) {
+load_panel_ac_files <- function(ac_files, cores=5) {
   # Set fields to draw from AC files
   ac_load_fields <- c(
     "chrom", "start", "end", "POS", "ref", "alt",
     "total_depth", "M", "UM", "m", "total_counts_m", "BAF"
   )
   # Load ac files as list of data tables
-  data <- lapply(ac_files, function(x) {
+  data <- mclapply(ac_files, function(x) {
     v <- data.table::fread(x, select = ac_load_fields)
     setkey(v, chrom, start, end)
     return(v)
-  })
+  }, mc.cores = cores)
   # Find unique cpg positions in all samples so we can create
   #  a shared mapping for the dataset
   uac <- unique_cpg_pos(data)
@@ -121,7 +121,7 @@ min_sample_cg_threshold <- function(x, min_samples) {
   rs <- Reduce(
     cbind,
     lapply(x, function(o) o$PASS)
-  ) %>% matrix %>% rowSums()
+  ) %>% as.matrix() %>% rowSums()
   return(rs >= min_samples)
 }
 
@@ -133,7 +133,7 @@ max_sd_threshold <- function(x, max_sd) {
   rs <- Reduce(
     cbind,
     lapply(x, function(o) o$m)
-  ) %>% matrix %>% rowSds(na.rm = T)
+  ) %>% as.matrix() %>% rowSds(na.rm = T)
   bool <- ifelse(!is.na(rs) & rs <= max_sd, TRUE, FALSE)
   return(bool)
 }
@@ -187,8 +187,8 @@ panel_meth_counts <- function(x, ac_props = NULL) {
     end <- x[[1]]$end
   } else {
     # Otherwise, sum the counts
-    M <- Reduce(cbind, lapply(x, function(o) o$M)) %>% matrix %>% rowSums(na.rm = T)
-    UM <- Reduce(cbind, lapply(x, function(o) o$UM)) %>% matrix %>% rowSums(na.rm = T)
+    M <- Reduce(cbind, lapply(x, function(o) o$M)) %>% as.matrix() %>% rowSums(na.rm = T)
+    UM <- Reduce(cbind, lapply(x, function(o) o$UM)) %>% as.matrix() %>% rowSums(na.rm = T)
     m <- M / (M + UM)
     total_counts_m <- M + UM
     POS <- NA
