@@ -11,7 +11,7 @@
 #' @param cores Number of cores to use for calculating HDI
 #' @export
 panel_meth_from_counts <- function(ac_files, ac_props = NULL, min_coverage = 3, min_samples = 1,
-                                   max_sd = 0.1, drop_snps = FALSE, cores = 5) {
+                                   max_sd = 1, drop_snps = FALSE, cores = 5) {
   # Load AC files as list, ordering each sample by the same CpG positions
   # Adds a PASS field for us to track and set sites to NA based on filters
   acl <- load_panel_ac_files(ac_files)
@@ -121,15 +121,19 @@ min_sample_cg_threshold <- function(x, min_samples) {
   rs <- Reduce(
     cbind,
     lapply(x, function(o) o$PASS)
-  ) %>% rowSums()
+  ) %>% matrix %>% rowSums()
   return(rs >= min_samples)
 }
 
 max_sd_threshold <- function(x, max_sd) {
+  # Can't calculate SD with one sample. Return TRUE if so
+  if (length(x) == 1) {
+    return(rep(TRUE, nrow(x[[1]])))
+  }
   rs <- Reduce(
     cbind,
     lapply(x, function(o) o$m)
-  ) %>% rowSds(na.rm = T)
+  ) %>% matrix %>% rowSds(na.rm = T)
   bool <- ifelse(!is.na(rs) & rs <= max_sd, TRUE, FALSE)
   return(bool)
 }
@@ -183,8 +187,8 @@ panel_meth_counts <- function(x, ac_props = NULL) {
     end <- x[[1]]$end
   } else {
     # Otherwise, sum the counts
-    M <- Reduce(cbind, lapply(x, function(o) o$M)) %>% rowSums(na.rm = T)
-    UM <- Reduce(cbind, lapply(x, function(o) o$UM)) %>% rowSums(na.rm = T)
+    M <- Reduce(cbind, lapply(x, function(o) o$M)) %>% matrix %>% rowSums(na.rm = T)
+    UM <- Reduce(cbind, lapply(x, function(o) o$UM)) %>% matrix %>% rowSums(na.rm = T)
     m <- M / (M + UM)
     total_counts_m <- M + UM
     POS <- NA
