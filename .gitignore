@@ -39,3 +39,5 @@ test_*.R
 *dev.md
 tests/testthat/result*
 local/
+wgbs_asm/
+test_wgbs_asm/
