@@ -154,6 +154,8 @@ combine_tumour_normal_methylation <- function(t_meth, n_meth) {
 }
 
 annotate_cgs_with_cnas <- function(meth_c, cna) {
+  # Format cna names, allowing datasets to be independent
+  names(cna)[1:5] <- c("chrom", "start", "end", "nA", "nB")
   setkey(cna, chrom, start, end)
   # Add additional columns so segments can be referenced elswhere in code
   cna$seg_start <- cna$start
