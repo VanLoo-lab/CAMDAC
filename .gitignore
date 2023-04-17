@@ -41,3 +41,4 @@ tests/testthat/result*
 local/
 wgbs_asm/
 test_wgbs_asm/
+result*
