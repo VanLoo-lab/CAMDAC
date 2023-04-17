@@ -309,6 +309,11 @@ calculate_m_t_hdi <- function(meth_c, n_cores, itersplit = 1e5) {
 #' @return Value: HDIlim is a vector containing the limits of the HDI
 #' @keywords internal
 HDIofMCMC_mt <- function(M_b, UM_b, M_n, UM_n, p, CN, credMass = 0.99) {
+  # Cannot calculate if counts are not given. Return NA in this instance
+  if(any(is.na(c(M_b, UM_b, M_n, UM_n, p, CN)))){
+    return(c(lower=NA, upper=NA))
+  }
+
   # Simulate beta distributions from bulk and normal methylation
   bulk_dist <- rbeta(n = 2000, shape1 = M_b + 1, shape2 = UM_b + 1)
   normal_dist <- rbeta(n = 2000, shape1 = M_n + 1, shape2 = UM_n + 1)
@@ -346,7 +351,7 @@ vec_HDIofMCMC_mt <- function(...) {
   # Vectorize will return a matrix, however if there are sufficiently large rows,
   # the matrix is returned as a list of vectors. This is a workaround to ensure that the
   # result is always a matrix.
-  if (class(result) == "list") {
+  if ("list" %in% class(result)) {
     # Unfortunately, sites with no result are returned simply as numeric(0).
     # Set these to appropriate NA values before reducing, otherwise they are dropped by R.
     z <- sapply(result, length) != 2
