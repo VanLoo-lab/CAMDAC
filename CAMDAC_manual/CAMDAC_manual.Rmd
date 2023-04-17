@@ -102,6 +102,8 @@ CAMDAC::pipeline_tumor_normal(
 
 You can look up all of the wrapper arguments using the command ```{r}help(CAMDAC::pipeline_tumor_normal)```.
 
+For more complex study designs with CAMDAC, see the next section on step-by-step analysis.
+
 ### CAMDAC step-by-step
 
 <br/> In this section, we show users how to run CAMDAC in a step-by-step fashion within R. There are six main CAMDAC functions calls:
