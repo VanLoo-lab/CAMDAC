@@ -193,6 +193,7 @@ cmain_fit_meth_cna <- function(tumor, config) {
         stop("Error. CNA file not found for tumor.")
     }
     cna <- fread_chrom(cna_file)
+   
 
     # Get BAF for tumor at phased SNPs
     hap_stats <- fread_chrom(get_fpath(tumor, config, "asm_hap_stats"))
@@ -204,13 +205,10 @@ cmain_fit_meth_cna <- function(tumor, config) {
     asm_meth <- fread_chrom(get_fpath(tumor, config, "asm_meth"))
 
     # Overlap three datasets from ASM counter. For each CpG, return asm, BAF, cna and methylation.
-    # TODO: Consider asm_hap as main output of asm counter alongside three source datasets.
     asm_hap <- merge_asm_hap(asm_meth, hap_stats, phase_map)
-    # Overlap DNA methylation.
+    # Overlap DNA methylation with CNA.
     asm_hap_cna <- overlap_meth_cna(asm_hap, cna)
 
-    # TODO: Use battenberg phasing where available
-    # TODO: Explain CpGs where ref_CN > alt_CN but ref_m is NA
     # Assign each phased CpG to a CNA state
     amc <- assign_asm_cna(asm_hap_cna)
 

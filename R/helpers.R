@@ -221,6 +221,9 @@ load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA
     selector, nMin1_A, nMin2_A
   )]
 
+  # Ensure nA is always nMajor
+   cna[nA<nB, `:=`(nA=nB, nB=nA)]
+
   # Return if raw data required
   if (bb_raw) {
     return(bb_cna)

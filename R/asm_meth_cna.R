@@ -21,10 +21,10 @@ overlap_meth_cna <- function(asm_hap, cna) {
 
     # Merge methylation and cna
     amc <- data.table::foverlaps(asm_hap, cna, mult = "first", nomatch = NA)
-    amc$start <- amc$cna_start
-    amc$end <- amc$cna_end
-    amc$start <- amc$i.start
-    amc$end <- amc$i.end # Set back
+    amc$cna_start <- amc$start
+    amc$cna_end <- amc$end
+    amc$start <- amc$i.start # Set back to CG
+    amc$end <- amc$i.end # Set back to CG
     amc$i.start <- NULL
     amc$i.end <- NULL
     setkey(amc, chrom, start, end)
@@ -33,8 +33,10 @@ overlap_meth_cna <- function(asm_hap, cna) {
 }
 
 assign_asm_cna <- function(ol) {
-    # TODO: This is a naive and incorrect solution. Update assignment
+    # TODO: Use battenberg phasing where available
+    # TODO: Explain CpGs where ref_CN > alt_CN but ref_m is NA?
 
+    # Simple case: equal CNA states
     ol[
         nA == nB,
         `:=`(
@@ -43,15 +45,35 @@ assign_asm_cna <- function(ol) {
         )
     ]
 
-    ol[hap_BAF <= 0.5, `:=`(
-        ref_CN = nA,
-        alt_CN = nB
-    )]
+    # For each segment, annotate whether nMajor is consistent with ref or alt.
+    segmap = ol[, .(
+        mBAF = mean(hap_BAF, na.rm=TRUE),
+        medBaF = median(hap_BAF, na.rm=TRUE),
+        MajRef = sum(hap_BAF < 0.5, na.rm=TRUE),
+        MajAlt = sum(hap_BAF > 0.5, na.rm=TRUE),
+        nBAF = .N),
+        by = c("chrom", "cna_start", "cna_end", "nA", "nB")
+    ]
 
-    ol[hap_BAF > 0.5, `:=`(
-        ref_CN = nB,
-        alt_CN = nA
-    )]
+    # Overlap
+    ol <- left_join(ol, segmap)
+
+
+    # Assign based on BAF per segment
+    ol[
+        is.na(ref_CN) & is.na(alt_CN) & (MajRef > MajAlt),
+        `:=`(
+            ref_CN = nA,
+            alt_CN = nB
+        )
+    ]
+    ol[
+        is.na(ref_CN) & is.na(alt_CN) & (MajRef < MajAlt),
+        `:=`(
+            ref_CN = nB,
+            alt_CN = nA
+        )
+    ]
 
     return(ol)
 }
