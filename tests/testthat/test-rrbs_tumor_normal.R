@@ -1,16 +1,15 @@
 test_that("rrbs tumor_normal_pipeline", {
-
   # Log test run
   logger::log_info("Running test: rrbs tumor_normal_pipeline. Estimated time: 25 minutes.")
 
   # Ensure pipeline files are downloaded
-  pf_dir = "pf_rrbs"
-  if(!fs::dir_exists(pf_dir)){
-      pf <- download_pipeline_files("rrbs", directory=pf_dir)
+  pf_dir <- "pf_rrbs"
+  if (!fs::dir_exists(pf_dir)) {
+    pf <- download_pipeline_files("rrbs", directory = pf_dir)
   }
 
   # Setup inputs
-  patient_id <- "P1"
+  patient_id <- "PRRBS"
   tumor_id <- "T"
   normal_id <- "N"
   tumor_bam <- system.file("extdata", "test_tumor.bam", package = "CAMDAC")
@@ -26,7 +25,7 @@ test_that("rrbs tumor_normal_pipeline", {
     pipeline_files, build,
     min_tumor = 1, min_normal = 1,
     n_cores = 10, mq = 0
-)
+  )
 
   # Check output directories are created and have more than one file each
   expected_outdirs <- sapply(
