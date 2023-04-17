@@ -588,8 +588,8 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
   
   # Create file
   f_nm <- paste(path_output, patient_id, ".", sample_id, ".", i, ".SNPs.CpGs.fst", sep = "")
-  print(f_nm)
   write_fst(df_merged,  f_nm)
+  cat(paste0("Written to: ", f_nm, "\n"))
 }
 
 # END
