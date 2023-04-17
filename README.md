@@ -1,6 +1,6 @@
 # Copy-number Aware Methylation Deconvolution and Analysis of Cancer (CAMDAC)
 
-Plesae refer to the [CAMDAC manual](https://htmlpreview.github.io/?https://github.com/VanLoo-lab/CAMDAC/blob/main/CAMDAC_manual.html) for a detailed description of the CAMDAC principles, installation and steps for running the code.
+Plesae refer to the [CAMDAC manual](https://htmlpreview.github.io/?https://github.com/VanLoo-lab/CAMDAC/blob/main/CAMDAC_manual/CAMDAC_manual.html) for a detailed description of the CAMDAC principles, installation and steps for running the code.
 
 To cite CAMDAC, please refer to our pre-print: [Larose Cadieux et al., 2020. Copy number-aware deconvolution of tumor-normal DNA methylation profiles. bioRxiv.](https://doi.org/10.1101/2020.11.03.366252).
 
