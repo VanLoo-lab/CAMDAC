@@ -1,4 +1,3 @@
-
 detect_genome_build <- function(bam_file) {
   # Get genome build from BAM header for opening reference files
 
@@ -39,9 +38,9 @@ get_reads_in_segments <- function(bam_file, segments, min_mapq, paired_end = FAL
 
   # Set segment chromosome names based on sequence style in BAM
   # Required to read BAM correctly e.g. hg38 vs GRCh38 contigs
-  is_ucsc = startsWith( seqnames(seqinfo(BamFile(bam_file)))[[1]], "chr" )
-  bamstyle = ifelse(is_ucsc, "UCSC", "NCBI")
-  GenomeInfoDb::seqlevelsStyle(segments) = bamstyle
+  is_ucsc <- startsWith(seqnames(seqinfo(BamFile(bam_file)))[[1]], "chr")
+  bamstyle <- ifelse(is_ucsc, "UCSC", "NCBI")
+  GenomeInfoDb::seqlevelsStyle(segments) <- bamstyle
 
   # Set parameters and read BamFile.
   #    ScanBamParam "whats" options are available via scanBamWhat()
@@ -58,8 +57,8 @@ get_reads_in_segments <- function(bam_file, segments, min_mapq, paired_end = FAL
   )
 
   # Format BAM to ucsc format if not already
-  if(!is_ucsc & nrow(bam_dt)>0){
-    bam_dt$rname = paste0("chr", bam_dt$rname)
+  if (!is_ucsc & nrow(bam_dt) > 0) {
+    bam_dt$rname <- paste0("chr", bam_dt$rname)
   }
 
   # For paired end reads, ensure that only reads with proper mates are returned
@@ -105,9 +104,9 @@ load_loci_as_data_table <- function(loci_file, drop_ccgg = TRUE) {
 }
 
 annotate_bam_with_loci <- function(bam_dt, loci_subset, drop_ccgg = FALSE, paired_end = FALSE) {
-  loci_subset$chrom = as.character(loci_subset$chrom)
+  loci_subset$chrom <- as.character(loci_subset$chrom)
   data.table::setkey(loci_subset, chrom, start, end)
-  bam_dt$chrom = as.character(bam_dt$chrom)
+  bam_dt$chrom <- as.character(bam_dt$chrom)
   data.table::setkey(bam_dt, chrom, start, end)
   # Depreciated on 210513 as loci already subset to relevant regions upstream
   # First limit loci_subset to regions in BAM to speed up later overlap by ~5x
@@ -161,19 +160,19 @@ drop_positions_outside_segments <- function(bam_dt, segments) {
   return(bam_dt)
 }
 
-fix_pe_strand_with_flags <- function(bam_dt, paired_end=T) {
+fix_pe_strand_with_flags <- function(bam_dt, paired_end = T) {
   # Convert "strand" column to CAMDAC-expected strand using Bismark flags for OT/OB
   #
   #                 |  R1     R2    |  CAMDAC strand column
   # Bismark flag OT | 99(+)  147(-) |       OT = "+"
   # Bismark flag OB | 83(-)  163(+) |       OB = "-"
   # Note, this is the same as viewing in IGV as "first of pair strand".
-  if(paired_end){
-  setkey(bam_dt, groupid)
-  bam_dt[, strand := data.table::fcase(
-    flag %in% c(99, 147), "+",
-    flag %in% c(83, 163), "-"
-  )]
+  if (paired_end) {
+    setkey(bam_dt, groupid)
+    bam_dt[, strand := data.table::fcase(
+      flag %in% c(99, 147), "+",
+      flag %in% c(83, 163), "-"
+    )]
   }
   return(bam_dt)
   # TODO: determine when to rename nstrand to strand
@@ -220,8 +219,10 @@ add_loci_read_position_skipCIGAR <- function(bam_dt) {
 
 add_loci_read_position <- function(bam_dt) {
   # Setup data as GRanges and aln object
-  aln <- GAlignments(seqnames = as.character(bam_dt$chrom), pos = bam_dt$read.start,
-  cigar = as.character(bam_dt$cigar), strand = GenomicAlignments::strand(bam_dt$strand), names = as.character(bam_dt$qname))
+  aln <- GAlignments(
+    seqnames = as.character(bam_dt$chrom), pos = bam_dt$read.start,
+    cigar = as.character(bam_dt$cigar), strand = GenomicAlignments::strand(bam_dt$strand), names = as.character(bam_dt$qname)
+  )
   gr <- GRanges(seqnames = bam_dt$chrom, ranges = IRanges(bam_dt$start, bam_dt$end))
   # Get loci position in read
   res <- pmapToAlignments(gr, aln)
@@ -458,7 +459,7 @@ flatten_pileup_to_counts <- function(bam_dt) {
     # hence Af selection is arbitrary and any field could be used.
     "total_depth" = length(Af),
     "CCGG" = sum(CCGG, na.rm = TRUE),
-    "mq" = paste0(mq, collapse = ",")
+    "mq" = median(as.numeric(mq), na.rm = TRUE)
   ),
   keyby = .(chrom, start, end, width, POS, ref, alt)
   ]
@@ -785,23 +786,56 @@ empty_count_alleles_result <- function() {
   return(bam_dt)
 }
 
-drop_all_duplicates <- function(dt) {
-  # Remove sites duplicated due to multiple SNPs overlapping CG/CCGG or
-  # SNPs on both CG nucleotides.
-  # FUTURE: CAMDAC to allow a one-to-many relationship between CGs and SNPs
-  # pileup_summary <- drop_all_duplicates(pileup_summary)
+filter_multi_snp_loci <- function(pileup_summary) {
+  # Reference files may carry potential SNPs on both CG nucleotides
+  # CAMDAC currently only handles one CG-SNP pair, therefore filter for the more informative position
+  # Select loci based on:
+  # - One pair has a SNP, we take this one as it informs us to what degree the CG is imbalanced
+  # - Take the member of the pair with the highest CpG coverage
+  # - Otherwise, take the cytosine site
+  # FUTURE: A tool like bis-SNP to determine SNPs per sample
 
-  # We want to remove all CG records that occur more than once, but the `duplicate` function doesn't return the first
-  # of the duplicated records. Here, we use the fromLast argument to search for duplicates in the opposite direction,
-  # and merge these results with `|` to capture all duplicate instances.
+  # Label multi_snp_loci (msl) based on duplicates
+  pileup_summary[, msl := duplicated(pileup_summary, by = c("chrom", "start", "end"), fromLast = F) |
+    duplicated(pileup_summary, by = c("chrom", "start", "end"), fromLast = T)]
 
-  dt[!(
-    duplicated(dt, by = c("chrom", "start", "end"), fromLast = F) |
-      duplicated(dt, by = c("chrom", "start", "end"), fromLast = T)
+  # Label loci as SNP based on BAF
+  pileup_summary[msl == T, is_snp := dplyr::between(BAF, 0.1, 0.9)]
+
+  # Label loci with maximum coverage (could be both)
+  pileup_summary[msl == T, max_cov := total_counts_m == max(total_counts_m), by = c("chrom", "start", "end")]
+  pileup_summary[msl == T, max_cov := ifelse(is.na(max_cov), FALSE, max_cov)]
+
+  # Any remaining duplicates are due to equivalance in the criteria. We can therefore take the first (C) element:
+  is_first <- !duplicated(pileup_summary[msl == T], by = c("chrom", "start", "end"))
+  pileup_summary[msl == T, is_first := is_first]
+
+  # Apply filters by position to determine which to keep
+  pileup_summary[msl == T,
+    keep := (
+      (!all(is_snp) & is_snp) | # One is a SNP
+        (!all(max_cov) & max_cov) # Max coverage
+    ),
+    by = c("chrom", "start", "end")
+  ]
+  pileup_summary[msl == T, keep_t := (
+    (!sum(keep) == 1 & is_first) |
+      (sum(keep) == 1) & keep),
+  by = c("chrom", "start", "end")
+  ]
+
+  # Filter out duplicates
+  pileup_summary <- pileup_summary[msl == F | (msl == T & !is.na(keep_t) & keep_t == T)]
+  # Remove any remaining duplicates (potential >2 multi-SNP loci. Not currently in references.)
+  pileup_summary <- pileup_summary[!duplicated(pileup_summary, by = c("chrom", "start", "end"))]
+
+  # Remove extra columns
+  pileup_summary[, `:=`(
+    msl = NULL, is_snp = NULL, is_first = NULL, max_cov = NULL, keep = NULL, keep_t = NULL
   )]
+
+  return(pileup_summary)
 }
-
-
 
 # Wrapper ----
 
@@ -853,7 +887,7 @@ cwrap_get_allele_counts <- function(bam_file, seg, loci_dt = NA, paired_end, dro
   pileup_summary <- filter_bad_allele_count_rows(pileup_summary, min_cov)
   pileup_summary <- compute_methylation_rates(pileup_summary)
   pileup_summary <- compute_BAFs(pileup_summary)
-
+  pileup_summary <- filter_multi_snp_loci(pileup_summary)
 
   # Format result for output
   result <- format_get_reads_result(pileup_summary)
