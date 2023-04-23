@@ -10,8 +10,8 @@ test_that("allele counting regions can be read from BED file", {
 
   # Run allele counting
   tumor <- CamSample(id = "T", sex = "XY", bam = bam)
-  cmain_count_alleles(tumor, config)
-  ac_file <- get_fpath(tumor, config, "counts")
+  cmain_count_alleles(tumor, config_t)
+  ac_file <- get_fpath(tumor, config_t, "counts")
 
   testthat::expect_true(
     fs::file_exists(
