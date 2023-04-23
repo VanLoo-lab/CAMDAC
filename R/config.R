@@ -243,6 +243,11 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
     return(fs::path_dir(output_name))
   }
 
+  # When outpath does not exist, an uninitialised character object is given. Replace with empty string.
+  if(length(output_name)==0) {
+    output_name <- ""
+  }
+
   return(output_name)
 }
 

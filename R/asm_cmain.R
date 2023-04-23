@@ -120,11 +120,23 @@ cmain_asm_make_methylation <- function(sample, config) {
 }
 
 
-cmain_asm_make_snps <- function(tumor, germline, config) {
+cmain_asm_make_snps <- function(tumor, germline, infiltrates, origin, config) {
     # Check that ASM snps file is availabe for tumor. If so, return NULL
     asm_snps_file <- get_fpath(tumor, config, "asm_snps")
     if (file.exists(asm_snps_file)) {
         loginfo("ASM snps file found for tumor.")
+        # Loop over remaining objects
+        for (i in list(germline, infiltrates, origin)) {
+            if (is.null(i)) {
+                next
+            }
+            # Add ASM snps from tumor to object if currently Null
+            i_asm_snps <- get_fpath(i, config, "asm_snps")
+            if (!file.exists(i_asm_snps)) {
+                loginfo("Attaching existing ASM SNPs to %s", i$id)
+                attach_output(i, config, "asm_snps", asm_snps_file)
+            }
+        }
         return(NULL)
     }
 
@@ -154,6 +166,18 @@ cmain_asm_make_snps <- function(tumor, germline, config) {
     # Save hets as ASM SNPs for tumor
     fs::dir_create(fs::path_dir(asm_snps_file))
     data.table::fwrite(n_snp, asm_snps_file)
+
+    # Save hets as ASM SNPs for origin and infiltrates if present
+    if (!is.null(infiltrates)) {
+        i_asm_snps_file <- get_fpath(infiltrates, config, "asm_snps")
+        fs::dir_create(fs::path_dir(i_asm_snps_file))
+        data.table::fwrite(n_snp, i_asm_snps_file)
+    }
+    if (!is.null(origin)) {
+        o_asm_snps_file <- get_fpath(origin, config, "asm_snps")
+        fs::dir_create(fs::path_dir(o_asm_snps_file))
+        data.table::fwrite(n_snp, o_asm_snps_file)
+    }
     loginfo("ASM SNPS file created from germline for: {tumor$patient_id}:{tumor$id}")
 }
 
@@ -193,7 +217,7 @@ cmain_fit_meth_cna <- function(tumor, config) {
         stop("Error. CNA file not found for tumor.")
     }
     cna <- fread_chrom(cna_file)
-   
+
 
     # Get BAF for tumor at phased SNPs
     hap_stats <- fread_chrom(get_fpath(tumor, config, "asm_hap_stats"))

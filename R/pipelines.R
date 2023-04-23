@@ -67,7 +67,8 @@ asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NU
   sample_list <- list(tumor, germline, infiltrates, origin)
 
   # Checks that ASM SNPs file is available, otherwise, creates from bulk allele counts on germline
-  cmain_asm_make_snps(tumor, germline, config)
+  # and attach ASM SNPs to infiltrates and origin objects if present
+  cmain_asm_make_snps(tumor, germline, infiltrates, origin, config)
 
   # Check that ASM CNA file is available, otherwise, create from CAMDAC CNA calls
   cmain_asm_call_cna(tumor, germline, config)

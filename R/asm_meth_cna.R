@@ -35,13 +35,14 @@ overlap_meth_cna <- function(asm_hap, cna) {
 assign_asm_cna <- function(ol) {
     # TODO: Use battenberg phasing where available
     # TODO: Explain CpGs where ref_CN > alt_CN but ref_m is NA?
+    ol = data.table(ol)
 
     # Simple case: equal CNA states
     ol[
-        nA == nB,
+        major_cn == minor_cn,
         `:=`(
-            ref_CN = nA,
-            alt_CN = nB
+            ref_CN = major_cn,
+            alt_CN = minor_cn
         )
     ]
 
@@ -52,7 +53,7 @@ assign_asm_cna <- function(ol) {
         MajRef = sum(hap_BAF < 0.5, na.rm=TRUE),
         MajAlt = sum(hap_BAF > 0.5, na.rm=TRUE),
         nBAF = .N),
-        by = c("chrom", "cna_start", "cna_end", "nA", "nB")
+        by = c("chrom", "cna_start", "cna_end", "nA", "minor_cn")
     ]
 
     # Overlap
@@ -63,15 +64,15 @@ assign_asm_cna <- function(ol) {
     ol[
         is.na(ref_CN) & is.na(alt_CN) & (MajRef > MajAlt),
         `:=`(
-            ref_CN = nA,
-            alt_CN = nB
+            ref_CN = major_cn,
+            alt_CN = minor_cn
         )
     ]
     ol[
         is.na(ref_CN) & is.na(alt_CN) & (MajRef < MajAlt),
         `:=`(
-            ref_CN = nB,
-            alt_CN = nA
+            ref_CN = minor_cn,
+            alt_CN = major_cn
         )
     ]
 

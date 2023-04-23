@@ -149,7 +149,7 @@ load_cna_data_ascat <- function(tumour, config) {
     chrom = factor(seg$chr, levels = c(1:22, "X", "Y")),
     start = as.numeric(as.character(seg$startpos)),
     end = as.numeric(as.character(seg$endpos)),
-    nA = seg$nMajor, nB = seg$nMinor
+    major_cn = seg$nMajor, minor_cn = seg$nMinor
   )
 
   setkeyv(cna_clean, cols = c("chrom", "start", "end"))
@@ -222,7 +222,9 @@ load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA
   )]
 
   # Ensure nA is always nMajor
-   cna[nA<nB, `:=`(nA=nB, nB=nA)]
+  cna[nA<nB, `:=`(nA=nB, nB=nA)]
+  setnames(cna, "nA", "major_cn")
+  setnames(cna, "nB", "minor_cn")
 
   # Return if raw data required
   if (bb_raw) {
@@ -232,7 +234,7 @@ load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA
   # Finalise data for export
   cna_clean <- bb_cna[, .(
     chrom = factor(chr, levels = c(1:22, "X", "Y")), start = startpos, end = endpos,
-    nA, nB
+    major_cn, minor_cn
   )]
   setkeyv(cna_clean, cols = c("chrom", "start", "end"))
 
@@ -381,7 +383,7 @@ validate_cna <- function(cna) {
 
   # Check expected number of columns. Rename and clean as per docs.
   stopifnot(ncol(cna) >= 7)
-  names(cna)[1:7] <- c("chrom", "start", "end", "nA", "nB", "purity", "ploidy")
+  names(cna)[1:7] <- c("chrom", "start", "end", "major_cn", "minor_cn", "purity", "ploidy")
   cna$chrom <- stringr::str_remove(cna$chrom, "chr")
   cna$chrom <- factor(cna$chrom, levels = c(1:22, "X", "Y"))
   cna <- as.data.table(cna)[order(chrom, start)]
