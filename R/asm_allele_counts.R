@@ -64,6 +64,9 @@ cwrap_asm_get_allele_counts <- function(
         )
     }
 
+    # Filter duplicates (potential due to multi-snp loci)
+    asm_cg <- asm_cg[!duplicated(asm_cg, by = c("chrom", "start", "end"))]
+
     # Complete results object form hap_stats
     return(
         list(
