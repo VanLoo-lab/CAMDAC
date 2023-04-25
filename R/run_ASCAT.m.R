@@ -3,13 +3,6 @@
 ##  Version 1.0.0
 ##  Author: Elizabeth Larose Cadieux
 
-# Load library
-x <- c("optparse","readr","fst","stringr","ASCAT","GenomicRanges",
-       "scales","ggplot2","data.table","gridExtra","dplyr","parallel")
-invisible(lapply(x, function(y) suppressWarnings(suppressMessages(
-library(y, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))))
-rm(x)
-
 #' Obtain allele-specific copy number profiles, tumour purity and plot SNP data
 #' 
 #' \code{run_ASCAT.m}

@@ -3,13 +3,6 @@
 ##  Version 1.0.0
 ##  Author: Elizabeth Larose Cadieux
 
-# Load library
-x <- c("optparse","readr","GenomicRanges","scales","ggplot2",
-       "data.table","gridExtra","dplyr","parallel","stringr", "fst")
-invisible(lapply(x, function(y) suppressWarnings(suppressMessages(
-library(y, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))))
-rm(x)
-
 #' Perform differential methylation analysis on deconvolute tumour methylation rates
 #' 
 #' \code{get_differential_methylation}

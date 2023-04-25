@@ -3,13 +3,6 @@
 ##  Version 1.0.0
 ##  Author: Elizabeth Larose Cadieux
 
-# Load library
-x <- c("optparse", "stringr", "GenomicRanges", "scales", "ggplot2", "gtable",
-       "gridExtra", "grid","data.table", "dplyr", "parallel")
-invisible(lapply(x, function(y) suppressWarnings(suppressMessages(
-library(y, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))))
-rm(x)
-
 #' Filter bulk tumour and normal methylation data, get methylation rate highest density interval (HDI)
 #' and plot raw methylation info
 #' \code{run_methylation_data_processing}
