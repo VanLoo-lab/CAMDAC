@@ -261,7 +261,7 @@ cmain_asm_deconvolve <- function(tumor, infiltrates, config) {
 
     # Filter: CN=0
     # Bulk filters not yet implemented: effective cov_t>= 3, is.na(mt-raw)
-    meth_c <- meth_c[nA + nB != 0, ]
+    meth_c <- meth_c[ major_cn + minor_cn != 0, ]
 
     loginfo("Calculating ASM HDI")
     # Calculate m_t HDI # parallel, long-running function

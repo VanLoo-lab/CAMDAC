@@ -361,7 +361,7 @@ fread_chrom <- function(x, ...) {
 #' @export
 attach_output <- function(sample, config, code, file) {
   # Validate external CNA files before attaching to CAMDAC
-  if (code == "cna") {
+  if (code == "cna" | code == "asm_cna") {
     cna <- validate_cna(data.table::fread(file))
   }
 

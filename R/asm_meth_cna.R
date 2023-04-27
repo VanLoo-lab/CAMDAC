@@ -53,7 +53,7 @@ assign_asm_cna <- function(ol) {
         MajRef = sum(hap_BAF < 0.5, na.rm=TRUE),
         MajAlt = sum(hap_BAF > 0.5, na.rm=TRUE),
         nBAF = .N),
-        by = c("chrom", "cna_start", "cna_end", "nA", "minor_cn")
+        by = c("chrom", "cna_start", "cna_end", "major_cn", "minor_cn")
     ]
 
     # Overlap
