@@ -94,14 +94,16 @@ is_ccgg <- function(config) {
   ifelse(config$bsseq == "wgbs", TRUE, FALSE)
 }
 
-# Create/confirm output directories
-#' @export
-get_fpath <- function(sample, config, code, dir = FALSE) {
-  stopifnot(code %in% c(
+FPATH_CODES = c(
     "counts", "meth", "pure", "dmps", "dmrs", "segment_split", "snps",
     "ascat", "battenberg", "tsnps", "cna", "asm_snps", "asm_counts", "asm_hap_stats",
     "asm_phase_map", "asm_meth", "asm_cna", "asm_meth_cna", "asm_meth_pure", "asm_ss_dmp", "asm_dmp"
-  ))
+)
+
+# Create/confirm output directories
+#' @export
+get_fpath <- function(sample, config, code, dir = FALSE) {
+  stopifnot(code %in% FPATH_CODES)
 
   # Set output file name
   output_name <- dplyr::case_when(

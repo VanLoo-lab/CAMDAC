@@ -106,7 +106,7 @@ process_methylation <- function(allele_counts, min_meth_loci_reads = 3) {
   # therefore this label may be more appropriate earlier in the pipeline
   methyl[, SNP := fifelse(!is.na(BAF) & (BAF >= 0.15) & (BAF <= 0.85), 1, 0)]
 
-  # Add column of methylation coverage as cov. #TODO: More efficient DT rename here?
+  # Add column of methylation coverage as cov.
   methyl[, cov := total_counts_m]
 
   # Add CG-SNP status (CG-forming or destroying). Required for accurate CG-copy number assignment
@@ -366,58 +366,6 @@ vec_HDIofMCMC_mt <- function(...) {
 
   return(out)
 }
-
-# TODO: Calculate HDI and annotate data table.
-# Note: CAMDAC defines a column name suffix depending on the tumour/normal status
-
-# TEMP: ADD fake data for testing while full dataframe is insufficient
-add_fake <- function(data) {
-  # TODO: As there are no SNP-cpgs in my test data (0.25% occurence in full data from RRBS inspection)
-  #    ensure that add_fake injection is migrated to test file.
-  fake_sites <- list(
-    # Add sites for cpg and snps co-occuring
-    list("chr1", 1, 860720, 860721, 2, 860720, "C", "T", 0, 7, 7, 0, 11, 0, 11, 5, 6, 11, 5 / 11, 0, 0, 0, 7, 4, 0, 0, 0, 0, 0, 0, 0, 0, "30,44,60,60,30,30,60,6,60,60,60"),
-    list("chr10", 10, 126707095, 126707096, 2, 126707095, "C", "T", 0, 7, 7, 0, 11, 0, 11, 5, 6, 11, 5 / 11, 0, 0, 0, 7, 4, 0, 0, 0, 0, 0, 0, 0, 0, "30,44,60,60,30,30,60,6,60,60,60"),
-    list("chr2", 2, 241489488, 241489489, 2, 241489488, "C", "T", 0, 7, 7, 0, 11, 0, 11, 5, 6, 11, 5 / 11, 0, 0, 0, 7, 4, 0, 0, 0, 0, 0, 0, 0, 0, "30,44,60,60,30,30,60,6,60,60,60"),
-
-    # Add sites to test loci where hits occur on both cpgs
-    list("chr7", 7, 1652650, 1652651, 2, 1652650, "C", "T", 0, 7, 7, 0, 11, 0, 11, 5, 6, 11, 5 / 11, 0, 0, 0, 7, 4, 0, 0, 0, 0, 0, 0, 0, 0, "30,44,60,60,30,30,60,6,60,60,60"),
-    list("chr7", 7, 1652650, 1652651, 2, 1652651, "C", "T", 0, 7, 7, 0, 11, 0, 11, 5, 6, 11, 5 / 11, 0, 0, 0, 7, 4, 0, 0, 0, 0, 0, 0, 0, 0, "30,44,60,60,30,30,60,6,60,60,60")
-  )
-  sites <- rbindlist(fake_sites)
-  names(sites) <- names(data)
-  rbind(data, sites)
-}
-
-# TODO: Upstream, perhaps in filter_bad_ac_rows (maybe turn into ac_quality_filter).
-# Remove super-high coverage sites. Lili uses 0.9999 quantile,
-# and agreed in lab meeting this is acceptabel.
-
-# TODO: Remove sites duplicated due to two co-localising SNP occurring at both CG nucleotide loci
-# OR CG and CCGG.
-# Note: CRRBS deduplicates here and recalculates the methylation rates. I would instead
-# ensure this SNP protocol is handled at allele-counts section.
-
-
-# This was raising roxygen error. We have this in allele_counts so not sure why it's here
-# #' @param dt Data table with chrom, start and end columns
-# drop_all_duplicates <- function(dt){
-#
-#   # Remove sites duplicated due to multiple SNPs overlapping CG/CCGG or
-#   # SNPs on both CG nucleotides.
-#   # FUTURE: CAMDAC to allow a one-to-many relationship between CGs and SNPs
-#   # pileup_summary <- drop_all_duplicates(pileup_summary)
-#
-#   # We want to remove all CG records that occur more than once, but the `duplicate` function doesn't return the first
-#   # of the duplicated records. Here, we use the fromLast argument to search for duplicates in the opposite direction,
-#   # and merge these results with `|` to capture all duplicate instances.
-#
-#   dt [ !(
-#     duplicated(dt, by=c("chrom","start","end"), fromLast=F) |
-#       duplicated(dt, by=c("chrom","start","end"), fromLast=T)
-#   )]
-#
-# }
 
 # Helper function to split data
 make_split_factor <- function(nrows, itersplit) {

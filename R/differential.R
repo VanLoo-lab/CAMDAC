@@ -1,8 +1,3 @@
-# Notes:
-# Is it worth implementing other DMR detection methods?
-# - https://scholar.google.com/scholar?hl=en&as_sdt=0%2C5&q=differential+methylation+analysis&btnG=s
-# TODO (Future) : Getting DMPs for the bulk tumor from the DMP_b field
-# Differential methylation probability arises from comparing **bulk** and normal with closed-form solution. Is this accurate?
 
 # Evan Miller's closed form solution for the probability that
 # a draw from a beta dist is greater than another
@@ -13,7 +8,6 @@ prob_diff_meth <- function(M_n, UM_n, M, UM) {
     return(NA)
   }
 
-  # TODO: Why are psuedocounts of 0.5 added? Is this part of evan miller's solution?
   M_n <- M_n + 1
   UM_n <- UM_n + 1
   M <- M + 1

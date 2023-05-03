@@ -242,8 +242,6 @@ cmain_fit_meth_cna <- function(tumor, config) {
     return(asm_meth_cna)
 }
 
-# TODO: Why am I not able to map all phase_map CpGs to asm_meth CpGs? It seems piledup sites are missing from the phase map (should be otherway around)
-
 cmain_asm_deconvolve <- function(tumor, infiltrates, config) {
     # Load tumor and normal methylation
     t_meth <- fread_chrom(get_fpath(tumor, config, "asm_meth_cna"))
@@ -392,13 +390,12 @@ cmain_asm_ss_dmps <- function(sample, config) {
         return()
     }
 
-    # TODO: refactor function
     loginfo("Running ASM DMP calls for %s", sample$id)
     #  Calculate AS-DMP within-sample, including CAMDAC where available
     dt <- fread_chrom(asm_file)
 
     # Params
-    # TODO: Move to config
+    # TODO: Set CAMDAC DMP thresholds in config
     itersplit <- 1e5
     effect_size <- 0.2
     prob <- 0.99

@@ -175,7 +175,7 @@ fix_pe_strand_with_flags <- function(bam_dt, paired_end = T) {
     )]
   }
   return(bam_dt)
-  # TODO: determine when to rename nstrand to strand
+
 }
 
 fix_pe_overlap_at_loci <- function(bam_dt) {
@@ -215,6 +215,8 @@ add_loci_read_position_skipCIGAR <- function(bam_dt) {
   # Set ccgg sites to 0 for now
   # TODO: Process PE CCGG (RRBS) in CAMDAC?
   bam_dt[width == 4, `:=`(rstart = 0, rend = 0)]
+
+  return(bam_dt)
 }
 
 add_loci_read_position <- function(bam_dt) {
@@ -260,9 +262,6 @@ add_loci_read_position_legacy <- function(bam_dt, skip_cigar = T) {
     return(bam_dt)
   }
 
-  # TODO: Software would hang on CIGAR parsing. pmapToAlignments works in parallel and can be used to
-  # update if necessary. Currently estimate this would recover an additional 30% of reads.
-  # Warning: This does not work for CCGG sites yet as data has not been tested
   ccgg_dt <- bam_dt[width == 4]
   ccgg_dt[, `:=`(rstart = 0, rend = 0)] # Add extra columns for downstream rbind
 
@@ -365,7 +364,6 @@ get_qual_snps <- function(POS, read.start, qual, offset = 1) {
 
 get_alleles_and_qual <- function(bam_dt) {
   # Set CCGG columns (for column name continuity with RRBS version)
-  # TODO: Confirm CAMDAC-RRBS CCGG column values are as below
   bam_dt[width == 4, CCGG := TRUE]
   bam_dt[width == 4, alleles.CCGG := paste0(substr(seq, rstart, rend), strand)]
   # Set dinucleotides at CG sites for methylation rate calculation
@@ -662,30 +660,17 @@ filter_bad_allele_count_rows <- function(pileup_summary, min_cov) {
   loci_all <- nrow(pileup_summary) # Save initial record count for alerting users (see below)
 
   # Remove positions with unexpected bases at SNPs (i.e. SNV)
-  # Note that loci with 1 other_counts are filtered out at 20X, and 2 other_counts at 40X. We tolerate a minimum
-  # of 1 as WGBS data is ~20X. Note that these other alleles are not in the CAMDAC tables.
   pileup_summary <- pileup_summary[other_counts <= 0.05 * total_depth | (other_counts <= 1)]
   loci_low_unexpected <- nrow(pileup_summary)
   loci_high_unexpected <- loci_all - loci_low_unexpected
   # Alert users to how many loci filtered for unexpected reads
   if (loci_high_unexpected > 0) {
-    # TODO: Design reporter to log CpG sites not included in allele counting.
-    # print(paste0(
-    #   "Unexpected nucleotides represent > 5% of the alleles at ", loci_high_unexpected,
-    #   " positions ( ", round(loci_high_unexpected * 100 / loci_all, digits = 2),
-    #   " %) - positions removed.",
-    #   sep = ""
-    # ))
+    # TODO: Report CpG sites filtered for logfile
   }
 
   # Remove positions without distinguishable ref/alt alleles or without methylation
   # Note: minimum reads filter could be implemented elsewhere in pipeline
   pileup_summary <- pileup_summary[total_counts >= min_cov | total_counts_m >= min_cov]
-
-  # TODO: Danger. This should be done on the full merged dataframe. Doing so here is on subsets of segments
-  # This means you can filter out snps based on arbitrary quantile. Perhaps test if read counts >500X are present then run.
-  # Remove positions where coverage is too high. These are likely due to poor alignments
-  # pileup_summary <- pileup_summary[ total_depth < quantile(total_depth, 0.99), ]
 
   return(pileup_summary)
 }
@@ -764,11 +749,6 @@ format_naive_get_reads_result <- function(dt) {
 }
 
 format_and_write_output <- function(data, output_file) {
-  # TODO: Checks performed in RRBS to be implemented elsewhere:
-  # - Ensuring no NAs
-  # - Check spurious alignments to Y in females avoided
-  # - Set "type" column if patient matched normal is given
-
   fs::dir_create(fs::path_dir(output_file)) # Creates directory only if it doesn't exist
   data$chrom <- as.character(data$chrom) # Ensure 'chrom' field is character - May turn to integer if X/Y regions not present
   data <- sort_genomic_dt(data) # Ensure data is sorted by chrom and POS

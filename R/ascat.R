@@ -68,7 +68,6 @@ annotate_normal <- function(tsnps, nsnps, min_cov) {
 
   tsnps <- tsnps[nsnps, on = c("chrom", "POS")]
 
-  # TODO: Apply coverage filter from config or earlier in pipeline
   tsnps <- tsnps[total_counts_n >= min_cov]
 
   return(tsnps)
@@ -90,8 +89,6 @@ calculate_logr <- function(tsnps) {
   return(tsnps)
 }
 
-# TODO: Time this function. Currently approx 8 minutes on a small sample
-# TODO: Convert existing GC-content files to fst for faster read/write?
 annotate_gc <- function(tsample, gc_refs, max_window = 10000, n_cores = 1) {
   chrom <- as.character(tsample$chrom)
   start <- tsample$POS
@@ -176,7 +173,6 @@ annotate_repli <- function(tsample, repli_file) {
 }
 
 spline_regress_logr <- function(LogR, GC, repli) {
-  # TODO: Why df=5?
   model <- lm(
     LogR ~ splines::ns(x = GC, df = 5, intercept = T) +
       splines::ns(x = repli, df = 5, intercept = T),
@@ -187,7 +183,6 @@ spline_regress_logr <- function(LogR, GC, repli) {
 
 # Function from ASCAT/CAMDAC-RRBS
 split_genome_WGBS <- function(chrom, POS) {
-  # TODO: Must be sorted and chrom must match POS. Easier to use a dataframe/table?
 
   # Convert chromosomes to numeric, including X and Y
   # suppressWarnings() used to stop warning that NAs introduced after coercion.
@@ -238,10 +233,6 @@ assign_genotypes <- function(BAF, as_logical = F) {
 #' load_ascat_bc
 #'
 #' Create an ascat.bc object from input data vectors. Data must be sorted by genomic co-ordinate.
-#'
-#' @param logr_t Tumor LogR
-#' @param baf_t Tumor BAF, ideally randomised for NGS.
-#' TODO: Complete params
 #'
 #' @return List. An object containing the following fields:
 #'     - Tumor_LogR
@@ -437,9 +428,8 @@ write_acf_and_ploidy_file <- function(tsnps, ascat.output, ascat.frag, sample_pr
   write.table(fdata, file = fs::path(outdir, paste0(sample_prefix, ".ACF.and.ploidy.txt")), sep = "\t", row.names = F, col.names = T, quote = F)
 }
 
-# TODO: Refactor function to not use CAMDAC objects
 run_ascat.m2 <- function(tumour, tsnps, penalty = 200, outdir, rho_manual = NA, psi_manual = NA) {
-  # TODO: Make this an accessor function on the CAMDAC object so that it's consistent throughout code
+
   sample_prefix <- paste(tumour$patient_id, tumour$id, sep = ".")
 
   # Load ASCAT object

@@ -1,4 +1,4 @@
-# TODO: Better to accept columns to sort by alongside e.g. POS or start, end
+
 #' @export
 sort_genomic_dt <- function(dt, with_chr = F) {
   if (with_chr) {

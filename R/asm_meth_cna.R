@@ -50,8 +50,8 @@ assign_asm_cna <- function(ol) {
     segmap = ol[, .(
         mBAF = mean(hap_BAF, na.rm=TRUE),
         medBaF = median(hap_BAF, na.rm=TRUE),
-        MajRef = sum(hap_BAF < 0.5, na.rm=TRUE),
-        MajAlt = sum(hap_BAF > 0.5, na.rm=TRUE),
+        MajRef = sum(hap_BAF <= 0.5, na.rm=TRUE),
+        MajAlt = sum(hap_BAF >= 0.5, na.rm=TRUE),
         nBAF = .N),
         by = c("chrom", "cna_start", "cna_end", "major_cn", "minor_cn")
     ]

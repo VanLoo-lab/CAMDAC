@@ -259,8 +259,6 @@ camdac_to_battenberg_prepare_wgbs <- function(tumour_prefix, normal_prefix, camd
   # Create the mutantLogR_gcCorrected file
   create_logr_and_baf_files(camdac_tsnps, tumour_prefix, normal_prefix, outdir)
 
-  # TODO: Create the alleleCounts.tab file? Not necessary for pipeline.
-
   # TODO: Create ASCAT plots and simplify the tables by passing sample name to the write output function:
   # see: https://github.com/Wedge-lab/battenberg/blob/43686673566cf5adbd8d00e2450d70eced27696d/R/prepare_wgs.R#L154
 
