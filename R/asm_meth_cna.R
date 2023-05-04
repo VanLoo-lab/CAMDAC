@@ -46,30 +46,16 @@ assign_asm_cna <- function(ol) {
         )
     ]
 
-    # For each segment, annotate whether nMajor is consistent with ref or alt.
-    segmap = ol[, .(
-        mBAF = mean(hap_BAF, na.rm=TRUE),
-        medBaF = median(hap_BAF, na.rm=TRUE),
-        MajRef = sum(hap_BAF <= 0.5, na.rm=TRUE),
-        MajAlt = sum(hap_BAF >= 0.5, na.rm=TRUE),
-        nBAF = .N),
-        by = c("chrom", "cna_start", "cna_end", "major_cn", "minor_cn")
-    ]
-
-    # Overlap
-    ol <- left_join(ol, segmap)
-
-
-    # Assign based on BAF per segment
+    # Assign based on BAF per SNP
     ol[
-        is.na(ref_CN) & is.na(alt_CN) & (MajRef > MajAlt),
+        is.na(ref_CN) & is.na(alt_CN) & hap_BAF < 0.5001,
         `:=`(
             ref_CN = major_cn,
             alt_CN = minor_cn
         )
     ]
     ol[
-        is.na(ref_CN) & is.na(alt_CN) & (MajRef < MajAlt),
+        is.na(ref_CN) & is.na(alt_CN) & hap_BAF > 0.5001,
         `:=`(
             ref_CN = minor_cn,
             alt_CN = major_cn
