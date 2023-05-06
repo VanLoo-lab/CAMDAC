@@ -1,9 +1,10 @@
 name: cache-camdac
 
 on:
-  workflow:
-    workflows:
-      - 'R-CMD-check'
+  workflow_run:
+    workflows: [R-CMD-check]
+    types:
+      - completed
 
 jobs:
   download-file:
