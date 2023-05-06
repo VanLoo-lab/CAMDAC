@@ -21,7 +21,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-camdac-${{ env.cache-name }}-
 
-      - name: Use cached files
+      - name: Load cached files
         if: steps.cache-camdac.outputs.cache-hit != 'true'
         run: |
           echo "Downloading cache"
