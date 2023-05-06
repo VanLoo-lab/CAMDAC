@@ -2,6 +2,7 @@ name: cache-camdac
 
 on:
   workflow_run:
+    branches: [main, master, wgbs]
     workflows: [R-CMD-check]
     types:
       - completed
