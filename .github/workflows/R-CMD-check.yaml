@@ -34,7 +34,10 @@ jobs:
           error-on: '"error"'
 
   pipeline_files:
-    runs_on: ubuntu-latest
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
     steps:
       - name: Cache pipeline files
         id: cache-camdac
