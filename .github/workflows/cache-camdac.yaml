@@ -23,10 +23,9 @@ jobs:
       - name: Use cached files
         if: steps.cache-camdac.outputs.cache-hit != 'true'
         run: |
-        echo "Downloading cache"
-        Rscript -e 'CAMDAC::download_pipeline_files("wgbs", "./pipline_files/")'
-        Rscript -e 'CAMDAC::download_pipeline_files("rrbs", "./pipline_files/")'
-
+          echo "Downloading cache"
+          Rscript -e 'CAMDAC::download_pipeline_files("wgbs", "./pipline_files/")'
+          Rscript -e 'CAMDAC::download_pipeline_files("rrbs", "./pipline_files/")'
       - name: Restore cached data.txt
         if: steps.cache-data-txt.outputs.cache-hit == 'true'
         run: echo "Restoring cached data"
