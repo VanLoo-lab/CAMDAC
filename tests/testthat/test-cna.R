@@ -8,6 +8,7 @@ test_that("ascat and battenberg runs on wgbs samples", {
         n_cores = 10,
         min_cov = 1 # Required to capture sufficient SNPs from test
     )
+    withr::defer(fs::dir_delete(config_c$outdir))
 
     # Attach tsnps file to tumor
     tsnps_file <- system.file("testdata", "test_tsnps.csv.gz", package = "CAMDAC")
