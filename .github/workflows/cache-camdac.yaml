@@ -1,0 +1,32 @@
+name: cache-camdac
+
+on:
+  workflow:
+    workflows:
+      - 'R-CMD-check'
+
+jobs:
+  download-file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache pipeline files
+        id: cache-camdac
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-camdac
+        with:
+          path: pipeline_files
+          key: ${{ runner.os }}-camdac-${{ hashFiles('inst/extdata/pipeline_files_urls.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-camdac-${{ env.cache-name }}-
+
+      - name: Use cached files
+        if: steps.cache-camdac.outputs.cache-hit != 'true'
+        run: |
+        echo "Downloading cache";
+        Rscript -e 'CAMDAC::download_pipeline_files("wgbs", "./pipline_files/")';
+        Rscript -e 'CAMDAC::download_pipeline_files("rrbs", "./pipline_files/")';
+
+      - name: Restore cached data.txt
+        if: steps.cache-data-txt.outputs.cache-hit == 'true'
+        run: echo "Restoring cached data"
