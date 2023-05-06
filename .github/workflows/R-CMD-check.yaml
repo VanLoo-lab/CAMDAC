@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main, master, wgbs]
 
-name: R-CMD-check
+name: setup_camdac
 
 jobs:
   R-CMD-check:
@@ -32,3 +32,26 @@ jobs:
       - uses: r-lib/actions/check-r-package@v2
         with:
           error-on: '"error"'
+
+  pipeline_files:
+    runs_on: ubuntu-latest
+    steps:
+      - name: Cache pipeline files
+        id: cache-camdac
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-camdac
+        with:
+          path: pipeline_files
+          key: ${{ runner.os }}-camdac-${{ hashFiles('inst/extdata/pipeline_files_urls.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-camdac-${{ env.cache-name }}-
+      - name: Load cached files
+        if: steps.cache-camdac.outputs.cache-hit != 'true'
+        run: |
+          echo "Downloading cache"
+          Rscript -e 'CAMDAC::download_pipeline_files("wgbs", "./pipline_files/")'
+          Rscript -e 'CAMDAC::download_pipeline_files("rrbs", "./pipline_files/")'
+      - name: Restore cached data
+        if: steps.cache-data-txt.outputs.cache-hit == 'true'
+        run: echo "Restoring cached data"
