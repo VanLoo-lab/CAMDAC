@@ -34,6 +34,7 @@ jobs:
           error-on: '"error"'
 
   pipeline_files:
+    needs: R-CMD-check
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
