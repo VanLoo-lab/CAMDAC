@@ -34,33 +34,93 @@ overlap_meth_cna <- function(asm_hap, cna) {
 
 assign_asm_cna <- function(ol) {
     # TODO: Use battenberg phasing where available
-    # TODO: Explain CpGs where ref_CN > alt_CN but ref_m is NA?
-    ol = data.table(ol)
 
-    # Simple case: equal CNA states
-    ol[
-        major_cn == minor_cn,
-        `:=`(
-            ref_CN = major_cn,
-            alt_CN = minor_cn
-        )
-    ]
+    # Select essential fields
+    ab = ol[, .(major_cn, minor_cn, hap_BAF, hap_reads)]
+    ab$cnstate = paste0(ab$major_cn, "+", ab$minor_cn)
+    ab$cnix = seq_len(nrow(ab))
+    
+    # Split by balance
+    ab_bal = ab[ major_cn == minor_cn,  ]
+    ab_imbal = ab[ major_cn != minor_cn,  ]
 
-    # Assign based on BAF per SNP
-    ol[
-        is.na(ref_CN) & is.na(alt_CN) & hap_BAF < 0.5001,
-        `:=`(
-            ref_CN = major_cn,
-            alt_CN = minor_cn
-        )
-    ]
-    ol[
-        is.na(ref_CN) & is.na(alt_CN) & hap_BAF > 0.5001,
-        `:=`(
-            ref_CN = minor_cn,
-            alt_CN = major_cn
-        )
-    ]
+    # Assign major to ref or alt allele
+    ab_bal[, maj_assign:=maj_by_gauss(hap_BAF, balanced=T)$maj, by=cnstate]
+    ab_imbal[, maj_assign:=maj_by_gauss(hap_BAF, balanced=F)$maj, by=cnstate]
+    ab_phas = rbind(ab_bal, ab_imbal, ab[is.na(major_cn) | is.na(minor_cn)], fill=T)[order(cnix), ]
 
-    return(ol)
+    # Assign ref and alt CN
+    ab_phas[, ref_CN:=data.table::fcase(
+        maj_assign == "ref", major_cn,
+        maj_assign == "alt", minor_cn,
+        maj_assign == "balanced", major_cn
+    )]
+    ab_phas[, alt_CN:=data.table::fcase(
+        maj_assign == "ref", minor_cn,
+        maj_assign == "alt", major_cn,
+        maj_assign == "balanced", major_cn
+    )]
+
+    # Cleanup fields
+    ab_phas$cnix=NULL
+    add_cols = setdiff(names(ab_phas), names(ol))
+    res = cbind(ol, ab_phas[, ..add_cols])
+    return(res)
+}
+
+maj_by_gauss <- function(BAF, balanced=T){
+    # Reserve original BAF values to determine ref or alt as major or minor
+    BAF_orig = BAF
+    # First, ensure BAF is mirrored by flipping to 0.5 and 1 window
+    BAF[ BAF < 0.5 ] = 1 - BAF[ BAF < 0.5 ]
+
+    # Classify BAF as major, minor, balanced, or NA
+      # truncate data to values less than 1. 
+    truncated_data <- BAF[BAF != 1]
+    if(length(truncated_data) == 0){
+        return(list("maj" = "NA", "params" = c("NA", "NA", "NA", "NA")))
+    }
+
+    # Get thresholds from gaussian fit. Does not fit to extreme values on 0 or 1
+    # This avoids fitting to outliers yet should identify peak regardless
+    fit <- fit_gaussian(truncated_data)
+    thresh = qnorm(c(0.025, 0.975), fit$mean, fit$sd)
+    lower = thresh[[1]]
+    upper = thresh[[2]]
+    
+    # Set default threshold for filtering out hets in imbalances
+    hets_upper = qnorm(c(0.99), mean=0.5, sd=0.01)
+
+    # If state is balanced, return "balanced"
+    if(balanced){
+        maj = ifelse(BAF < upper, "balanced", "NA")
+    }else{
+        # One model fits at peak, another fits at 0.5
+        in_dist = dplyr::between(BAF, lower, upper)
+        is_ref = BAF_orig < 0.5
+        is_het_outdist = BAF < hets_upper
+        maj = dplyr::case_when(
+            is_het_outdist ~ "NA",
+            is_ref & in_dist ~ "ref",
+            !is_ref & in_dist ~ "alt",
+            TRUE ~ "NA"
+        )
+    }
+
+    # Setup parameters for return
+    params = c(
+        mean = fit$mean,
+        sd = fit$sd,
+        qlower = lower,
+        qupper = upper
+    )
+    
+    return(list("maj" = maj, "params" = params))
+}
+
+fit_gaussian <- function(data) {
+  fit <- fitdistr(data, "normal") # fit Gaussian distribution to truncated data
+  mean <- fit$estimate[1] # extract mean from fitted parameters
+  sd <- fit$estimate[2] # extract standard deviation from fitted parameters
+  return(list(mean = mean, sd = sd))
 }

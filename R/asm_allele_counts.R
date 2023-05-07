@@ -36,7 +36,7 @@ cwrap_asm_get_allele_counts <- function(
     # Get qname to cpg mapping
     qname_hap_cg <- unique(bam_dt[, .(qname, hap_id, chrom, start, end)])
 
-    # Count unexpected alleles and split by ref and alt after filtering
+    # Split by ref and alt after filtering
     ref_bam <- bam_dt[hap_is_ref == T]
     alt_bam <- bam_dt[hap_is_alt == T]
     rm(bam_dt)
