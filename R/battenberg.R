@@ -132,9 +132,9 @@ filter_allele_frequencies_to_overlap <- function(outdir, tumour_prefix, normal_p
       return(NULL)
     }
 
-    tumour_dt <- fread_chrom(tumour_af)
+    tumour_dt <- fread(tumour_af)
     setkey(tumour_dt, "#CHR", "POS")
-    normal_dt <- fread_chrom(normal_af)
+    normal_dt <- fread(normal_af)
     setkey(normal_dt, "#CHR", "POS")
 
     stopifnot(unique(tumour_dt$`#CHR`) == unique(normal_dt$`#CHR`)) # Ensure same chroms
