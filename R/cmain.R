@@ -292,7 +292,7 @@ cmain_run_battenberg <- function(tumour, normal, config) {
   )))
 
   loginfo("Preparing WGBS allele counts for Battenberg")
-  # TODO: Should we use existing SNP objects instead of ac?
+  # Future: Consider using existing SNP objects instead of ac?
   camdac_to_battenberg_allele_freqs(camdac_tumour_ac, tumour_prefix, camdac_normal_ac, normal_prefix,
     outdir,
     min_normal_depth = config$min_cov
@@ -409,7 +409,7 @@ cmain_deconvolve_methylation <- function(tumour, normal, config) {
 
   loginfo("Calculating pure_tumour HDI: %s", tumour$patient_id)
   # Calculate m_t HDI # parallel, long-running function
-  meth_c <- calculate_m_t_hdi(meth_c, config$n_cores)
+  meth_c <- calculate_m_t_hdi_norm(meth_c)
 
   outfile <- get_fpath(tumour, config, "pure")
   data.table::fwrite(meth_c, outfile)

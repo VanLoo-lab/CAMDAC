@@ -55,15 +55,8 @@ unique_calculate_counts_hdi <- function(M, UM, n_cores = 1, itersplit = 5e5) {
   # Calculate HDI parallel
   doParallel::registerDoParallel(cores = n_cores)
   # mapply is used to vectorise over M and UM, which are arrays
-  hdi <- foreach(M = M, UM = UM, .combine = "c") %dopar% {
-    mapply(
-      FUN = HDIofICDF,
-      shape1 = M + 1,
-      shape2 = UM + 1,
-      MoreArgs = list(ICDFname = qbeta),
-      SIMPLIFY = FALSE,
-      USE.NAMES = TRUE
-    )
+  hdi <- foreach(M = M, UM = UM) %dopar% {
+    hdi_qbeta(M, UM)
   }
   doParallel::stopImplicitCluster()
 
@@ -387,4 +380,83 @@ make_split_factor <- function(nrows, itersplit) {
   )
 
   return(split_f)
+}
+
+
+# Calculate HDI of mt by normal approximation
+hdi_norm_approx <- function(m, um, mn, umn, p, CN){
+    # Is robust to NA
+    # Add the relevant pseudocounts as they are in the m_t calculation
+    m = m+1; um = um+1; mn = mn+1; umn = umn+1
+    
+    # Calculate mt as mean
+    m_b = m/(m+um)
+    m_n = mn/(mn+umn)
+    bulk_constant = ( (p * CN) + ((1 - p) * 2) ) / (p * CN)
+    norm_constant = ( (1-p) * 2) / (p * CN)
+    m_t = (m_b * bulk_constant) - (m_n * norm_constant)
+
+    # Calculate variance
+    var_bulk = var_func(m, um) * (bulk_constant^2)
+    var_norm = var_func(mn, umn) * (norm_constant^2)
+    var_t = var_bulk + var_norm
+    sd_t = sqrt(var_t)
+
+    # Calculate normal approx for HDI 
+    m_t_low = qnorm(c(0.005), mean = m_t, sd = sd_t)
+    m_t_high = qnorm(c(0.995), mean = m_t, sd = sd_t)
+    
+    return(data.table(cbind(m_t_low, m_t_high)))
+}
+
+# Calculate HDI of mt by normal approximation
+calculate_m_t_hdi_norm <- function(meth_c){
+    meth_c_hdi = hdi_norm_approx(
+        meth_c$M,
+        meth_c$UM,
+        meth_c$M_n,
+        meth_c$UM_n,
+        meth_c$p,
+        meth_c$CN
+    )
+    meth_c = cbind(meth_c, meth_c_hdi)
+    return(meth_c)
+}
+
+# Refactored from unique_calculate_counts_hdi
+hdi_qbeta <- function(M, UM){
+    # Settings
+    shape1 = M+1
+    shape2 = UM+1
+    incredMass <- 1.0 - .99
+    credMass <- .99
+    tol <- 1e-4
+
+    qBetaInterval <- function(lowTailPr, credMass, shape1, shape2) {
+    qbeta(credMass + lowTailPr, shape1, shape2) - qbeta(lowTailPr, shape1, shape2)
+    }
+
+    # Vectorize optimisation
+    get_minima <- function(shape1, shape2, credMass, incredMass){
+        optInfo <- optimize(f = intervalWidth, interval = c(0, incredMass), ICDFname = qbeta, credMass = credMass, tol = tol, 
+            shape1=shape1, shape2=shape2)
+        return(optInfo$minimum)
+    }
+    v_get_minima <- Vectorize(get_minima, vectorize.args = c("shape1", "shape2"))
+
+    # Warnings if NA
+    minima = suppressWarnings(v_get_minima(shape1, shape2, credMass, incredMass))
+    lo = qbeta(minima, shape1, shape2)
+    hi = qbeta(minima + credMass, shape1, shape2)
+
+    hdi = data.frame(lo, hi)
+    return(hdi)
+}
+
+# Now, variance is the sum of the individual beta variances
+# And, to scale variance, you multiply by the scaling factor squared.
+var_func <- function(a, b){
+    (a * b)  / (
+        ( a + b ) ^ 2 * ( a + b + 1 )
+    )
 }
