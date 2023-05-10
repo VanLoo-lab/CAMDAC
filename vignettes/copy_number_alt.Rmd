@@ -1,0 +1,77 @@
+---
+title: "pipeline"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{copy_number_alt}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+### Use external CNA solutions
+
+The germline sample is optional as, in the absence of patient-matched methylation data, you may already have an allele-specific CNA solutions for your bulk tumor. For example, this could be derived from bulk WGS of the same sampl.
+
+You can provide this data in tab-delimited text file as shown below. Importantly,:
+
+- column names are optional
+- purity and ploidy values are taken from the first data row alone
+- chromosome names may be given with or without 'chr' prefix
+
+| chrom | start | end | major_cn | minor_cn | purity | ploidy |
+| --------- | ---- | ---- | ---- | ---- | ---- | ---- |
+| chr1 | 1 | 400 | 2 | 1 | 0.67 | 3.5 |
+| chr1 | 401 | 1000 | 1 | 1 | 0.67 | 3.5 |
+
+To run CAMDAC with this CNA solution, pass attach the file to the tumor `CamSample()` object:
+
+```{r add_cna}
+library(CAMDAC)
+
+# Load test data
+b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
+b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
+cna_file <- system.file("testdata", "test.cna.txt", package = "CAMDAC")
+
+# Set config
+config <- CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
+
+# Create tumor object and attach CNA solution
+tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
+attach_output(tumor, config, "cna", cna_file)
+
+# Define normal object(s) for deconvolution or differential methylation
+normal <- CamSample(id="N", sex="XY", bam=b_normal)
+
+# Run pipeline with CNA solution
+pipeline(
+    tumor=tumor,
+    germline=NULL,
+    infiltrates=normal,
+    origin=normal,
+    config=config
+)
+```
+
+### Copy number calling in tumor-only mode
+
+If no SNP file is present for the germline, CAMDAC will infer the copy number calls from the tumor sample alone. Here, the BAF is calculated by a threshold on the tumor BAF, and the LogR is calculated by taking the coverage relative to the median. These results are not as accurate as using a germline normal sample.
+
+You may already know where heterozygous SNPs lie for your sample, obviating the need for a tumor BAF threshold. In addition, you may have a proxy of the normal coverage for your platform, which is an improvement over taking the tumor median. You can provide this information by attaching a SNPs file to the germline CamSample object. The file should contain:
+
+| Field | Description |
+| --- | --- |
+| chrom | Chromosome name |
+| POS | Position of SNP |
+| BAF | (optional) B-allele frequency at this SNP |
+| total_counts | (optional) Total number of reads at this SNP |
+
+POS and total_counts are used to derive the BAF and the LogR respectively. We strongly recommend that total_counts is derived from a normal sample sequenced with the same bisulfite-sequencing assay as the tumor, and unmatched patient samples are acceptable.
+

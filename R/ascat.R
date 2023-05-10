@@ -66,27 +66,66 @@ annotate_normal <- function(tsnps, nsnps, min_cov) {
   setnames(nsnps, old = to_suffix, new = paste0(to_suffix, "_n"))
   setkey(nsnps, chrom, POS)
 
-  tsnps <- tsnps[nsnps, on = c("chrom", "POS")]
+  tsnps <-  merge(tsnps, nsnps, on = c("chrom","POS"))
 
   tsnps <- tsnps[total_counts_n >= min_cov]
 
   return(tsnps)
 }
 
-# Calculate the tumour LogR from the tumour and normal sample
-calculate_logr <- function(tsnps) {
-  #  Tumour LogR is the log2 normalised ratio of tumour and normal coverage
-  #  at each position.
-  calc_logr <- function(sample_cov, normal_cov) {
-    tumour_normal_coverage <- sample_cov / normal_cov
-    mean_coverage_ratio <- mean(tumour_normal_coverage, na.rm = T)
-    LogR <- log2(tumour_normal_coverage / mean_coverage_ratio)
+annotate_normal_tumor_only <- function(tsnps, nsnps){
+
+  bool_to_hets <- function(tsnps){
+    baf_set <- ifelse(tsnps$BAF < .5, (1-tsnps$BAF)*tsnps$total_counts, tsnps$BAF*tsnps$total_counts)
+    hets <- is_het(baf_set, tsnps$total_counts) == "Heterozygous"
+    return(hets)
   }
 
-  # Calculate LogR and drop any NA sites. These sites have no coverage/SNP loci in the normal.
-  tsnps[, LogR := calc_logr(total_depth, total_depth_n)]
-  tsnps <- tsnps[!is.na(LogR)]
+  # If no SNP data for normal return tumor only data
+  if(is.null(nsnps)){ # Must be NULL due to object loading
+    tsnps[, BAFr_n := NA]
+    tsnps[, LogR_n := NA]
+    tsnps[, total_counts_n := NA]
+    tsnps = tsnps[ bool_to_hets(tsnps), ]
+    return(tsnps)
+  }
+
+  # Annotate counts depending on dataset available
+  if ("total_counts" %in% names(nsnps)){
+    setnames(nsnps, "total_counts", "total_counts_n", T)
+    tsnps = merge(tsnps, nsnps)
+    tsnps[, BAFr_n := NA] # Used to call tumor BAF
+    tsnps[, LogR_n := NA]
+  } else {
+    tsnps = merge(tsnps, nsnps)
+    tsnps[, BAFr_n := NA]
+    tsnps[, LogR_n := NA]
+    tsnps[, total_counts_n := NA]
+  }
+
   return(tsnps)
+}
+
+# Calculate the tumour LogR from the tumour and normal sample
+calculate_logr <- function(sample_cov, normal_cov, is_autosome=NULL) {
+
+  # If in tumor only mode
+  if(all(is.na(normal_cov))){
+    stopifnot(length(is_autosome) == length(sample_cov))
+    # For LogR, take median across autosomes
+    med_cov = median(sample_cov[is_autosome], na.rm = T)
+    LogR <- round(
+      log2(sample_cov) - log2(med_cov), digits=3
+    )
+    return(LogR)
+  }
+
+  #  Tumour LogR is the log2 normalised ratio of tumour and normal coverage
+  #  at each position.
+  tumour_normal_coverage <- sample_cov / normal_cov
+  mean_coverage_ratio <- mean(tumour_normal_coverage, na.rm = T)
+  LogR <- log2(tumour_normal_coverage / mean_coverage_ratio)
+  return(LogR)
 }
 
 annotate_gc <- function(tsample, gc_refs, max_window = 10000, n_cores = 1) {
@@ -164,7 +203,6 @@ annotate_repli <- function(tsample, repli_file) {
   correl <- apply(nearest_repli[, ..cell_line_cols], MARGIN = 2, FUN = function(x) abs(cor(x, nearest_repli$LogR)))
   best_line <- names(which.max(correl))
   print(best_line)
-  print(correl)
 
   # Combine with original dataframe and return
   result <- cbind(tsample, data.table(repli = nearest_repli[[best_line]]))
@@ -534,4 +572,41 @@ winsorize <- function(BAF) {
   }
 
   return(madWins(BAF))
+}
+
+# probabilistic approach to assign heterozygous SNPs directly from tumour BAF profiles
+is_het <- function(x, y, pbin=0.01, probHom=.99, na.rm=TRUE) {
+  flag <- logical(length=length(x))
+  flag <- !(pbinom(unlist(x),size=unlist(y),prob=probHom,log.p=FALSE)>pbin)
+  flag <- ifelse(flag==TRUE, "Heterozygous", "Homozygous")
+  return(flag)
+}
+
+bind_snps_protocol <- function(tsnps, normal, config){
+    # Annotate tumour SNPs
+  # Four modes:
+  # 1) Default mode: annotate tumour SNPs with normal SNPs
+  # 2) Position only mode: ignore BAF and use to select SNP loci (BAFr_n=F)
+  # 3) Coverage mode: Use coverage from normal to select (BAFr_n=F)
+  # 4) No normal mode: Use tumor only for all selections
+  if (is.null(normal)) {
+    loginfo("No germline normal. Tumor-only SNP profile")
+    tsnps <- annotate_normal_tumor_only(tsnps, nsnps=NULL)
+  } else {
+
+    loginfo("Generating SNP profiles for tumor-normal")
+    nsnps_f <- get_fpath(normal, config, "snps")
+    nsnps <- fread_chrom(nsnps_f)
+
+    default_mode = all(c("chrom", "POS", "ref", "alt", "BAF", "BAFr") %in% names(nsnps))
+
+    if(!default_mode){
+      loginfo("Normal SNP profile is external. Applying to tumor only mode")
+      tsnps <- annotate_normal_tumor_only(tsnps, nsnps=nsnps)
+    }else{
+      tsnps <- annotate_normal(tsnps, nsnps, min_cov = config$min_cov)
+    }
+  }
+
+  return(tsnps)
 }

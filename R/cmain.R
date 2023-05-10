@@ -90,17 +90,18 @@ cmain_count_alleles <- function(sample, config) {
 #' @export
 cmain_make_snps <- function(sample, config) {
   # Skip if counts file does not exist
+  output_file <- CAMDAC::get_fpath(sample, config, "snps")
+  if (fs::file_exists(output_file) & !config$overwrite) {
+    loginfo("Skipping SNP profile creation for %s", paste0(sample$id))
+    return(output_file)
+  }
+
   ac_file <- get_fpath(sample, config, "counts")
   if (!fs::file_exists(ac_file)) {
     loginfo("No counts file. Skipping SNP profile creation for %s", paste0(sample$id))
     return(NULL)
   }
 
-  output_file <- CAMDAC::get_fpath(sample, config, "snps")
-  if (fs::file_exists(output_file) & !config$overwrite) {
-    loginfo("Skipping SNP profile creation for %s", paste0(sample$id))
-    return(output_file)
-  }
 
   loginfo("Making SNP profile for %s", paste0(sample$id))
 
@@ -134,10 +135,6 @@ cmain_make_snps <- function(sample, config) {
 #' @param config A camdac config object
 #' @export
 cmain_bind_snps <- function(tumour, normal, config) {
-  if (is.null(normal)) {
-    loginfo("No germline normal. SNP profile binding for %s", paste0(tumour$id))
-    return(NULL)
-  }
 
   tsnps_output_file <- CAMDAC::get_fpath(tumour, config, "tsnps")
   if (fs::file_exists(tsnps_output_file) & !config$overwrite) {
@@ -145,27 +142,24 @@ cmain_bind_snps <- function(tumour, normal, config) {
     return(tsnps_output_file)
   }
 
-  # Check previous pipeline steps have been run
-  tsnps_f <- get_fpath(tumour, config, "snps")
-  nsnps_f <- get_fpath(normal, config, "snps")
-  if (!fs::file_exists(tsnps_f) & !fs::file_exists(nsnps_f)) {
-    stop("Tumour and normal SNP profiles must be created before binding")
-  }
-
-  loginfo("Binding SNP profiles for %s", paste0(tumour$id, "&", normal$id))
   # Load required reference files
   gc_refs <- get_reference_files(config, "gc_per_window")
   repli_ref <- get_reference_files(config, "repli_timing")
 
-  # Load SNP profiles
+  # Check previous pipeline step was run
+  tsnps_f <- get_fpath(tumour, config, "snps")
+  if (!fs::file_exists(tsnps_f)) {
+    stop("Tumour SNP profiles must be created before binding")
+  }
   tsnps <- fread_chrom(tsnps_f)
-  nsnps <- fread_chrom(nsnps_f)
 
-  # Annotate tumour SNPs
-  tsnps <- annotate_normal(tsnps, nsnps, min_cov = config$min_cov)
+  tsnps <- bind_snps_protocol(tsnps, normal, config)
 
   # Calculate LogR
-  tsnps <- calculate_logr(tsnps) # Requires total_depth, total_depth_n
+  # Accounts for whether tumor-only mode used or not
+  is_autosome = !(tsnps$chrom %in% c("X", "Y", "23", "24"))
+  tsnps$LogR <- calculate_logr(tsnps$total_counts, tsnps$total_counts_n, is_autosome)
+
   # Correct LogR with GC and replication timing
   tsnps <- annotate_gc(tsnps, gc_refs, n_cores = config$n_cores) # Long-running
   tsnps <- annotate_repli(tsnps, repli_ref)
@@ -200,14 +194,15 @@ cmain_call_cna <- function(tumour, normal, config) {
     return(cna_output_name)
   }
 
-  # Stop if no germline normal
-  if (is.null(normal)) {
-    stop("No germline normal. CNA analysis requires a normal sample.")
-  }
 
   if (config$cna_caller == "ascat") {
-    cna <- cmain_run_ascat(tumour, normal, config)
+    cna <- cmain_run_ascat(tumour, config)
   } else if (config$cna_caller == "battenberg") {
+    # Stop if no germline normal
+    if (is.null(normal)) {
+      stop("No germline normal. Battenberg CNA analysis requires a normal sample.")
+      # TODO: Can we refactor to allow for any tsnps setup?
+    }
     cna <- cmain_run_battenberg(tumour, normal, config)
   } else {
     stop("Unknown cna caller option in config")
@@ -225,7 +220,7 @@ cmain_call_cna <- function(tumour, normal, config) {
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_run_ascat <- function(tumour, normal, config) {
+cmain_run_ascat <- function(tumour, config) {
   loginfo("Running ASCAT analysis for %s", paste0(tumour$id))
 
   # Setup output object and results directory
@@ -366,8 +361,14 @@ cmain_make_methylation_profile <- function(sample, config) {
     return()
   }
 
+  ac_file <- get_fpath(sample, config, "counts")
+  if (!fs::file_exists(ac_file)){
+    logwarn("No counts file. Skipping methylation profile for %s %s", sample$patient_id, sample$id)
+    return()
+  }
+
   loginfo("Preprocessing methylation data: %s", sample$id)
-  allele_counts <- data.table::fread(get_fpath(sample, config, "counts"))
+  allele_counts <- data.table::fread(ac_file)
   methylation <- process_methylation(allele_counts, min_meth_loci_reads = config$min_cov)
   rm(allele_counts)
 

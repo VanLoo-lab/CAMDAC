@@ -52,49 +52,4 @@ pipeline(
 )
 ```
 
-### Use external CNA solutions
-
-The germline sample is optional as, in the absence of patient-matched methylation data, you may already have an allele-specific CNA solutions for your bulk tumor. For example, this could be derived from bulk WGS of the same sampl.
-
-You can provide this data in tab-delimited text file as shown below. Importantly,:
-
-- column names are optional
-- purity and ploidy values are taken from the first data row alone
-- chromosome names may be given with or without 'chr' prefix
-
-| chrom | start | end | major_cn | minor_cn | purity | ploidy |
-| --------- | ---- | ---- | ---- | ---- | ---- | ---- |
-| chr1 | 1 | 400 | 2 | 1 | 0.67 | 3.5 |
-| chr1 | 401 | 1000 | 1 | 1 | 0.67 | 3.5 |
-
-To run CAMDAC with this CNA solution, pass attach the file to the tumor `CamSample()` object:
-
-```{r add_cna}
-library(CAMDAC)
-
-# Load test data
-b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
-b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
-cna_file <- system.file("testdata", "test.cna.txt", package = "CAMDAC")
-
-# Set config
-config <- CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
-
-# Create tumor object and attach CNA solution
-tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
-attach_output(tumor, config, "cna", cna_file)
-
-# Define normal object(s) for deconvolution or differential methylation
-normal <- CamSample(id="N", sex="XY", bam=b_normal)
-
-# Run pipeline with CNA solution
-pipeline(
-    tumor=tumor,
-    germline=NULL,
-    infiltrates=normal,
-    origin=normal,
-    config=config
-)
-```
-
 Next, see `vignette("output")` for a detailed summary of CAMDAC results files.
