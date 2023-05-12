@@ -197,7 +197,7 @@ cmain_asm_call_cna <- function(tumor, germline, config) {
 
     # Combine tumor-germline SNPs and call CNAs
     cmain_bind_snps(tumor, germline, config)
-    cmain_call_cna(tumor, germline, config)
+    cmain_call_cna(tumor, config)
     cna_file <- get_fpath(tumor, config, "cna")
     attach_output(tumor, config, "asm_cna", cna_file)
     loginfo("CNA file created for tumor: {tumor$patient_id}:{tumor$id}")
