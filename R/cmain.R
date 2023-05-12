@@ -186,7 +186,7 @@ cmain_bind_snps <- function(tumour, normal, config) {
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_call_cna <- function(tumour, normal, config) {
+cmain_call_cna <- function(tumour, config) {
   # Skip if file exists and overwrite is false
   cna_output_name <- get_fpath(tumour, config, "cna")
   if (fs::file_exists(cna_output_name) & !config$overwrite) {
@@ -194,16 +194,10 @@ cmain_call_cna <- function(tumour, normal, config) {
     return(cna_output_name)
   }
 
-
   if (config$cna_caller == "ascat") {
     cna <- cmain_run_ascat(tumour, config)
   } else if (config$cna_caller == "battenberg") {
-    # Stop if no germline normal
-    if (is.null(normal)) {
-      stop("No germline normal. Battenberg CNA analysis requires a normal sample.")
-      # TODO: Can we refactor to allow for any tsnps setup?
-    }
-    cna <- cmain_run_battenberg(tumour, normal, config)
+    cna <- cmain_run_battenberg(tumour, config)
   } else {
     stop("Unknown cna caller option in config")
   }
@@ -268,7 +262,7 @@ cmain_run_ascat <- function(tumour, config) {
 #' @param normal A camdac sample object
 #' @param config A camdac config object
 #' @export
-cmain_run_battenberg <- function(tumour, normal, config) {
+cmain_run_battenberg <- function(tumour, config) {
   # BB operates from within output directory, therefore we switch there to start and leave before ending
   currentwd <- getwd()
   outdir <- fs::dir_create(get_fpath(tumour, config, "battenberg", dir = T))
@@ -276,22 +270,13 @@ cmain_run_battenberg <- function(tumour, normal, config) {
 
   # Convert CAMDAC objects to bb inputs
   tumour_prefix <- paste0(tumour$patient_id, "-", tumour$id)
-  normal_prefix <- paste0(normal$patient_id, "-", normal$id)
-  camdac_tumour_ac <- get_fpath(tumour, config, "counts")
-  camdac_normal_ac <- get_fpath(normal, config, "counts")
+  normal_prefix <- paste0(tumour$patient_id, "-", "N")
   camdac_tsnps <- get_fpath(tumour, config, "tsnps")
-
-  # Ensure camdac files exist
-  stopifnot(all(sapply(
-    c(camdac_tumour_ac, camdac_normal_ac, camdac_tsnps), fs::file_exists
-  )))
+  stopifnot(fs::file_exists(camdac_tsnps))
+  tsnps <- fread_chrom(camdac_tsnps)
 
   loginfo("Preparing WGBS allele counts for Battenberg")
-  # Future: Consider using existing SNP objects instead of ac?
-  camdac_to_battenberg_allele_freqs(camdac_tumour_ac, tumour_prefix, camdac_normal_ac, normal_prefix,
-    outdir,
-    min_normal_depth = config$min_cov
-  )
+  camdac_to_battenberg_allele_freqs(tsnps, tumour_prefix, normal_prefix, outdir,min_normal_depth = config$min_cov)
 
   loginfo("Preparing WGBS BAF and logR for Battenberg")
   prepare_wgbs_files <- camdac_to_battenberg_prepare_wgbs(tumour_prefix, normal_prefix, camdac_tsnps, outdir)
