@@ -43,13 +43,19 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
+      <a href="../articles/allele-specific.html">allele-specific</a>
+    </li>
+    <li>
+      <a href="../articles/copy_number_alt.html">pipeline</a>
+    </li>
+    <li>
       <a href="../articles/output.html">output</a>
     </li>
     <li>
@@ -210,7 +216,12 @@
 <span>  min_samples <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  max_sd <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>As CAMDAC requires coverage at each CpG site to estimate uncertainty, the <code>cov</code> value is given to all CpG sites when building a panel from beta values. Additionally, if any beta values are missing from a sample, proportions are redistributed evenly among the remaining samples as this is the only information available to build the panel for that site.</p>
+<p>As CAMDAC requires coverage at each CpG site to estimate uncertainty, the <code>cov</code> value is given to all CpG sites when building a panel from beta values. Additionally, if any beta values are missing from a sample, proportions are recalculated among the remaining samples as this is the only information available to build the panel for that site.</p>
+<p>There are two experimental arguments that can be set to filter CpG sites from the panel:</p>
+<ul>
+<li><p>min_samples: The minimum number of samples that have to have a beta value for a CpG to be included in the panel. The idea here is if you have sparse data, you can skip sites where you aren’t confident in the panel. Set this to 1 to use any sample.</p></li>
+<li><p>max_sd: Maximum standard deviation of beta values across samples a CpG must have to be included in the panel. The idea here is that when combining many bulk methylomes from the same tissue, sites with high variability reflect sample-specific differences and their averages are less reliable for use in a methylation panel.</p></li>
+</ul>
 </div>
 </div>
   </div>
@@ -232,7 +243,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.9000.</p>
 </div>
 
       </footer>
