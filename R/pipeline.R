@@ -20,7 +20,7 @@ pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NULL, 
 
   # Combine tumor-germline SNPs and call CNAs
   cmain_bind_snps(tumor, germline, config)
-  cmain_call_cna(tumor, germline, config)
+  cmain_call_cna(tumor, config)
 
   # Run deconvolution
   cmain_deconvolve_methylation(tumor, infiltrates, config)
