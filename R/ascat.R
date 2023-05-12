@@ -93,9 +93,10 @@ annotate_normal_tumor_only <- function(tsnps, nsnps){
   # Annotate counts depending on dataset available
   if ("total_counts" %in% names(nsnps)){
     setnames(nsnps, "total_counts", "total_counts_n", T)
-    tsnps = merge(tsnps, nsnps)
-    tsnps[, BAFr_n := NA] # Used to call tumor BAF
+    setnames(nsnps, "BAF", "BAF_n", T)
+    tsnps = merge(tsnps, nsnps, by=c("chrom", "POS"))
     tsnps[, LogR_n := NA]
+    tsnps[, BAFr_n := NA] # Used to call tumor BAF
   } else {
     tsnps = merge(tsnps, nsnps)
     tsnps[, BAFr_n := NA]
