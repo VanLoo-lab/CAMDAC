@@ -50,9 +50,20 @@ allele_counts_to_beagle_vcf_ <- function(allele_counts, outfile, impute_legend, 
 }
 
 # Convert CAMDAC allele counts object to per-chromosome allele frequency files for battenberg
-create_allele_frequencies_chr <- function(camdac_allele_counts, outdir, sample_af_prefix, min_depth) {
+create_allele_frequencies_chr <- function(tsnps, outdir, sample_af_prefix, min_depth, is_tumor=T) {
   # Load data table of SNP positions
-  dt <- fread_chrom(camdac_allele_counts, select = c("chrom", "POS", "ref", "alt", "ref_counts", "alt_counts"))[!is.na(POS)]
+  dt <- tsnps[, .(chrom, POS, ref, alt)]
+  
+  if(is_tumor){
+    dt$alt_counts = round(tsnps$BAF * tsnps$total_counts, 0)
+    dt$ref_counts = tsnps$total_counts - dt$alt_counts
+  }else{
+    dt$ref_counts = round(tsnps$BAF_n * tsnps$total_counts_n, 0)
+    dt$alt_counts = tsnps$total_counts - dt$ref_counts
+    dt[ is.na(ref_counts), ref_counts:=2 ]
+    dt[ is.na(alt_counts), alt_counts:=2 ]
+  }
+
   # Filter for min depth
   dt <- dt[ref_counts + alt_counts >= min_depth]
   # Split per chromosome for parallel processing
@@ -177,9 +188,9 @@ create_impute_info_file <- function(bb_38_dir, outdir) {
   return(impute_info_out)
 }
 
-camdac_to_battenberg_allele_freqs <- function(camdac_tumour_ac, tumour_prefix, camdac_normal_ac, normal_prefix, outdir, min_normal_depth) {
-  create_allele_frequencies_chr(camdac_tumour_ac, outdir, tumour_prefix, min_depth = 0) # TODO make function(exists)
-  create_allele_frequencies_chr(camdac_normal_ac, outdir, normal_prefix, min_depth = min_normal_depth)
+camdac_to_battenberg_allele_freqs <- function(tsnps, tumour_prefix, normal_prefix, outdir, min_normal_depth) {
+  create_allele_frequencies_chr(tsnps, outdir, tumour_prefix, min_depth = 1, is_tumor=T)
+  create_allele_frequencies_chr(tsnps, outdir, normal_prefix, min_depth = min_normal_depth, is_tumor=F)
   filter_allele_frequencies_to_overlap(outdir, tumour_prefix, normal_prefix)
   make_allele_frequencies_chrX_chrY(outdir, tumour_prefix, normal_prefix)
 }
@@ -267,6 +278,7 @@ camdac_to_battenberg_prepare_wgbs <- function(tumour_prefix, normal_prefix, camd
 
 check_callChrXSubclones <- function(TUMOURNAME) {
   # Helper function to check whether we can run callChrX subclones i.e. enough SNPs in non-par regions
+  # N.B. May not be valid if reference significantly changes.
   PCFinput <- data.frame(Battenberg::read_table_generic(paste0(TUMOURNAME, "_mutantLogR_gcCorrected.tab")), stringsAsFactors = F)
   PCFinput <- PCFinput[which(PCFinput$Chromosome == "X" & PCFinput$Position > 2.6e6 & PCFinput$Position < 156e6), ] # get nonPAR
   colnames(PCFinput)[3] <- TUMOURNAME
@@ -440,7 +452,7 @@ battenberg_wgbs_wrapper <- function(tumourname,
     baf.segmented.file = paste(tumourname[sampleidx], ".BAFsegmented.txt", sep = ""),
     logr.file = logr_file,
     rho.psi.file = paste(tumourname[sampleidx], "_rho_and_psi.txt", sep = ""),
-    output.file = paste(tumourname[sampleidx], "_subclones.txt", sep = ""),
+    output.file = paste(tumourname[sampleidx], "_copynumber.txt", sep = ""),
     output.figures.prefix = paste(tumourname[sampleidx], "_subclones_chr", sep = ""),
     output.gw.figures.prefix = paste(tumourname[sampleidx], "_BattenbergProfile", sep = ""),
     masking_output_file = paste(tumourname[sampleidx], "_segment_masking_details.txt", sep = ""),
@@ -458,11 +470,12 @@ battenberg_wgbs_wrapper <- function(tumourname,
   if (ismale) {
     if (check_callChrXSubclones(tumourname[sampleidx])) {
       Battenberg::callChrXsubclones(
-        TUMOURNAME = tumourname[sampleidx],
-        X_GAMMA = 1000,
-        X_KMIN = 100,
-        GENOMEBUILD = GENOMEBUILD,
-        AR = TRUE
+        tumourname = tumourname[sampleidx],
+        X_gamma = 1000,
+        X_kmin = 100,
+        genomebuild = GENOMEBUILD,
+        AR = TRUE,
+        chrom_names = chrom_names
       )
     }
   }
