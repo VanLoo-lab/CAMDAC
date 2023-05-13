@@ -1,8 +1,8 @@
 ---
-title: "pipeline"
+title: "copy_number"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{copy_number_alt}
+  %\VignetteIndexEntry{copy_number}
   %\VignetteEngine{rmarkdown::render}
   %\VignetteEncoding{UTF-8}
 ---
@@ -75,3 +75,37 @@ You may already know where heterozygous SNPs lie for your sample, obviating the 
 
 POS and total_counts are used to derive the BAF and the LogR respectively. We strongly recommend that total_counts is derived from a normal sample sequenced with the same bisulfite-sequencing assay as the tumor, and unmatched patient samples are acceptable.
 
+CAMDAC may be run to the copy number calling stage using the external heterozygous SNP file:
+
+```{r}
+
+library(CAMDAC)
+
+# Load test data
+b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
+b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
+snps_file <- system.file("testdata", "test.to.norm_pos.csv.gz", package = "CAMDAC")
+
+# Set config
+config <- CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
+
+# Create tumor object and attach CNA solution
+tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
+attach_output(tumor, config, "cna", cna_file)
+
+# Define normal object(s) for deconvolution or differential methylation
+germline <- CamSample(id="G", sex="XY", bam=b_normal)
+attach_output(germline, config, "snps", snps_file)
+
+# Run pipeline with CNA solution
+pipeline(
+    tumor=tumor,
+    germline=germline,
+    infiltrates=NULL,
+    origin=NULL,
+    config=config
+)
+
+```
+
+After this, we recommend inspecting the CNA results. If all is well, the pipeline() function can be repeated with the infiltrates and origin CamSamples to complete deconvolution and differential methylation respectively.
