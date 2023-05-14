@@ -208,7 +208,6 @@
 <span></span>
 <span><span class="co"># Load test data</span></span>
 <span><span class="va">b_tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"tumor.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
-<span><span class="va">b_normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"normal.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span><span class="va">snps_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"test.to.norm_pos.csv.gz"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Set config</span></span>
@@ -219,7 +218,7 @@
 <span><span class="fu"><a href="../reference/attach_output.html">attach_output</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="va">config</span>, <span class="st">"cna"</span>, <span class="va">cna_file</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Define normal object(s) for deconvolution or differential methylation</span></span>
-<span><span class="va">germline</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"G"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_normal</span><span class="op">)</span></span>
+<span><span class="va">germline</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"G"</span>, sex<span class="op">=</span><span class="st">"XY"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/attach_output.html">attach_output</a></span><span class="op">(</span><span class="va">germline</span>, <span class="va">config</span>, <span class="st">"snps"</span>, <span class="va">snps_file</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Run pipeline with CNA solution</span></span>

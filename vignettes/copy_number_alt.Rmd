@@ -83,7 +83,6 @@ library(CAMDAC)
 
 # Load test data
 b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
-b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
 snps_file <- system.file("testdata", "test.to.norm_pos.csv.gz", package = "CAMDAC")
 
 # Set config
@@ -94,7 +93,7 @@ tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
 attach_output(tumor, config, "cna", cna_file)
 
 # Define normal object(s) for deconvolution or differential methylation
-germline <- CamSample(id="G", sex="XY", bam=b_normal)
+germline <- CamSample(id="G", sex="XY")
 attach_output(germline, config, "snps", snps_file)
 
 # Run pipeline with CNA solution
