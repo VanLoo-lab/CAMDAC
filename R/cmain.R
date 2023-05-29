@@ -442,7 +442,7 @@ cmain_call_dmrs <- function(tumour, config) {
   tmeth_outfile <- get_fpath(tumour, config, "dmps")
   tmeth_dmps <- fst::read_fst(tmeth_outfile, as.data.table = T)
   regions_file <- CAMDAC::get_reference_files(config, "annotations", "*all_regions_annotations*")
-  regions_annotations <- fst::read_fst(regions_file, as.data.table = T)
+  regions_annotations <- data.table::fread(regions_file)
   tmeth_dmrs <- call_dmrs(tmeth_dmps, regions_annotations, n_cores = config$n_cores)
   tmeth_dmrs_outfile <- get_fpath(tumour, config, "dmrs")
   fst::write_fst(tmeth_dmrs, tmeth_dmrs_outfile)
