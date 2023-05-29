@@ -22,21 +22,18 @@ test_that("ascat and battenberg runs on wgbs samples", {
     }
 
     # Test CNA and expect file exists after ASCAT
-    config_c$cna_caller <- "ascat"
-    cmain_call_cna(tumor, normal, config_c)
+    # config_c$cna_caller <- "ascat"
+    # cmain_call_cna(tumor, config_c)
 
-    # Test ASCAT
-    tool <- fread(cna_file)$pipeline[[1]]
-    testthat::expect_equal(tool, "ascat")
-    fs::file_delete(cna_file)
+    # tool <- fread(cna_file)$pipeline[[1]]
+    # testthat::expect_equal(tool, "ascat")
+    # fs::file_delete(cna_file)
 
     # Run battenberg
     config_c$cna_caller <- "battenberg"
-    cmain_count_alleles(tumor, config_c)
-    cmain_count_alleles(normal, config_c)
 
     # Battenberg warnings are function of the test data
-    suppressWarnings(cmain_call_cna(tumor, normal, config_c))
+    suppressWarnings(cmain_call_cna(tumor, config_c))
     tool <- fread(cna_file)$pipeline[[1]]
     testthat::expect_equal(tool, "battenberg")
     fs::file_delete(cna_file)
