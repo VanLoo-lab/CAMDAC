@@ -327,6 +327,7 @@ download_pipeline_files <- function(bsseq, directory = NULL) {
   # Download pipeline files and unzip
   tf <- tempfile(tmpdir = ".")
   download.file(link, destfile = tf, method = "wget")
+  loginfo("Unpacking tempfile (tar.gz): %s", tf)
   untar(tf, exdir = location)
 
   fs::file_delete(tf)

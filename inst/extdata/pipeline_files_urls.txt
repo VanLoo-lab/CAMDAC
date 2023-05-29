@@ -1,3 +1,3 @@
-rrbs https://www.dropbox.com/sh/twsm26o920ggsn7/AADf18QxRwxUrbxRcKUINo1ra?dl=0
-wgbs https://www.dropbox.com/s/ongw6jti1vcpq1d/camdac_wgbs_pipeline_files.tar.gz?dl=0
-test https://www.dropbox.com/s/8zojz2mwnuuiyh6/test_wgbs_pipeline_files.tar.gz?dl=0
+rrbs https://drive.google.com/u/0/uc?id=1dCBlXQ-AndgZhUEU6-1TuMdLDVLRxg6m&export=download&confirm=t
+wgbs https://drive.google.com/u/0/uc?id=1LINRkMdbUAj5jRifvHgaRJ7Sq4wRUbgN&export=download&confirm=t
+test https://drive.google.com/u/0/uc?id=1ksLR5HRxorbIKSV1FbQtBYOFkRPDClI6&export=download&confirm=t
