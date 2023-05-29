@@ -49,8 +49,8 @@ cmain_count_alleles <- function(sample, config) {
 
   loginfo("Counting alleles for %s", paste0(sample$patient_id, ":", sample$id))
   # For each segment, load the appropriate SNP/CpG loci file segment and call allele counter in parallel
-  #   Set warn=2 to ensure foreach fails if any of the parallel workers are terminated due to memory.
-  #   without this option, foreach simply returns a warning and software continues
+  #   Set warn=2 to ensure foreach fails if any of the parallel workers are terminated or raise a warning.
+  #   without this option, foreach simply returns a warning and the pipeline continues. Essential for memory warning terminations.
   options(warn = 2)
   tmpfiles <- foreach(seg = segments, .combine = "c") %dopar% {
     loci_dt <- load_loci_for_segment(seg, loci_files)
@@ -290,8 +290,8 @@ cmain_run_battenberg <- function(tumour, config) {
   # Setup battenberg references
   # `get_reference_files` returns files in subdirectory, so to get root we take the parent of the first file returned.
   bb_38_dir <- fs::path_dir(get_reference_files(config, "battenberg"))[[1]]
-  beagleref.template <- paste0(bb_38_dir, "/beagle5/chrCHROMNAME.1kg.phase3.v5a_GRCh38nounref.vcf.gz")
-  beagleplink.template <- paste0(bb_38_dir, "/beagle5/plink.chrCHROMNAME.GRCh38.map")
+  beagleref.template <- paste0(bb_38_dir, "/beagle5/chrCHROMNAME.1kg.phase3.v5a.vcf.gz")
+  beagleplink.template <- paste0(bb_38_dir, "/beagle5/plink.chrCHROMNAME.map")
   problemloci <- paste0(bb_38_dir, "/probloci/probloci.txt.gz")
   imputeinfofile <- create_impute_info_file(bb_38_dir, outdir) # Created from template.
 
