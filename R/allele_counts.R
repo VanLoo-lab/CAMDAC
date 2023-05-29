@@ -774,10 +774,15 @@ filter_multi_snp_loci <- function(pileup_summary) {
   # - Take the member of the pair with the highest CpG coverage
   # - Otherwise, take the cytosine site
   # FUTURE: A tool like bis-SNP to determine SNPs per sample
-
+  
   # Label multi_snp_loci (msl) based on duplicates
   pileup_summary[, msl := duplicated(pileup_summary, by = c("chrom", "start", "end"), fromLast = F) |
     duplicated(pileup_summary, by = c("chrom", "start", "end"), fromLast = T)]
+
+  # Return NULL if no MSL loci found
+  if(nrow(pileup_summary[msl==T])==0) {
+    return(pileup_summary)
+  }
 
   # Label loci as SNP based on BAF
   pileup_summary[msl == T, is_snp := dplyr::between(BAF, 0.1, 0.9)]
@@ -835,9 +840,14 @@ cwrap_get_allele_counts <- function(bam_file, seg, loci_dt = NA, paired_end, dro
   if (nrow(bam_dt) == 0) {
     return(empty_count_alleles_result())
   }
+
+  # Overlap with loci
   bam_dt <- format_bam_for_loci_overlap(bam_dt, paired_end = paired_end)
   bam_dt <- annotate_bam_with_loci(bam_dt, loci_dt, drop_ccgg = drop_ccgg, paired_end = paired_end)
   bam_dt <- drop_positions_outside_segments(bam_dt, seg)
+  if (nrow(bam_dt) == 0) {
+    return(empty_count_alleles_result())
+  }
 
   if (paired_end) {
     # For paired end samples, we must select a single read at overlapping and then fix the
@@ -855,6 +865,9 @@ cwrap_get_allele_counts <- function(bam_file, seg, loci_dt = NA, paired_end, dro
   # Additional filtering
   bam_dt <- filter_clipped_dinucleotides(bam_dt)
   bam_dt <- filter_bam_by_quality(bam_dt, min_mapq = min_mapq)
+  if (nrow(bam_dt) == 0) {
+    return(empty_count_alleles_result())
+  }
 
   # Get nucleotide counts and flatten pileup
   bam_dt <- annotate_nucleotide_counts(bam_dt)
