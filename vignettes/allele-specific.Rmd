@@ -20,13 +20,15 @@ knitr::opts_chunk$set(
 CAMDAC can be used to detect allele-specific methylation (ASM) by phasing CpGs to heterozygous SNPs and deconvolving bulk methylation rates per allele. 
 
 This tutorial steps through the ASM analysis pipeline. Briefly:
+
 1. Count CpG methylation on tumor and normal at sites phased to SNP loci.
 2. Deconvolve methylation on tumor **per haplotype** using the normal
 3. Assign allele-specific copy number state **per CpG** using the bulk tumor solution
 4. Call allele-specific differential methylation within samples
 5. Call allele-specific differential methylation between samples
 
-Results from this pipeline are found in the results directory under 'PATIENT/AlleleSpecific'. The following files are generated:
+Results from this pipeline are found in the results directory under 'PATIENT/AlleleSpecific' and 'PATIENT/Methylation':
+
 - *asm_counts.csv.gz - The number of reads supporting each allele at each CpG
 - *asm_hap_stats.csv.gz - Summary statistics for each phased SNP
 - *asm_phase_map.csv.gz - A mapping if read-CpG-SNP phasing
@@ -60,10 +62,8 @@ asm_pipeline(
 )
 ```
 
-The ASM results are placed in a PATIENT/AlleleSpecific directory with the following files:
-- 
 
-## TODO: CAMDAC-ASM from external inputs
+## CAMDAC-ASM from external inputs (in_development)
 
 To run the ASM pipeline without BAM files, CAMDAC requires:
 - Each CamSample object has SNP loci
@@ -78,12 +78,6 @@ CAMDAC-ASM requires a file of heterozygous SNP loci against which CpGs will be p
 | pos | SNP loci position |
 | ref | The reference allele (A/C/T/G) |
 | alt | The alternate SNP allele (A/C/T/G) | 
-
-## ASM analysis after CAMDAC main pipeline 
-
-TODO
-
-## ASM analysis with external inputs
 
 First, attach your SNP loci file to the tumor object with `attach_output()`, then run `asm_pipeline()`:
 ```{r}
