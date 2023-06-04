@@ -73,7 +73,6 @@ if(sample_id %in% normal_ids){
 path_patient <- file.path(path, patient_id)
 dir.create(file.path(path_patient, "Methylation",sample_id), recursive=TRUE,showWarnings=FALSE)
 path_output <-paste0(path_patient, "/Methylation/",sample_id,"/")
-setwd(path_output)
 
 # Load data
 f_nm = paste0(path_patient,"/Allelecounts/", sample_id, "/",
