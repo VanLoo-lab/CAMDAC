@@ -73,9 +73,9 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
   }
   
   # Create output directory
-  suppressWarnings(dir.create(file.path(path_patient, "Copy_number", sample_id), recursive = TRUE))
   path_output<-paste0(path_patient, "/Copy_number/",sample_id,"/")
-  setwd(path_output)
+  dir.create(path_output, recursive=TRUE, showWarnings = FALSE)
+  orig_dir <- getwd()
   
   # Set reference human genome build variables
   cat(paste("Data with build ", build, sep = " "), "\n", sep = "")
@@ -100,23 +100,25 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
   # Load germline tag
   if(sample_id != normal_id){
     if(is.null(reference_panel_coverage)){
-       f_name <- paste0(path_patient,"/Copy_number/",normal_id,"/",patient_id, 
-                        ".", normal_id, ".SNPs.RData")
-       load(f_name); rm(f_name)
-       dt_normal_SNPs <- dt[,.SD, .SDcols=c(cols,"type")]
- 
-       # format
-       idxs <- match(c("total_counts","total_depth","BAF"), colnames(dt_normal_SNPs))
-       colnames(dt_normal_SNPs)[idxs] <- c("total_counts_n","total_depth_n","BAF_n")
-       rm(idxs)
+
+      germline_snps_f_name <- paste0(path_patient,"/Copy_number/",normal_id,"/",patient_id, 
+                            ".", normal_id, ".SNPs.RData")
+
+      load(germline_snps_f_name); rm(germline_snps_f_name)
+      dt_normal_SNPs <- dt[,.SD, .SDcols=c(cols,"type")]
+      rm(dt)
+
+      # format
+      idxs <- match(c("total_counts","total_depth","BAF"), colnames(dt_normal_SNPs))
+      colnames(dt_normal_SNPs)[idxs] <- c("total_counts_n","total_depth_n","BAF_n")
+      rm(idxs)
     } else {
        dt_normal_SNPs <- read_fst(reference_panel_coverage, as.data.table=TRUE)
        dt_normal_SNPs <- 
            dt_normal_SNPs[, .SD, .SDcols= c("chrom","POS","ref","alt","total_depth_n")]
        dt_normal_SNPs[, BAF_n := as.numeric(NA)]
        dt_normal_SNPs <- dt_normal_SNPs[total_depth_n >= min_normal,]
-  }
-    
+    }
     # double check chromosome format
     x <- substr(as.character(dt_normal_SNPs$chrom[1]),1,3)
     if(x=="chr"){dt_normal_SNPs[, chrom := substr(chrom, 4, 5)]}
@@ -257,161 +259,145 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
   # save dt
   save(dt, file=paste(path_output, patient_id, ".", sample_id, ".SNPs.RData", sep = ""))
   rm(dt)
-  
+
+  # Switch WD for ASCAT
+  setwd(path_output)
+
   if(sample_id != normal_id){
-  # Annotate
-  dt_sample_SNPs[, chrom := as.character(chrom)]
-  SNPpos = dt_sample_SNPs[, .SD, .SDcols=c("chrom","POS","BAFloci")]
-  ch = list()
-  for (i in 1:length(chr_names)) {
-    temp = which(as.character(SNPpos$chrom)==chr_names[i])
-    if (length(temp) == 0) {
-      ch[[i]] = 0
-    } else {
-      ch[[i]] = temp[1]:temp[length(temp)]
+    # Annotate
+    dt_sample_SNPs[, chrom := as.character(chrom)]
+    SNPpos = dt_sample_SNPs[, .SD, .SDcols=c("chrom","POS","BAFloci")]
+    ch = list()
+    for (i in 1:length(chr_names)) {
+      temp = which(as.character(SNPpos$chrom)==chr_names[i])
+      if (length(temp) == 0) {
+        ch[[i]] = 0
+      } else {
+        ch[[i]] = temp[1]:temp[length(temp)]
+      }
     }
-  }
-  
-  chr=split_genome_RRBS(SNPpos)
-  types <- dt_sample_SNPs[, as.character(type)=="Homozygous"]
-  
-  ascat.bc = list(Tumor_LogR=data.frame(LogR_t_corr=dt_sample_SNPs$LogR_t_corr),
-                  Tumor_BAF=data.frame(rBAF_t=dt_sample_SNPs$rBAF),
-                  Germline_LogR=data.frame(LogR_n=dt_sample_SNPs$LogR_n),
-                  Germline_BAF=data.frame(rBAF_n=dt_sample_SNPs$rBAF_n),
-                  Tumor_LogR_segmented=NULL, Tumor_BAF_segmented=NULL,
-                  Tumor_counts=NULL, Germline_counts=NULL,
-                  SNPpos=SNPpos[,c("chrom","POS")], chr=chr,
-                  samples=paste(patient_id, sample_id, sep="."), 
-                  chrs=chr_names, ch=ch, 
-                  gender=sex, sexchromosomes=c("X", "Y"),
-                  genotypes=data.frame(ggtypes=types))
-  rm(chr,ch,SNPpos)
-
-  # chrs = chromosome_names
-  # ch = list of length chr_names. Each list contrains all the position for any one of chr_names
-  # chr = All SNP loci from 1:n split in different lists where gaps of more than 1Mb are
-  # found or chromosome borders
-  
-  ascat.m.plotRawData(ascat.bc, raw_LogR=dt_sample_SNPs$LogR_t, pch = 10, cex = 0.2, lim_logR = 2.5)
-  save(ascat.bc, file = paste(patient_id, sample_id, "ascat.bc.RData", sep = "."))
-  cat("ASCAT object created\n")
-  
-  # Carry out segmentation
-  gg = list(germlinegenotypes=ascat.bc$genotypes)
-  ascat.frag <- ascat.aspcf(ascat.bc, ascat.gg=gg, penalty=200)
-  # penalty = 200 recommended for sequencing data
-
-  # fix issue with ascat.ascpcf renaming samples 
-  ascat.frag$samples <- paste(patient_id, sample_id, sep=".")
-  rm(ascat.bc)
-  
-  ascat.m.plotSegmentedData(ascat.frag, lim_logR = 2.5) 
-  save(ascat.frag, file = paste(patient_id, sample_id, "ascat.frag.RData", sep = "."))
-  cat("\nASCAT copy number segmentation completed\n")
-  
-  # Run copy number caller a first time to get the distance matrix
-  ascat.output <- ascat.runAscat(ascat.frag, gamma = 1)
-  save(ascat.output, file = paste(patient_id, sample_id,"ascat.output.RData", sep = "."))
-  num_het_SNPs = nrow(ascat.frag$Tumor_LogR_segmented)
-  num_hom_SNPs = nrow(ascat.frag$Tumor_BAF_segmented[[1]])
-  rm(ascat.frag)
-   
-  if(file.exists(paste(patient_id, sample_id,"ASCATprofile.png", sep = "."))){
-    cat("\nASCAT completed\n")
-  
-    # Save purity and ploidy
-    f.nm <- paste(path_output, patient_id, ".", sample_id,".ACF.and.ploidy.txt", sep = "")
-    file.create(f.nm)
-    f <- file(f.nm, open="w") 
     
-    # Save/write
-    dt <- data.frame(ploidy=ascat.output$ploidy,ACF=ascat.output$aberrantcellfraction, 
-                    num_het_SNPs = num_het_SNPs, num_hom_SNPs = num_hom_SNPs,
-                    #mean_depth = mean(dt_sample_SNPs$total_depth, na.rm=TRUE), 
-                    median_depth = median(dt_sample_SNPs$total_depth, na.rm=TRUE),
-                    median_n_depth = median(dt_sample_SNPs$total_depth_n, na.rm=TRUE))
-    rm(ascat.output, num_het_SNPs, num_hom_SNPs)
-    cat(format_delim(dt, delim = "\t", col_names = T),  file = f)
-    close(f); rm(dt,f,f.nm)
-    cat(paste("\nPloidy, Purity and summary stats saved in ",
-              path_output,patient_id,".",sample_id,".ACF.and.ploidy.txt","\n",sep = ""))
-    } else {
-      cat("\nASCAT could not find a solution\n")  
-  }
-  
-  # convert to data.table
-  dt_sample_SNPs[, chrom := as.character(chrom)]
+    chr=split_genome_RRBS(SNPpos)
+    types <- dt_sample_SNPs[, as.character(type)=="Homozygous"]
+    
+    ascat.bc = list(Tumor_LogR=data.frame(LogR_t_corr=dt_sample_SNPs$LogR_t_corr),
+                    Tumor_BAF=data.frame(rBAF_t=dt_sample_SNPs$rBAF),
+                    Germline_LogR=data.frame(LogR_n=dt_sample_SNPs$LogR_n),
+                    Germline_BAF=data.frame(rBAF_n=dt_sample_SNPs$rBAF_n),
+                    Tumor_LogR_segmented=NULL, Tumor_BAF_segmented=NULL,
+                    Tumor_counts=NULL, Germline_counts=NULL,
+                    SNPpos=SNPpos[,c("chrom","POS")], chr=chr,
+                    samples=paste(patient_id, sample_id, sep="."), 
+                    chrs=chr_names, ch=ch, 
+                    gender=sex, sexchromosomes=c("X", "Y"),
+                    genotypes=data.frame(ggtypes=types))
+    rm(chr,ch,SNPpos)
 
-  # format seqnames
-  x <- dt_sample[1, substr(as.character(CHR),1,3)]
-  if(x=="chr"){dt_sample[, chrom := substr(dt_sample$CHR, 4, 5)]}
-  if(x!="chr"){dt_sample[, chrom := dt_sample$CHR]}
-  
-  # join SNP and methylation info for plot
-  dt_sample <- dt_sample[!is.na(POS),]
-  dt_sample$chrom <- as.character(dt_sample$chrom)
-  dt <- merge(dt_sample_SNPs, 
-              dt_sample[,c("chrom","POS","ref","alt","BAF","m","width","CCGG")], 
-              by=c("chrom","POS","ref","alt","BAF"))
-  dt[, flag := factor(ifelse(CCGG>0,"CCGG",
-                      ifelse(width>=2&!is.na(dt$m), "CG", 
-                      "neither")),
-               levels=c("CCGG", "CG", "neither"))]
-  rm(dt_sample)
-  
-  # run plot function
-  outfile = paste(patient_id, sample_id,"SNP_data.pdf", sep = "_")
-  plot_SNP_info(dt=dt,outfile=outfile,min=min)
-  cat("BAF and LogR diagnostics plots generated\n")
-  }
-  
-  if(is.null(reference_panel_coverage)&sample_id==normal_id){ 
+    # chrs = chromosome_names
+    # ch = list of length chr_names. Each list contrains all the position for any one of chr_names
+    # chr = All SNP loci from 1:n split in different lists where gaps of more than 1Mb are
+    # found or chromosome borders
+    
+    ascat.m.plotRawData(ascat.bc, raw_LogR=dt_sample_SNPs$LogR_t, pch = 10, cex = 0.2, lim_logR = 2.5)
+    save(ascat.bc, file = paste(patient_id, sample_id, "ascat.bc.RData", sep = "."))
+    cat("ASCAT object created\n")
+    
+    # Carry out segmentation
+    gg = list(germlinegenotypes=ascat.bc$genotypes)
+    ascat.frag <- ascat.aspcf(ascat.bc, ascat.gg=gg, penalty=200)
+    # penalty = 200 recommended for sequencing data
+
+    # fix issue with ascat.ascpcf renaming samples 
+    ascat.frag$samples <- paste(patient_id, sample_id, sep=".")
+    rm(ascat.bc)
+    
+    ascat.m.plotSegmentedData(ascat.frag, lim_logR = 2.5) 
+    save(ascat.frag, file = paste(patient_id, sample_id, "ascat.frag.RData", sep = "."))
+    cat("\nASCAT copy number segmentation completed\n")
+    
+    # Run copy number caller a first time to get the distance matrix
+    ascat.output <- ascat.runAscat(ascat.frag, gamma = 1)
+    save(ascat.output, file = paste(patient_id, sample_id,"ascat.output.RData", sep = "."))
+    num_het_SNPs = nrow(ascat.frag$Tumor_LogR_segmented)
+    num_hom_SNPs = nrow(ascat.frag$Tumor_BAF_segmented[[1]])
+    rm(ascat.frag)
+    
+    if(file.exists(paste(patient_id, sample_id,"ASCATprofile.png", sep = "."))){
+      cat("\nASCAT completed\n")
+    
+      # Save purity and ploidy
+      f.nm <- paste(patient_id, ".", sample_id,".ACF.and.ploidy.txt", sep = "")
+      file.create(f.nm)
+      f <- file(f.nm, open="w") 
+      
+      # Save/write
+      dt <- data.frame(ploidy=ascat.output$ploidy,ACF=ascat.output$aberrantcellfraction, 
+                      num_het_SNPs = num_het_SNPs, num_hom_SNPs = num_hom_SNPs,
+                      #mean_depth = mean(dt_sample_SNPs$total_depth, na.rm=TRUE), 
+                      median_depth = median(dt_sample_SNPs$total_depth, na.rm=TRUE),
+                      median_n_depth = median(dt_sample_SNPs$total_depth_n, na.rm=TRUE))
+      rm(ascat.output, num_het_SNPs, num_hom_SNPs)
+      cat(format_delim(dt, delim = "\t", col_names = T),  file = f)
+      close(f); rm(dt,f,f.nm)
+      cat(paste("\nPloidy, Purity and summary stats saved in ",
+                path_output,patient_id,".",sample_id,".ACF.and.ploidy.txt","\n",sep = ""))
+      } else {
+        cat("\nASCAT could not find a solution\n")  
+    }
+    
     # convert to data.table
     dt_sample_SNPs[, chrom := as.character(chrom)]
 
+    # format seqnames
+    x <- dt_sample[1, substr(as.character(CHR),1,3)]
+    if(x=="chr"){dt_sample[, chrom := substr(dt_sample$CHR, 4, 5)]}
+    if(x!="chr"){dt_sample[, chrom := dt_sample$CHR]}
+    
     # join SNP and methylation info for plot
     dt_sample <- dt_sample[!is.na(POS),]
     dt_sample$chrom <- as.character(dt_sample$chrom)
     dt <- merge(dt_sample_SNPs, 
-              dt_sample[,c("chrom","POS","ref","alt","BAF","m","width","CCGG")], 
-              by=c("chrom","POS","ref","alt","BAF"))
+                dt_sample[,c("chrom","POS","ref","alt","BAF","m","width","CCGG")], 
+                by=c("chrom","POS","ref","alt","BAF"))
     dt[, flag := factor(ifelse(CCGG>0,"CCGG",
-                      ifelse(width>=2&!is.na(dt$m), "CG", 
-                      "neither")),
-               levels=c("CCGG", "CG", "neither"))]
+                        ifelse(width>=2&!is.na(dt$m), "CG", 
+                        "neither")),
+                levels=c("CCGG", "CG", "neither"))]
     rm(dt_sample)
-  
-    # set vars
-    min=min_normal
-    outfile=paste(patient_id, sample_id, "normal_SNP_data.pdf", sep = "_")
     
     # run plot function
-    plot_normal_SNP_info(dt=dt,outfile=outfile,min=min)
-    cat("Normal BAF plots generated\n")
-  }
+    outfile = paste(patient_id, sample_id,"SNP_data.pdf", sep = "_")
+    plot_SNP_info(dt=dt,outfile=outfile,min=min)
+    cat("BAF and LogR diagnostics plots generated\n")
+    }
+    
+    if(is.null(reference_panel_coverage)&sample_id==normal_id){ 
+      # convert to data.table
+      dt_sample_SNPs[, chrom := as.character(chrom)]
 
-  #if(txt_output==TRUE){
-  #  # Format columns as char
-  #  all_cols <- unlist(lapply(dt_sample_SNPs, is.numeric))
-  #  all_cols <- names(all_cols[all_cols==TRUE])
-  #  dt_sample_SNPs[,all_cols] <- lapply(dt_sample_SNPs[,all_cols], as.character)
-  #
-  #  # Create file
-  #  f.nm <- paste(path_output, patient_id, ".", sample_id, ".SNPs.txt", sep = "")
-  #  file.create(f.nm)
-  #  f <- file(f.nm, open="w") # or open="a" if appending
-  #
-  #  # Save/write
-  #  cat(format_delim(dt, delim = "\t", col_names = T),  file = f)
-  #  close(f)
-  #
-  #  rm(all_cols, f.nm, f,cols)
-  #}
+      # join SNP and methylation info for plot
+      dt_sample <- dt_sample[!is.na(POS),]
+      dt_sample$chrom <- as.character(dt_sample$chrom)
+      dt <- merge(dt_sample_SNPs, 
+                dt_sample[,c("chrom","POS","ref","alt","BAF","m","width","CCGG")], 
+                by=c("chrom","POS","ref","alt","BAF"))
+      dt[, flag := factor(ifelse(CCGG>0,"CCGG",
+                        ifelse(width>=2&!is.na(dt$m), "CG", 
+                        "neither")),
+                levels=c("CCGG", "CG", "neither"))]
+      rm(dt_sample)
+    
+      # set vars
+      min=min_normal
+      outfile=paste(patient_id, sample_id, "normal_SNP_data.pdf", sep = "_")
+      
+      # run plot function
+      plot_normal_SNP_info(dt=dt,outfile=outfile,min=min)
+      cat("Normal BAF plots generated\n")
+    }
 
-  # # clean-up
-  # rm(dt_sample_SNPs)
-  # gc()
+  setwd(orig_dir)
+
 }
 
 #' @title split_genome_RRBS
@@ -493,6 +479,7 @@ remove_low_cov_singletons = function(dt_sample_SNPs,min){
   # get neighbouring SNP index
   ranges <- -5:5
   idxs <- outer(which(low_cov==TRUE), ranges, `+`)
+  idxs[idxs<0] <- 0
   
   # get neighbouring SNP genomic coordinates
   POSS <- matrix(dt$POS[idxs],ncol=length(ranges))
