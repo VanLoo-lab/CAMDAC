@@ -1,7 +1,4 @@
 ##  CAMDAC get allele counts at SNPs and CpGs from bisulfite sequencing BAM file
-##  Latest update: 04/05/2021
-##  Version 1.0.0
-##  Author: Elizabeth Larose Cadieux
 
 #' Compile allele counts at SNPs and at CpGs for bisulfite sequencing data
 #' \code{get_allele_counts}
@@ -41,12 +38,8 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
   
   # Set working directory path and create results folders
   # Do not change this - subsequent functions will look for files in this directory
-  path <- file.path(path, patient_id)
-  suppressWarnings(dir.create(file.path(path), recursive = TRUE))
-  suppressWarnings(dir.create(file.path(path, "Allelecounts"), recursive = TRUE))
-  suppressWarnings(dir.create(file.path(path, "Allelecounts",sample_id), recursive = TRUE))
-  path_output=paste0(path, "/Allelecounts/",sample_id,"/")
-  setwd(path_output)
+  path_output <- file.path(path, patient_id, "Allelecounts", sample_id)
+  suppressWarnings(dir.create(path_output, recursive = TRUE))
 
   # Load doParrellel if running job in parrallel 
   if(n_cores > 1){
@@ -587,7 +580,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
   invisible(gc())
   
   # Create file
-  f_nm <- paste(path_output, patient_id, ".", sample_id, ".", i, ".SNPs.CpGs.fst", sep = "")
+  f_nm <- file.path(path_output, paste(patient_id, ".", sample_id, ".", i, ".SNPs.CpGs.fst", sep = ""))
   write_fst(df_merged,  f_nm)
   cat(paste0("Written to: ", f_nm, "\n"))
 }

@@ -17,7 +17,6 @@
 #' including dir name  (e.g. "/path/to/CAMDAC/").
 #' @param build Character variable corresponding to the reference genome used for alignment.
 #' CAMDAC is compatible with "hg19", "hg38", "GRCH37","GRCH38".
-##' @param txt_output Character varaiable indicating if .txt output
 #' is desired in addition to GRanges object in .RData file
 #'
 #' @return Concatenated SNP and CpG information
@@ -25,7 +24,7 @@
 format_output <- function(patient_id, sample_id, sex,
                           is_normal = FALSE,
                           path, path_to_CAMDAC,
-                          build, txt_output = FALSE) {
+                          build) {
   if (getOption("scipen") == 0) {
     options(scipen = 999)
   }
@@ -33,12 +32,11 @@ format_output <- function(patient_id, sample_id, sex,
   # Set output directoty
   # Do not change this - subsequent functions will look for files in this directory
   path_patient <- file.path(path, patient_id)
-  path_output <- paste0(path_patient, "/Allelecounts/", sample_id, "/")
-  setwd(path_output)
+  path_output <- file.path(path, patient_id, "Allelecounts", sample_id)
 
   # Get the names of all allele counts sub-files
-  index <- grepl(pattern = ".SNPs.CpGs.fst", list.files())
-  files <- list.files()[index]
+  index <- grepl(pattern = ".SNPs.CpGs.fst", list.files(path_output, full.names=T))
+  files <- list.files(path_output, full.names=T)[index]
   rm(index)
   files <- files[order(as.numeric(gsub("^.*\\.([0-9]+)\\..*$", "\\1", files)))]
 
@@ -60,7 +58,7 @@ format_output <- function(patient_id, sample_id, sex,
   }
 
   # Create allele counts combined output file name
-  output_file_prefix <- paste0(path_output, patient_id, ".", sample_id)
+  output_file_prefix <- paste0(path_output, "/", patient_id, ".", sample_id)
   f_nm <- paste0(output_file_prefix, ".SNPs.CpGs.all.sorted.RData")
 
   # Save tumour data
@@ -95,25 +93,6 @@ format_output <- function(patient_id, sample_id, sex,
   )
   cat("Msp1 fragments information obtained for patient\n")
   rm(outfile_prefix)
-
-  if (txt_output == TRUE) {
-    # Format SNP and CpG loci dt_combined data
-    cols <- unlist(lapply(dt_combined[1], is.numeric))
-    cols <- names(cols[cols == TRUE])
-    dt_combined[, as.character(cols) := dt_combined[, lapply(.SD, , as.character), .SDcols = cols]]
-
-    # Create file
-    f_nm <- paste0(output_file_prefix, ".SNPs.CpGs.all.sorted.txt")
-    file.create(f_nm)
-    f_name <- file(f_nm, open = "w") # or open="a" if appending
-
-    # Save/write dt_combined data
-    cat(format_delim(dt_combined, delim = "\t", col_names = TRUE), file = f_name)
-    close(f_name)
-    rm(f_nm, f_name)
-
-    cat("All CpG and SNP data sorted and saved as .txt file\n")
-  }
 }
 
 

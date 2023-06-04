@@ -62,8 +62,7 @@ preprocess_sample <- function(patient_id, sample_id, normal_id, bam_file, min_tu
     # Set normal status based on whether sample and normal ID match
     is_normal <- ifelse(sample_id == normal_id, TRUE, FALSE)
     format_output(
-        patient_id, sample_id, sex, is_normal, path, pipeline_files, build,
-        txt_output = FALSE
+        patient_id, sample_id, sex, is_normal, path, pipeline_files, build
     )
 
     # Create SNP files (normal) or run ASCAT (tumor)

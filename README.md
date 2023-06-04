@@ -20,7 +20,7 @@ Files required to run the CAMDAC pipeline [(listed here)](inst/extdata/pipeline_
 
 ```r
 library(CAMDAC)
-CAMDAC::download_pipeline_files(bbseq="rrbs", directory="pipe_path/")
+CAMDAC::download_pipeline_files(bsseq="rrbs", directory="pipeline_files/")
 ```
 
 ## Quickstart
@@ -40,10 +40,10 @@ CAMDAC::pipeline_tumor_normal(
     normal_bam=normal_bam,
     sex="XY",
     path="results/",
-    pipeline_files="pipe_path/",
+    pipeline_files="pipeline_files/",
     build="hg38",
     min_tumor = 1,
-    min_normal = 10,
+    min_normal = 1,
     mq = 0,
     n_cores = 1
 )

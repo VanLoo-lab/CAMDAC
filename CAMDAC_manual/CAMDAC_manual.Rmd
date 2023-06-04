@@ -71,7 +71,7 @@ remotes::install_github("VanLoo-lab/CAMDAC")
 
 # Install files required to run the CAMDAC pipeline
 library(CAMDAC)
-CAMDAC::download_pipeline_files(bbseq="rrbs", directory="pipeline_files/")
+CAMDAC::download_pipeline_files(bsseq="rrbs", directory="pipeline_files/")
 ```
 
 The last command in the installation retrieves and unpacks a tar archive containing files that CAMDAC requires. These files are hosted at a public URL and may be downloaded and unpacked manually in case of errors (see repository file `inst/extdata/pipeline_files_urls.txt`).
@@ -90,17 +90,17 @@ CAMDAC::pipeline_tumor_normal(
     tumor_bam=tumor_bam,
     normal_bam=normal_bam,
     sex="XY",
-    path="results_directory/",
+    path="results/",
     pipeline_files="pipeline_files/",
     build="hg38",
     min_tumor = 1, # Minimum coverage
-    min_normal = 10, # Minimum coverage
+    min_normal = 1, # Minimum coverage
     mq = 0, # Minimum mapping quality
     n_cores = 1
 )
 ```
 
-You can look up all of the wrapper arguments using the command ```{r}help(CAMDAC::pipeline_tumor_normal)```.
+The wrapper arguments are described with the command ```help(pipeline_tumor_normal)```.
 
 For more complex study designs with CAMDAC, see the next section on step-by-step analysis.
 
