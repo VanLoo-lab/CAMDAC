@@ -32,7 +32,7 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #' @param overwrite Config to overwrite files if they already exist.
 #' @param cna_caller The CNA caller to use. "ascat" or "battenberg". Default is "battenberg"
 #' @export
-CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, refs = NULL, n_seg_split = 50
+CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL, refs = NULL, n_seg_split = 50,
                       min_mapq = 1, min_cov = 3, overwrite = FALSE, cna_caller = "battenberg") {
   # Create output directory if it doesn't exist and set to absolute path
   fs::dir_create(outdir)
