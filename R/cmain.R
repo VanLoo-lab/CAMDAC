@@ -151,8 +151,8 @@ cmain_bind_snps <- function(tumour, normal, config) {
   if (!fs::file_exists(tsnps_f)) {
     stop("Tumour SNP profiles must be created before binding")
   }
-  tsnps <- fread_chrom(tsnps_f)
 
+  # Merge tumor and normal SNPs
   tsnps <- bind_snps_protocol(tsnps, normal, config)
 
   # Calculate LogR
