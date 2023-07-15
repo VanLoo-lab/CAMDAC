@@ -151,12 +151,15 @@ cmain_bind_snps <- function(tumour, normal, config) {
   if (!fs::file_exists(tsnps_f)) {
     stop("Tumour SNP profiles must be created before binding")
   }
+  tsnps <- fread_chrom(tsnps_f)
 
-  # Merge tumor and normal SNPs
+  # Merge tumor and normal
   tsnps <- bind_snps_protocol(tsnps, normal, config)
 
+  # Filter tumor SNPs for heterozygous SNPs based on normal
+  tsnps <- tsnps[ BAF_n >= 0.2 & BAF_n <= 0.8 ]
+
   # Calculate LogR
-  # Accounts for whether tumor-only mode used or not
   is_autosome = !(tsnps$chrom %in% c("X", "Y", "23", "24"))
   tsnps$LogR <- calculate_logr(tsnps$total_counts, tsnps$total_counts_n, is_autosome)
 

@@ -74,8 +74,9 @@ annotate_normal <- function(tsnps, nsnps, min_cov) {
 }
 
 annotate_normal_tumor_only <- function(tsnps, nsnps){
-
+  # TODO: refactor
   bool_to_hets <- function(tsnps){
+    # Call hets with probablistic model and filter
     baf_set <- ifelse(tsnps$BAF < .5, (1-tsnps$BAF)*tsnps$total_counts, tsnps$BAF*tsnps$total_counts)
     hets <- is_het(baf_set, tsnps$total_counts) == "Heterozygous"
     return(hets)
@@ -591,22 +592,25 @@ bind_snps_protocol <- function(tsnps, normal, config){
   # 3) Coverage mode: Use coverage from normal to select (BAFr_n=F)
   # 4) No normal mode: Use tumor only for all selections
   if (is.null(normal)) {
+    # No normal mode
     loginfo("No germline normal. Tumor-only SNP profile")
+    # TODO: Refactor. Currently filters SNPs on tumor set, or not at all
     tsnps <- annotate_normal_tumor_only(tsnps, nsnps=NULL)
-  } else {
+    return(tsnps)
+  }
 
-    loginfo("Generating SNP profiles for tumor-normal")
-    nsnps_f <- get_fpath(normal, config, "snps")
-    nsnps <- fread_chrom(nsnps_f)
+  # Load normal SNPs
+  loginfo("Generating SNP profiles for tumor-normal")
+  nsnps_f <- get_fpath(normal, config, "snps")
+  nsnps <- fread_chrom(nsnps_f)
 
-    default_mode = all(c("chrom", "POS", "ref", "alt", "BAF", "BAFr") %in% names(nsnps))
+  default_mode = all(c("chrom", "POS", "ref", "alt", "BAF", "BAFr") %in% names(nsnps))
 
-    if(!default_mode){
-      loginfo("Normal SNP profile is external. Applying to tumor only mode")
-      tsnps <- annotate_normal_tumor_only(tsnps, nsnps=nsnps)
-    }else{
-      tsnps <- annotate_normal(tsnps, nsnps, min_cov = config$min_cov)
-    }
+  if(!default_mode){
+    loginfo("Normal SNP profile is external. Applying to tumor only mode")
+    tsnps <- annotate_normal_tumor_only(tsnps, nsnps=nsnps)
+  }else{
+    tsnps <- annotate_normal(tsnps, nsnps, min_cov = config$min_cov)
   }
 
   return(tsnps)
