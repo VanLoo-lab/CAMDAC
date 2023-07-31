@@ -5,14 +5,15 @@ create_allele_frequencies_chr <- function(tsnps, outdir, sample_af_prefix, min_d
   dt <- tsnps[, .(chrom, POS, ref, alt)]
   
   if(is_tumor){
+    # For tumor, alt counts are derived from BAF
     dt$alt_counts = round(tsnps$BAF * tsnps$total_counts, 0)
     dt$ref_counts = tsnps$total_counts - dt$alt_counts
   }else{
-    dt$ref_counts = round(tsnps$BAF_n * tsnps$total_counts_n, 0)
-    dt$alt_counts = tsnps$total_counts - dt$ref_counts
-    dt[ is.na(ref_counts), ref_counts:=2 ]
-    dt[ is.na(alt_counts), alt_counts:=2 ]
+    # For normal, alt counts are derived from BAF_n
+    dt$alt_counts = round(tsnps$BAF_n * tsnps$total_counts_n, 0)
+    dt$ref_counts = tsnps$total_counts_n - dt$alt_counts
   }
+  
 
   # Filter for min depth
   dt <- dt[ref_counts + alt_counts >= min_depth]
@@ -21,8 +22,9 @@ create_allele_frequencies_chr <- function(tsnps, outdir, sample_af_prefix, min_d
   rm(dt)
 
   af_files <- foreach(dt_chrom = dt_per_chrom) %dopar% {
+    
+    # Set output filename with correct suffix for X and Y chromosomes
     chromosome <- unique(dt_chrom$chrom)[[1]]
-    # Set output file names with correct suffix for X and Y chromosomes
     outfile_chrom <- data.table::fcase(
       chromosome == "X", "23",
       chromosome == "Y", "24",
@@ -33,46 +35,27 @@ create_allele_frequencies_chr <- function(tsnps, outdir, sample_af_prefix, min_d
     # Set CHR column to allelefreq format expected
     data.table::setnames(dt_chrom, "chrom", "#CHR")
 
-    # Label alleles to allelefreq hedings. E.g. T -> Count_T
-    dt_chrom[, `:=`(ref = paste0("Count_", ref), alt = paste0("Count_", alt))]
-
-    # Pivot ref labels as columns with counts per SNP position as values
-    # Note: We perform for ref and alt separately, so that we can later stack and sum the count columns by SNP position
-    cubed <- data.table::cube(dt_chrom, .(result = sum(ref_counts)), by = c("#CHR", "POS", "ref"))
-    ref_table <- data.table::dcast(cubed, `#CHR` + POS ~ ref, value.var = "result")[!is.na(`#CHR`) & !is.na(POS)]
-    ref_table[is.na(ref_table)] <- 0
-
-    # Pivot alt labels as columns with counts per SNP position as values
-    cubed <- data.table::cube(dt_chrom, .(result = sum(alt_counts)), by = c("#CHR", "POS", "alt"))
-    alt_table <- data.table::dcast(cubed, `#CHR` + POS ~ alt, value.var = "result")[!is.na(`#CHR`) & !is.na(POS)]
-    alt_table[is.na(alt_table)] <- 0
-
-    # If data is sparse, some SNPs may not be present
-    # fix missing fields in ref and alt table
-    fix_count_fields <- function(data) {
-      count_fields <- paste0("Count_", c("A", "C", "G", "T"))
-      missing <- setdiff(count_fields, names(data))
-      if (length(missing) > 0) {
-        data[, missing] <- 0
-      }
-      return(data)
+    # Set counts based on ref and alt
+    nucs = c("A", "C", "G", "T")
+    for( nn in nucs ){
+      dt_chrom[ ref == nn, paste0("Count_", nn) := ref_counts ]
+      dt_chrom[ alt == nn, paste0("Count_", nn) := alt_counts ]
     }
-    ref_table <- fix_count_fields(ref_table)
-    alt_table <- fix_count_fields(alt_table)
+
+    # Cleanup data table
+    dt_chrom = dt_chrom[!is.na(POS)]
+    dt_chrom[, names(dt_chrom) := lapply(.SD, function(x) {x[is.na(x)] <- 0 ; x}) ]
 
     # Stack ref and alt count columns
-    headings <- c("#CHR", "POS", "Count_A", "Count_C", "Count_G", "Count_T", "Good_depth")
-    headings_sub <- headings[1:6] # Good_depth not implemented. Calculated downstream as sum
-    allele_counts <- rbind(ref_table[, ..headings_sub], alt_table[, ..headings_sub])
-    rm(dt_chrom, cubed, ref_table, alt_table)
+    headings <- c("#CHR", "POS", "Count_A", "Count_C", "Count_G", "Count_T")
+    dt_chrom = dt_chrom[, ..headings]
+    dt_chrom$Good_depth = rowSums(dt_chrom[, .(Count_A, Count_C, Count_G, Count_T)])
 
-    # Sum Count_Nucleotide columns by SNP position and calculate Good_depth field
-    allele_counts <- allele_counts[, .(Count_A = sum(Count_A), Count_C = sum(Count_C), Count_G = sum(Count_G), Count_T = sum(Count_T)), by = .(`#CHR`, POS)]
-    allele_counts[, Good_depth := sum(Count_A, Count_C, Count_G, Count_T), by = 1:nrow(allele_counts)]
-    allele_counts <- allele_counts[order(POS)] # Order by POS only as only a single chrom is used.
+    # Order by position. Possible as only a single chromosome is present
+    dt_chrom <- dt_chrom[order(POS)]
 
     # Write to output file
-    write.table(allele_counts, file = outfile, sep = "\t", row.names = F, col.names = T, quote = F)
+    write.table(dt_chrom, file = outfile, sep = "\t", row.names = F, col.names = T, quote = F)
     return(outfile)
   }
   return(af_files)
@@ -248,15 +231,15 @@ battenberg_wgbs_wrapper <- function(tumourname,
                                     beaglejar,
                                     beagleref.template,
                                     beagleplink.template,
-                                    nthreads = 1,
+                                    nthreads = 5,
                                     externalhaplotypefile = NA,
                                     allelecounts_file = NULL,
                                     sampleidx = 1,
                                     usebeagle = TRUE,
                                     beaglewindow = 40,
                                     beagleoverlap = 4,
-                                    beaglemaxmem = 10,
-                                    beaglenthreads = 1,
+                                    beaglemaxmem = 100,
+                                    beaglenthreads = 5,
                                     gccorrectprefix = NULL,
                                     data_type = "wgs",
                                     impute_exe = NULL,
@@ -309,8 +292,9 @@ battenberg_wgbs_wrapper <- function(tumourname,
   externalhaplotypeprefix <- ifelse(!is.na(externalhaplotypefile), paste0(normalname, "_external_haplotypes_chr"), NA)
 
   # 1. Run haplotying
-  doParallel::registerDoParallel(cores = nthreads)
-  foreach::foreach(i = 1:length(chrom_names), .errorhandling = "remove") %dopar% {
+  #doParallel::registerDoParallel(cores = nthreads)
+  #foreach::foreach(i = 1:length(chrom_names), .errorhandling = "remove") %do% {
+  for(i in 1:length(chrom_names)) {
     chrom <- chrom_names[i]
     logdebug(paste0("Haplotyping chromosome ", chrom))
 
@@ -342,7 +326,7 @@ battenberg_wgbs_wrapper <- function(tumourname,
 
     loginfo(paste0("Battenberg RUN HAPLO COMPLETE for ", chrom))
   }
-  doParallel::stopImplicitCluster()
+  # doParallel::stopImplicitCluster()
 
   # 2. Combine all the BAF output into a single file
   Battenberg::combine.baf.files(
