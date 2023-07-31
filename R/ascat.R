@@ -132,7 +132,8 @@ calculate_logr <- function(sample_cov, normal_cov, is_autosome=NULL) {
   return(LogR)
 }
 
-annotate_gc <- function(tsample, gc_refs, max_window = 10000, n_cores = 1) {
+annotate_gc <- function(tsample, gc_refs, min_window = 100, max_window = 10000, n_cores = 1) {
+  # Note: min_window included due to memory constraints
   chrom <- as.character(tsample$chrom)
   start <- tsample$POS
   LogR <- tsample$LogR
@@ -152,7 +153,7 @@ annotate_gc <- function(tsample, gc_refs, max_window = 10000, n_cores = 1) {
     window_size <- as.numeric(gsub(".csv.gz", "", regmatches(gc_file, regexpr("(\\d+).csv.gz", gc_file))))
 
     # Skip large windows. Here we correct for GC bias at the level of insert size
-    if (window_size > max_window) {
+    if (window_size > max_window | window_size < min_window) {
       return(list(gc_corr = NA, GC = NA, window = NA))
     }
 
@@ -170,7 +171,7 @@ annotate_gc <- function(tsample, gc_refs, max_window = 10000, n_cores = 1) {
 
   logging::loginfo("GC correlation check complete")
   best_corr <- gc_correlations[[which.max(sapply(gc_correlations, "[[", "gc_corr"))]]
-  return(cbind(tsample, data.table(GC = best_corr$GC)))
+  return(cbind(tsample, data.table(GC = best_corr$GC, GC_window=best_corr$window, GC_corr=best_corr$gc_corr)))
 }
 
 annotate_repli <- function(tsample, repli_file) {
