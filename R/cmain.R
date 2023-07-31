@@ -149,7 +149,8 @@ cmain_bind_snps <- function(tumour, normal, config) {
   # Check previous pipeline step was run
   tsnps_f <- get_fpath(tumour, config, "snps")
   if (!fs::file_exists(tsnps_f)) {
-    stop("Tumour SNP profiles must be created before binding")
+    logerror("Tumour SNP profiles must be created before binding for CNA calling. CAMDAC may not run correctly.")
+    return()
   }
   tsnps <- fread_chrom(tsnps_f)
 
@@ -157,11 +158,12 @@ cmain_bind_snps <- function(tumour, normal, config) {
   tsnps <- bind_snps_protocol(tsnps, normal, config)
 
   # Filter tumor SNPs for heterozygous SNPs based on normal
-  tsnps <- tsnps[ BAF_n >= 0.2 & BAF_n <= 0.8 ]
+  tsnps <- select_heterozygous_snps(tsnps)
 
   # Calculate LogR
   is_autosome = !(tsnps$chrom %in% c("X", "Y", "23", "24"))
-  tsnps$LogR <- calculate_logr(tsnps$total_counts, tsnps$total_counts_n, is_autosome)
+  normal_cov = ifelse(is.null(normal), NA, tsnps$total_counts_n)
+  tsnps$LogR <- calculate_logr(tsnps$total_counts, normal_cov, is_autosome)
 
   # Correct LogR with GC and replication timing
   tsnps <- annotate_gc(tsnps, gc_refs, n_cores = config$n_cores) # Long-running
@@ -195,6 +197,13 @@ cmain_call_cna <- function(tumour, config) {
   if (fs::file_exists(cna_output_name) & !config$overwrite) {
     loginfo("CNA Found. Skipping %s analysis for %s", config$cna_caller, tumour$id)
     return(cna_output_name)
+  }
+
+  # Skip if tsnps file does not exist
+  tsnps_f <- get_fpath(tumour, config, "tsnps")
+  if (!fs::file_exists(tsnps_f)) {
+    logwarn("No tsnps file. Skipping %s analysis for %s:%s", config$cna_caller, tumour$patient_id, tumour$id)
+    return(NULL)
   }
 
   if (config$cna_caller == "ascat") {
@@ -378,6 +387,21 @@ cmain_make_methylation_profile <- function(sample, config) {
 #' @param config A camdac config object
 #' @export
 cmain_deconvolve_methylation <- function(tumour, normal, config) {
+
+  if (!file.exists(get_fpath(tumour, config, "meth"))){
+    logwarn("No methylation file for tumor. Skipping deconvolution for %s", paste0(tumour$patient_id, ":", tumour$id))
+    return()
+  }
+  if (!file.exists(get_fpath(normal, config, "meth"))){
+    logwarn("No methylation file for normal infiltrates. Skipping deconvolution for %s", paste0(tumour$patient_id, ":", tumour$id))
+    return()
+  }
+  outfile <- get_fpath(tumour, config, "pure")
+  if (file.exists(outfile) && !config$overwrite) {
+    loginfo("File exists. Skipping deconvolution for %s", paste0(tumour$patient_id, ":", tumour$id))
+    return(outfile)
+  }
+
   loginfo("Combining tumour-normal methylation: %s", tumour$patient_id)
   # Load DNAme data and merge (one function)
   t_meth <- fread_chrom(get_fpath(tumour, config, "meth"))
@@ -400,7 +424,6 @@ cmain_deconvolve_methylation <- function(tumour, normal, config) {
   # Calculate m_t HDI # parallel, long-running function
   meth_c <- calculate_m_t_hdi_norm(meth_c)
 
-  outfile <- get_fpath(tumour, config, "pure")
   data.table::fwrite(meth_c, outfile)
 }
 
@@ -413,6 +436,23 @@ cmain_deconvolve_methylation <- function(tumour, normal, config) {
 #' @param config A camdac config object
 #' @export
 cmain_call_dmps <- function(tumour, normal, config) {
+
+  if (!file.exists(get_fpath(tumour, config, "pure"))){
+    logwarn("No purified methylation file for tumor. Skipping deconvolution for %s", paste0(tumour$patient_id, ":", tumour$id))
+    return()
+  }
+
+  if (is.null(normal)) {
+    loginfo("No cell of origin provided. Skipping DMP calling for %s", paste0(tumour$patient_id, ":", tumour$id))
+    return()
+  }
+
+  output_filename <- get_fpath(tumour, config, "dmps")
+  if (file.exists(output_filename) && !config$overwrite) {
+    loginfo("Skipping DMP calling for %s", paste0(tumour$patient_id, ":", tumour$id))
+    return(output_filename)
+  }
+
   loginfo("Calling DMPs")
   # Call DMPs between tumour and normal
   pmeth <- fread_chrom(get_fpath(tumour, config, "pure"))
@@ -441,6 +481,19 @@ cmain_call_dmps <- function(tumour, normal, config) {
 #' @param config A camdac config object
 #' @export
 cmain_call_dmrs <- function(tumour, config) {
+
+  dmp_outfile <- get_fpath(tumour, config, "dmps")
+  if (!fs::file_exists(dmp_outfile)){
+    logwarn("No DMPs file. Skipping DMR calling for %s", paste0(tumour$patient_id, ":", tumour$id))
+    return()
+  }
+
+  output_filename <- get_fpath(tumour, config, "dmrs")
+  if (file.exists(output_filename) && !config$overwrite) {
+    loginfo("Skipping DMR calling for %s", paste0(tumour$patient_id, ":", tumour$id))
+    return(output_filename)
+  }
+
   loginfo("Calling DMRs")
   tmeth_outfile <- get_fpath(tumour, config, "dmps")
   tmeth_dmps <- fst::read_fst(tmeth_outfile, as.data.table = T)
