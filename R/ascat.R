@@ -84,10 +84,11 @@ annotate_normal_tumor_only <- function(tsnps, nsnps){
 
   # If no SNP data for normal return tumor only data
   if(is.null(nsnps)){ # Must be NULL due to object loading
-    tsnps[, BAFr_n := NA]
-    tsnps[, LogR_n := NA]
-    tsnps[, total_counts_n := NA]
     tsnps = tsnps[ bool_to_hets(tsnps), ]
+    tsnps[, BAFr_n := 0.5 ]
+    tsnps[, BAF_n := 0.5 ]
+    tsnps[, total_counts_n := total_counts ]
+    tsnps[, LogR_n := 0 ]
     return(tsnps)
   }
 
@@ -119,6 +120,7 @@ calculate_logr <- function(sample_cov, normal_cov, is_autosome=NULL) {
     LogR <- round(
       log2(sample_cov) - log2(med_cov), digits=3
     )
+    # TODO: Should we use anscombe's transform to move LogR from poisson-like to normal like?
     return(LogR)
   }
 
@@ -158,6 +160,7 @@ annotate_gc <- function(tsample, gc_refs, max_window = 10000, n_cores = 1) {
     gcdf <- data.table::fread(gc_file, showProgress = FALSE)[, .(seqnames, start, end, GC)]
     setkey(gcdf, seqnames, start, end)
     overlap <- data.table::foverlaps(dt, gcdf)
+    overlap = overlap[complete.cases(overlap)]
     gc_corr <- abs(cor(overlap$GC, overlap$LogR))
 
     return(list(gc_corr = gc_corr, GC = overlap$GC, window = window_size))
@@ -613,5 +616,10 @@ bind_snps_protocol <- function(tsnps, normal, config){
     tsnps <- annotate_normal(tsnps, nsnps, min_cov = config$min_cov)
   }
 
+  return(tsnps)
+}
+
+select_heterozygous_snps <- function(tsnps){
+  tsnps = tsnps[ BAF_n >= 0.2 & BAF_n <= 0.8 ]
   return(tsnps)
 }
