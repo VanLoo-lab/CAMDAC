@@ -31,8 +31,7 @@ test_that("CNA calls can be made without a germline sample", {
 
     # Mock gc annotation
     local_mocked_bindings(
-        annotate_gc = function(tsnps, ...){
-            tsnps$GC=sample(1:10, nrow(tsnps), replace=T)
+        select_heterozygous_snps = function(tsnps, ...){
             tsnps
         }
     )
