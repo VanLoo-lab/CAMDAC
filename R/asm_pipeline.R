@@ -1,10 +1,10 @@
-
 #' Run allele-specific methylation analysis pipeline
 #' @param tumor. CamSample object for tumor sample.
 #' @param germline. CamSample object for germline sample. Used for CNA calling.
 #' @param infiltrates. CamSample object for infiltrating normal sample. Used for deconvolution.
 #' @param origin. CamSample object for cell of origin sample. Used for differential methylation.
 #' @param config. CamConfig object.
+#' @export
 asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NULL, config) {
   # Log
   loginfo("CAMDAC:::asm_pipeline start for %s", tumor$patient_id)
