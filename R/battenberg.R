@@ -130,13 +130,11 @@ camdac_to_battenberg_allele_freqs <- function(tsnps, tumour_prefix, normal_prefi
 
 # Battenberg LogR writer taken from : https://github.com/Wedge-lab/battenberg/blob/c257a710d88b23986f936e0b7b38131279d07f7e/R/prepare_wgs.R#L348
 # Battenberg BAF writer taken from : https://github.com/Wedge-lab/battenberg/blob/c257a710d88b23986f936e0b7b38131279d07f7e/R/prepare_wgs.R#L130
-create_logr_and_baf_files <- function(tsnps_file, tumour_prefix, normal_prefix, outdir) {
+create_logr_and_baf_files <- function(tsnps, tumour_prefix, normal_prefix, outdir) {
   # Set output file column var
   outfile_columns <- c("Chromosome", "Position")
 
-  # Load and format TSNPs file containing CAMDAC LogR+BAF
-  tsnps <- fread_chrom(tsnps_file)
-
+  # Format TSNPs file containing CAMDAC LogR+BAF
   data.table::setnames(tsnps, "chrom", outfile_columns[[1]])
   data.table::setnames(tsnps, "POS", outfile_columns[[2]])
 
@@ -201,7 +199,8 @@ camdac_to_battenberg_prepare_wgbs <- function(tumour_prefix, normal_prefix, camd
   # Create the mutantLogR and mutantBAF files
   # Create the normalLogR and normalBAF files
   # Create the mutantLogR_gcCorrected file
-  create_logr_and_baf_files(camdac_tsnps, tumour_prefix, normal_prefix, outdir)
+  tsnps = fread_chrom(camdac_tsnps)
+  create_logr_and_baf_files(tsnps, tumour_prefix, normal_prefix, outdir)
 
   # TODO: Create ASCAT plots and simplify the tables by passing sample name to the write output function:
   # see: https://github.com/Wedge-lab/battenberg/blob/43686673566cf5adbd8d00e2450d70eced27696d/R/prepare_wgs.R#L154

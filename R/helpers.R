@@ -184,21 +184,26 @@ load_cna_data_ascat_wgs <- function(ascat_output_file) {
   return(result)
 }
 
-load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA) {
+load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA, cna_glob="*_copynumber.txt") {
   # Allows us to use this helper for non-CAMDAC directories
   if (is.na(bb_dir)) {
     bb_dir <- fs::path_dir(get_fpath(tumour, config, "battenberg"))
   }
 
-  # Load purity and ploidy
+  # Skip if expected files don't exist
   pp_file <- fs::dir_ls(bb_dir, glob = "*purity_ploidy.txt*")
+  cna_file <- fs::dir_ls(bb_dir, glob = cna_glob)
+  if (length(pp_file) == 0 | length(cna_file) == 0) {
+    return(NULL)
+  }
+  
+  # Load purity and ploidy
   pp <- data.table::fread(pp_file)
   fit_file <- fs::dir_ls(bb_dir, glob = "*rho_and_psi.txt")
   ff <- suppressWarnings(data.table::fread(fit_file))
   pp$fit <- round(ff[is.best == T]$distance * 100, 3)
 
   # Load cna file
-  cna_file <- fs::dir_ls(bb_dir, glob = "*_copynumber.txt")
   cna_file <- cna_file[!grepl("chrX", cna_file)]
   bb_cna <- data.table::fread(cna_file)
   bb_cna_fields <- c(
@@ -252,8 +257,14 @@ load_clonal_bb <- function(bb_dir) {
 
   # Load purity and ploidy
   pp_file <- fs::dir_ls(bb_dir, glob = "*purity_ploidy.txt*")
+  if(length(pp_file) == 0){
+    return(data.table())
+  }
   pp <- data.table::fread(pp_file)
   fit_file <- fs::dir_ls(bb_dir, glob = "*rho_and_psi.txt")
+  if(length(fit_file) == 0){
+    return(data.table())
+  }
   ff <- suppressWarnings(data.table::fread(fit_file))
   pp$fit <- round(ff[is.best == T]$distance * 100, 3)
 

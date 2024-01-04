@@ -54,7 +54,6 @@ load_snp_profile <- function(ac_file, loci_files) {
   return(snps)
 }
 
-# Adds BAFr_N, LogR_n, total_depth_n
 annotate_normal <- function(tsnps, nsnps, min_cov) {
   # Ensure normal BAF randomised and LogR is 0
   nsnps[, BAFr := randomise_BAF(BAF)]
@@ -74,7 +73,7 @@ annotate_normal <- function(tsnps, nsnps, min_cov) {
 }
 
 annotate_normal_tumor_only <- function(tsnps, nsnps){
-  # TODO: refactor
+
   bool_to_hets <- function(tsnps){
     # Call hets with probablistic model and filter
     baf_set <- ifelse(tsnps$BAF < .5, (1-tsnps$BAF)*tsnps$total_counts, tsnps$BAF*tsnps$total_counts)
@@ -85,29 +84,49 @@ annotate_normal_tumor_only <- function(tsnps, nsnps){
   # If no SNP data for normal return tumor only data
   if(is.null(nsnps)){ # Must be NULL due to object loading
     tsnps = tsnps[ bool_to_hets(tsnps), ]
-    tsnps[, BAFr_n := 0.5 ]
     tsnps[, BAF_n := 0.5 ]
+    # Set a random fraction (100 or 0.2%) of het sites to hom to avoid ASCAT errors
+    tsnps[sample(.N, min(100, .N*0.002)), BAF_n := 0 ]
+    # Randomize
+    tsnps[, BAFr_n := randomise_BAF(BAF_n) ]
     tsnps[, total_counts_n := total_counts ]
+    tsnps[, total_depth_n := total_depth ]
     tsnps[, LogR_n := 0 ]
     return(tsnps)
   }
 
   # Annotate counts depending on dataset available
-  if ("total_counts" %in% names(nsnps)){
-    setnames(nsnps, "total_counts", "total_counts_n", T)
-    setnames(nsnps, "BAF", "BAF_n", T)
-    tsnps = merge(tsnps, nsnps, by=c("chrom", "POS"))
-    tsnps[, LogR_n := NA]
-    tsnps[, BAFr_n := NA] # Used to call tumor BAF
-  } else {
-    tsnps = merge(tsnps, nsnps)
-    tsnps[, BAFr_n := NA]
-    tsnps[, LogR_n := NA]
-    tsnps[, total_counts_n := NA]
+  setnames(nsnps, "total_counts", "total_counts_n", T)
+  setnames(nsnps, "BAF", "BAF_n", T)
+  if('BAF_n' %in% names(nsnps)){
+    nsnps$BAFr_n = randomise_BAF(nsnps$BAF_n)
+  }else{
+    nsnps$BAF_n = NA
+    nsnps$BAFr_n = NA
+  }
+
+  nsnps$LogR_n = 0
+  tsnps = merge(tsnps, nsnps, by=c("chrom", "POS"))
+
+  if(!('total_counts_n' %in% names(tsnps))){
+    tsnps[, total_counts_n := total_counts ]
   }
 
   return(tsnps)
 }
+
+# Anscombe transform the logr to stabilise variance for tumor-only LogR
+anscombe_transform <- function(x) {
+    return(2*sqrt(x + 3/8))
+    }
+
+logr_to_ansc <- function(logr){
+
+    trans = anscombe_transform(2^logr)
+    trans = trans - median(trans, na.rm=T) # Rescale so LogR median is 0
+    return( trans )
+}
+
 
 # Calculate the tumour LogR from the tumour and normal sample
 calculate_logr <- function(sample_cov, normal_cov, is_autosome=NULL) {
@@ -115,12 +134,16 @@ calculate_logr <- function(sample_cov, normal_cov, is_autosome=NULL) {
   # If in tumor only mode
   if(all(is.na(normal_cov))){
     stopifnot(length(is_autosome) == length(sample_cov))
+
     # For LogR, take median across autosomes
     med_cov = median(sample_cov[is_autosome], na.rm = T)
     LogR <- round(
       log2(sample_cov) - log2(med_cov), digits=3
     )
-    # TODO: Should we use anscombe's transform to move LogR from poisson-like to normal like?
+
+    # Use anscombe's transform to stabilise LogR variance
+    LogR <- logr_to_ansc(LogR)
+
     return(LogR)
   }
 
@@ -259,8 +282,8 @@ split_genome_WGBS <- function(chrom, POS) {
 
 assign_genotypes <- function(BAF, as_logical = F) {
   geno <- data.table::fcase(
-    BAF < 0.15, TRUE,
-    BAF > 0.85, TRUE,
+    BAF < 0.1, TRUE,
+    BAF > 0.9, TRUE,
     default = FALSE
   )
 
@@ -472,7 +495,7 @@ write_acf_and_ploidy_file <- function(tsnps, ascat.output, ascat.frag, sample_pr
   write.table(fdata, file = fs::path(outdir, paste0(sample_prefix, ".ACF.and.ploidy.txt")), sep = "\t", row.names = F, col.names = T, quote = F)
 }
 
-run_ascat.m2 <- function(tumour, tsnps, penalty = 200, outdir, rho_manual = NA, psi_manual = NA) {
+run_ascat.m2 <- function(tumour, tsnps, outdir, rho_manual = NA, psi_manual = NA, penalty = 200) {
 
   sample_prefix <- paste(tumour$patient_id, tumour$id, sep = ".")
 
@@ -621,6 +644,10 @@ bind_snps_protocol <- function(tsnps, normal, config){
 }
 
 select_heterozygous_snps <- function(tsnps){
-  tsnps = tsnps[ BAF_n >= 0.2 & BAF_n <= 0.8 ]
+  # Used to select het SNPs from T-N prior to Battenberg.
+  # However, this breaks ASCAT, so should be used with caution.
+  # Note that ASCAT.m will select at 0.1 <> 0.9 as germline hom stretches required
+  # This must therefore be higher. Does not influence battenberg.m
+  tsnps = tsnps[ BAF_n >= 0.08 & BAF_n <= 0.92 ]
   return(tsnps)
 }

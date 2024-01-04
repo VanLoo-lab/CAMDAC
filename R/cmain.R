@@ -158,8 +158,12 @@ cmain_bind_snps <- function(tumour, normal, config) {
   tsnps <- bind_snps_protocol(tsnps, normal, config)
 
   # Filter tumor SNPs for heterozygous SNPs based on normal
+  # Not necessary if normal is NULL as this is done in `bind_snps_protocol`
+  # Future refactor: bind_snps_protocol should not filter in tumor-only mode
+  if(!is.null(normal)){
   tsnps <- select_heterozygous_snps(tsnps)
-
+  }
+  
   # Calculate LogR
   is_autosome = !(tsnps$chrom %in% c("X", "Y", "23", "24"))
   normal_cov = ifelse(is.null(normal), NA, tsnps$total_counts_n)
@@ -227,6 +231,7 @@ cmain_call_cna <- function(tumour, config) {
 #' @param config A camdac config object
 #' @export
 cmain_run_ascat <- function(tumour, config) {
+
   loginfo("Running ASCAT analysis for %s", paste0(tumour$id))
 
   # Setup output object and results directory
@@ -238,17 +243,31 @@ cmain_run_ascat <- function(tumour, config) {
     CAMDAC::get_fpath(tumour, config, "tsnps")
   )
 
+  # Set CNA settings from object
+  cna_settings = config$cna_settings
+  
   # Set Rho and Psi to NA if not given (required by ASCAT)
-  if (!is.null(config$ascat_rho_manual) & !is.null(config$ascat_psi_manual)) {
-    preset_rho <- config$ascat_rho_manual
-    preset_psi <- config$ascat_psi_manual
+  if (!is.null(cna_settings$ascat_purity) & !is.null(cna_settings$ascat_ploidy)) {
+    preset_rho <- cna_settings$ascat_purity
+    preset_psi <- cna_settings$ascat_ploidy
   } else {
     preset_rho <- NA
     preset_psi <- NA
   }
 
+  # Set penalty to 200 if not given
+  if (is.null(cna_settings$ascat_penalty)) {
+    ascat_penalty <- 200
+  } else {
+    ascat_penalty <- as.numeric(cna_settings$ascat_penalty)
+  }
+
+  # Log ASCAT penalty param
+  logdebug("Using ASCAT penalty: %s", ascat_penalty)
+
   # Run ASCAT
-  ascat_results <- run_ascat.m2(tumour, tsnps, outdir = out_dir, rho_manual = preset_rho, psi_manual = preset_psi)
+  ascat_results <- run_ascat.m2(tumour, tsnps, outdir = out_dir, rho_manual = preset_rho, 
+                                psi_manual = preset_psi, penalty = ascat_penalty)
 
   # Write ASCAT output files. QS used to serialise for faster read/write of WGBS data. RRBS uses .RData.
   ascat_output_name <- get_fpath(tumour, config, "ascat")
