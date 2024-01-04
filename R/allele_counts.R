@@ -61,12 +61,6 @@ get_reads_in_segments <- function(bam_file, segments, min_mapq, paired_end = FAL
     bam_dt$rname <- paste0("chr", bam_dt$rname)
   }
 
-  # For paired end reads, ensure that only reads with proper mates are returned
-  if (paired_end) {
-    return(bam_dt[mate_status == "mated"])
-  } else {
-    return(bam_dt)
-  }
 }
 
 format_bam_for_loci_overlap <- function(bam_dt, paired_end = FALSE) {
