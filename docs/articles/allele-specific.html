@@ -132,21 +132,26 @@
 <div class="section level2">
 <h2 id="camdac-asm-from-bam-files">CAMDAC-ASM from BAM files<a class="anchor" aria-label="anchor" href="#camdac-asm-from-bam-files"></a>
 </h2>
-<p>The <code><a href="../reference/asm_pipeline.html">asm_pipeline()</a></code> function runs CAMDAC-ASM analysis by generates the allele-specific copy number solution and heterozygous SNP loci, followesd by deconvolution and differential ASM analysis:</p>
+<p>The <code><a href="../reference/asm_pipeline.html">asm_pipeline()</a></code> function runs CAMDAC-ASM analysis by generates the allele-specific copy number solution and heterozygous SNP loci, followed by deconvolution and differential ASM analysis:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">b_tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"tumor.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span><span class="va">b_normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"normal.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
+<span><span class="va">regions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"test_wgbs_segments.bed"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span> <span class="co"># speed up tests</span></span>
 <span></span>
-<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"T"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
-<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"N"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_normal</span><span class="op">)</span></span>
-<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>, build<span class="op">=</span><span class="st">"hg38"</span>, n_cores<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
+<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"T"</span>, sex <span class="op">=</span> <span class="st">"XY"</span>, bam <span class="op">=</span> <span class="va">b_tumor</span><span class="op">)</span></span>
+<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"N"</span>, sex <span class="op">=</span> <span class="st">"XY"</span>, bam <span class="op">=</span> <span class="va">b_normal</span><span class="op">)</span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span></span>
+<span>  outdir <span class="op">=</span> <span class="st">"./results"</span>, ref <span class="op">=</span> <span class="st">"./pipeline_files"</span>, bsseq <span class="op">=</span> <span class="st">"wgbs"</span>, lib <span class="op">=</span> <span class="st">"pe"</span>, cores <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  min_cov <span class="op">=</span> <span class="fl">1</span>, <span class="co"># For test data</span></span>
+<span>  regions <span class="op">=</span> <span class="va">regions</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/asm_pipeline.html">asm_pipeline</a></span><span class="op">(</span></span>
-<span>    tumor<span class="op">=</span><span class="va">tumor</span>,</span>
-<span>    germline<span class="op">=</span><span class="va">normal</span>,</span>
-<span>    infiltrates<span class="op">=</span><span class="va">normal</span>,</span>
-<span>    origin<span class="op">=</span><span class="va">normal</span>,</span>
-<span>    config<span class="op">=</span><span class="va">config</span></span>
+<span>  tumor <span class="op">=</span> <span class="va">tumor</span>,</span>
+<span>  germline <span class="op">=</span> <span class="va">normal</span>,</span>
+<span>  infiltrates <span class="op">=</span> <span class="va">normal</span>,</span>
+<span>  origin <span class="op">=</span> <span class="va">normal</span>,</span>
+<span>  config <span class="op">=</span> <span class="va">config</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -181,9 +186,13 @@
 <p>First, attach your SNP loci file to the tumor object with <code><a href="../reference/attach_output.html">attach_output()</a></code>, then run <code><a href="../reference/asm_pipeline.html">asm_pipeline()</a></code>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Setup CAMDAC samples</span></span>
-<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"tumor"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
-<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"normal"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_normal</span><span class="op">)</span></span>
-<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, ref<span class="op">=</span><span class="st">"./pipeline_files"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>, cores<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
+<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"tumor"</span>, sex <span class="op">=</span> <span class="st">"XY"</span>, bam <span class="op">=</span> <span class="va">b_tumor</span><span class="op">)</span></span>
+<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"normal"</span>, sex <span class="op">=</span> <span class="st">"XY"</span>, bam <span class="op">=</span> <span class="va">b_normal</span><span class="op">)</span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span></span>
+<span>  outdir <span class="op">=</span> <span class="st">"./results"</span>, ref <span class="op">=</span> <span class="st">"./pipeline_files"</span>, bsseq <span class="op">=</span> <span class="st">"wgbs"</span>, lib <span class="op">=</span> <span class="st">"pe"</span>, cores <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  min_cov <span class="op">=</span> <span class="fl">1</span>, <span class="co"># For test data</span></span>
+<span>  regions <span class="op">=</span> <span class="va">regions</span></span>
+<span><span class="op">)</span> <span class="co"># For arapid testing)</span></span>
 <span></span>
 <span><span class="co"># Add SNPs</span></span>
 <span><span class="va">asm_snps_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"test_het_snps.tsv"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
@@ -196,16 +205,43 @@
 <p>Finally, run the allele-specific methylation pipeline:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/asm_pipeline.html">asm_pipeline</a></span><span class="op">(</span></span>
-<span>  tumor<span class="op">=</span><span class="va">tumor</span>,</span>
-<span>  infiltrates<span class="op">=</span><span class="va">normal</span>,</span>
-<span>  origin<span class="op">=</span><span class="va">normal</span>,</span>
-<span>  config<span class="op">=</span><span class="va">config</span></span>
+<span>  tumor <span class="op">=</span> <span class="va">tumor</span>,</span>
+<span>  infiltrates <span class="op">=</span> <span class="va">normal</span>,</span>
+<span>  origin <span class="op">=</span> <span class="va">normal</span>,</span>
+<span>  config <span class="op">=</span> <span class="va">config</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="using-snps-called-from-previous-camdac-runs">Using SNPs called from previous CAMDAC runs<a class="anchor" aria-label="anchor" href="#using-snps-called-from-previous-camdac-runs"></a>
 </h2>
-<p>If you have already run the CAMDAC pipeline in tumor-normal mode, then the tumor object’s SNP files will be used by default.</p>
+<p>If you have already run the CAMDAC pipeline in tumor-normal mode, then the germline object’s SNP files will be used by default. The simplest run from BAM to ASM is shown below using matched normals for infiltrates and DMPs:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">b_tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"tumor.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
+<span><span class="va">b_normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"normal.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
+<span><span class="va">regions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"test_wgbs_segments.bed"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span> <span class="co"># speed up tests</span></span>
+<span></span>
+<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"T"</span>, sex <span class="op">=</span> <span class="st">"XY"</span>, bam <span class="op">=</span> <span class="va">b_tumor</span><span class="op">)</span></span>
+<span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"N"</span>, sex <span class="op">=</span> <span class="st">"XY"</span>, bam <span class="op">=</span> <span class="va">b_normal</span><span class="op">)</span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span></span>
+<span>  outdir <span class="op">=</span> <span class="st">"./test_results"</span>, bsseq <span class="op">=</span> <span class="st">"wgbs"</span>, lib <span class="op">=</span> <span class="st">"pe"</span>,</span>
+<span>  build <span class="op">=</span> <span class="st">"hg38"</span>, n_cores <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  regions <span class="op">=</span> <span class="va">regions</span>,</span>
+<span>  min_cov <span class="op">=</span> <span class="fl">1</span>, <span class="co"># For test data</span></span>
+<span>  cna_caller <span class="op">=</span> <span class="st">"ascat"</span> <span class="co"># Battenberg always recommended, however ASCAT used here for rapid testing.</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Run main CAMDAC generate SNP files for ASM</span></span>
+<span><span class="co"># Deconvolution skipped here for simplicity.</span></span>
+<span><span class="fu"><a href="../reference/pipeline.html">pipeline</a></span><span class="op">(</span><span class="va">tumor</span>, germline <span class="op">=</span> <span class="va">normal</span>, infiltrates <span class="op">=</span> <span class="cn">NULL</span>, origin <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">config</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Run ASM pipeline</span></span>
+<span><span class="fu"><a href="../reference/asm_pipeline.html">asm_pipeline</a></span><span class="op">(</span></span>
+<span>  tumor <span class="op">=</span> <span class="va">tumor</span>,</span>
+<span>  germline <span class="op">=</span> <span class="va">normal</span>,</span>
+<span>  infiltrates <span class="op">=</span> <span class="va">normal</span>,</span>
+<span>  origin <span class="op">=</span> <span class="va">normal</span>,</span>
+<span>  config <span class="op">=</span> <span class="va">config</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
   </div>
 
