@@ -1,4 +1,3 @@
-
 # Global text fixtures that may be used by tests.
 
 bam <- system.file("testdata", "tumor.bam", package = "CAMDAC")

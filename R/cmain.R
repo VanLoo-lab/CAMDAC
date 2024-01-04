@@ -135,7 +135,6 @@ cmain_make_snps <- function(sample, config) {
 #' @param config A camdac config object
 #' @export
 cmain_bind_snps <- function(tumour, normal, config) {
-
   tsnps_output_file <- CAMDAC::get_fpath(tumour, config, "tsnps")
   if (fs::file_exists(tsnps_output_file) & !config$overwrite) {
     loginfo("Skipping SNP profile creation for %s", paste0(tumour$id, "&", normal$id))
@@ -160,13 +159,13 @@ cmain_bind_snps <- function(tumour, normal, config) {
   # Filter tumor SNPs for heterozygous SNPs based on normal
   # Not necessary if normal is NULL as this is done in `bind_snps_protocol`
   # Future refactor: bind_snps_protocol should not filter in tumor-only mode
-  if(!is.null(normal)){
-  tsnps <- select_heterozygous_snps(tsnps)
+  if (!is.null(normal)) {
+    tsnps <- select_heterozygous_snps(tsnps)
   }
-  
+
   # Calculate LogR
-  is_autosome = !(tsnps$chrom %in% c("X", "Y", "23", "24"))
-  normal_cov = ifelse(is.null(normal), NA, tsnps$total_counts_n)
+  is_autosome <- !(tsnps$chrom %in% c("X", "Y", "23", "24"))
+  normal_cov <- ifelse(is.null(normal), NA, tsnps$total_counts_n)
   tsnps$LogR <- calculate_logr(tsnps$total_counts, normal_cov, is_autosome)
 
   # Correct LogR with GC and replication timing
@@ -231,7 +230,6 @@ cmain_call_cna <- function(tumour, config) {
 #' @param config A camdac config object
 #' @export
 cmain_run_ascat <- function(tumour, config) {
-
   loginfo("Running ASCAT analysis for %s", paste0(tumour$id))
 
   # Setup output object and results directory
@@ -244,8 +242,8 @@ cmain_run_ascat <- function(tumour, config) {
   )
 
   # Set CNA settings from object
-  cna_settings = config$cna_settings
-  
+  cna_settings <- config$cna_settings
+
   # Set Rho and Psi to NA if not given (required by ASCAT)
   if (!is.null(cna_settings$ascat_purity) & !is.null(cna_settings$ascat_ploidy)) {
     preset_rho <- cna_settings$ascat_purity
@@ -266,8 +264,10 @@ cmain_run_ascat <- function(tumour, config) {
   logdebug("Using ASCAT penalty: %s", ascat_penalty)
 
   # Run ASCAT
-  ascat_results <- run_ascat.m2(tumour, tsnps, outdir = out_dir, rho_manual = preset_rho, 
-                                psi_manual = preset_psi, penalty = ascat_penalty)
+  ascat_results <- run_ascat.m2(tumour, tsnps,
+    outdir = out_dir, rho_manual = preset_rho,
+    psi_manual = preset_psi, penalty = ascat_penalty
+  )
 
   # Write ASCAT output files. QS used to serialise for faster read/write of WGBS data. RRBS uses .RData.
   ascat_output_name <- get_fpath(tumour, config, "ascat")
@@ -307,7 +307,7 @@ cmain_run_battenberg <- function(tumour, config) {
   tsnps <- fread_chrom(camdac_tsnps)
 
   loginfo("Preparing WGBS allele counts for Battenberg")
-  camdac_to_battenberg_allele_freqs(tsnps, tumour_prefix, normal_prefix, outdir,min_normal_depth = config$min_cov)
+  camdac_to_battenberg_allele_freqs(tsnps, tumour_prefix, normal_prefix, outdir, min_normal_depth = config$min_cov)
 
   loginfo("Preparing WGBS BAF and logR for Battenberg")
   prepare_wgbs_files <- camdac_to_battenberg_prepare_wgbs(tumour_prefix, normal_prefix, camdac_tsnps, outdir)
@@ -378,7 +378,7 @@ cmain_make_methylation_profile <- function(sample, config) {
   }
 
   ac_file <- get_fpath(sample, config, "counts")
-  if (!fs::file_exists(ac_file)){
+  if (!fs::file_exists(ac_file)) {
     logwarn("No counts file. Skipping methylation profile for %s %s", sample$patient_id, sample$id)
     return()
   }
@@ -406,12 +406,11 @@ cmain_make_methylation_profile <- function(sample, config) {
 #' @param config A camdac config object
 #' @export
 cmain_deconvolve_methylation <- function(tumour, normal, config) {
-
-  if (!file.exists(get_fpath(tumour, config, "meth"))){
+  if (!file.exists(get_fpath(tumour, config, "meth"))) {
     logwarn("No methylation file for tumor. Skipping deconvolution for %s", paste0(tumour$patient_id, ":", tumour$id))
     return()
   }
-  if (!file.exists(get_fpath(normal, config, "meth"))){
+  if (!file.exists(get_fpath(normal, config, "meth"))) {
     logwarn("No methylation file for normal infiltrates. Skipping deconvolution for %s", paste0(tumour$patient_id, ":", tumour$id))
     return()
   }
@@ -455,8 +454,7 @@ cmain_deconvolve_methylation <- function(tumour, normal, config) {
 #' @param config A camdac config object
 #' @export
 cmain_call_dmps <- function(tumour, normal, config) {
-
-  if (!file.exists(get_fpath(tumour, config, "pure"))){
+  if (!file.exists(get_fpath(tumour, config, "pure"))) {
     logwarn("No purified methylation file for tumor. Skipping deconvolution for %s", paste0(tumour$patient_id, ":", tumour$id))
     return()
   }
@@ -500,9 +498,8 @@ cmain_call_dmps <- function(tumour, normal, config) {
 #' @param config A camdac config object
 #' @export
 cmain_call_dmrs <- function(tumour, config) {
-
   dmp_outfile <- get_fpath(tumour, config, "dmps")
-  if (!fs::file_exists(dmp_outfile)){
+  if (!fs::file_exists(dmp_outfile)) {
     logwarn("No DMPs file. Skipping DMR calling for %s", paste0(tumour$patient_id, ":", tumour$id))
     return()
   }

@@ -228,8 +228,8 @@ load_cna_data_battenberg <- function(tumour, config, bb_raw = FALSE, bb_dir = NA
 
   # Ensure nA is always nMajor
   bb_cna[nA<nB, `:=`(nA=nB, nB=nA)]
-  setnames(bb_cna, "nA", "major_cn")
-  setnames(bb_cna, "nB", "minor_cn")
+  data.table::setnames(bb_cna, "nA", "major_cn")
+  data.table::setnames(bb_cna, "nB", "minor_cn")
 
   # Return if raw data required
   if (bb_raw) {

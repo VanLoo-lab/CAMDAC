@@ -34,8 +34,8 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #' @param cna_settings A list of settings to pass to the CNA caller. Prefixed with ascat_ or battenberg_. Available for ascat: ascat_penalty.
 #' @export
 CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
-                    refs = NULL, n_seg_split = 50, min_mapq = 1, min_cov = 3, overwrite = FALSE,
-                    cna_caller = "battenberg", cna_settings = NULL) {
+                      refs = NULL, n_seg_split = 50, min_mapq = 1, min_cov = 3, overwrite = FALSE,
+                      cna_caller = "battenberg", cna_settings = NULL) {
   # Create output directory if it doesn't exist and set to absolute path
   fs::dir_create(outdir)
   outdir <- fs::path_real(outdir)
@@ -92,10 +92,10 @@ is_ccgg <- function(config) {
   ifelse(config$bsseq == "wgbs", TRUE, FALSE)
 }
 
-FPATH_CODES = c(
-    "counts", "meth", "pure", "dmps", "dmrs", "segment_split", "snps",
-    "ascat", "battenberg", "tsnps", "cna", "asm_snps", "asm_counts", "asm_hap_stats",
-    "asm_phase_map", "asm_meth", "asm_cna", "asm_meth_cna", "asm_meth_pure", "asm_ss_dmp", "asm_dmp"
+FPATH_CODES <- c(
+  "counts", "meth", "pure", "dmps", "dmrs", "segment_split", "snps",
+  "ascat", "battenberg", "tsnps", "cna", "asm_snps", "asm_counts", "asm_hap_stats",
+  "asm_phase_map", "asm_meth", "asm_cna", "asm_meth_cna", "asm_meth_pure", "asm_ss_dmp", "asm_dmp"
 )
 
 # Create/confirm output directories
@@ -201,15 +201,15 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
         sep = "."
       )
     ),
-    code == "asm_meth" ~ fs::path(
-      config$outdir, sample$patient_id, "Methylation", sample$id, paste(
-        sample$patient_id, sample$id, "asm_meth", "csv", "gz",
+    code == "asm_cna" ~ fs::path(
+      config$outdir, sample$patient_id, "AlleleSpecific", sample$id, paste(
+        sample$patient_id, sample$id, "asm_cna", "txt",
         sep = "."
       )
     ),
-    code == "asm_cna" ~ fs::path(
+    code == "asm_meth" ~ fs::path(
       config$outdir, sample$patient_id, "Methylation", sample$id, paste(
-        sample$patient_id, sample$id, "asm_cna", "txt",
+        sample$patient_id, sample$id, "asm_meth", "csv", "gz",
         sep = "."
       )
     ),
@@ -244,7 +244,7 @@ get_fpath <- function(sample, config, code, dir = FALSE) {
   }
 
   # When outpath does not exist, an uninitialised character object is given. Replace with empty string.
-  if(length(output_name)==0) {
+  if (length(output_name) == 0) {
     output_name <- ""
   }
 

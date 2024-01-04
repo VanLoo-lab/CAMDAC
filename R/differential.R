@@ -1,4 +1,3 @@
-
 # Evan Miller's closed form solution for the probability that
 # a draw from a beta dist is greater than another
 # Takes counts and methylation fractions for normal and bulk
@@ -26,7 +25,7 @@ calc_prob_dmp <- function(M_n, UM_n, M, UM, itersplit = 5e5, ncores = 5) {
   msplit <- iterators::isplit(seq(length(M_n)), split_factor)
 
   doParallel::registerDoParallel(cores = ncores)
-  prob <- foreach(v = msplit, .combine = "c") %dopar% {
+  prob <- foreach(v = msplit, .combine = "c") %do% {
     x <- v$value
     ph <- v_prob_diff_meth(M_n[x], UM_n[x], M[x], UM[x])
     return(ph)
