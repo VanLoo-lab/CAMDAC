@@ -2,6 +2,7 @@
 
 export(CamConfig)
 export(CamSample)
+export(asm_pipeline)
 export(attach_output)
 export(cmain_bind_snps)
 export(cmain_call_cna)

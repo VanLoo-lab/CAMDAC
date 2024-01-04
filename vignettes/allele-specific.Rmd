@@ -11,7 +11,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval=FALSE
+  eval = FALSE
 )
 ```
 
@@ -43,22 +43,27 @@ Results from this pipeline are found in the results directory under 'PATIENT/All
 
 ## CAMDAC-ASM from BAM files
 
-The `asm_pipeline()` function runs CAMDAC-ASM analysis by generates the allele-specific copy number solution and heterozygous SNP loci, followesd by deconvolution and differential ASM analysis:
+The `asm_pipeline()` function runs CAMDAC-ASM analysis by generates the allele-specific copy number solution and heterozygous SNP loci, followed by deconvolution and differential ASM analysis:
 
 ```{r}
 b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
 b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
+regions <- system.file("testdata", "test_wgbs_segments.bed", package = "CAMDAC") # speed up tests
 
-tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
-normal <- CamSample(id="N", sex="XY", bam=b_normal)
-config <- CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
+tumor <- CamSample(id = "T", sex = "XY", bam = b_tumor)
+normal <- CamSample(id = "N", sex = "XY", bam = b_normal)
+config <- CamConfig(
+  outdir = "./results", ref = "./pipeline_files", bsseq = "wgbs", lib = "pe", cores = 10,
+  min_cov = 1, # For test data
+  regions = regions
+)
 
 asm_pipeline(
-    tumor=tumor,
-    germline=normal,
-    infiltrates=normal,
-    origin=normal,
-    config=config
+  tumor = tumor,
+  germline = normal,
+  infiltrates = normal,
+  origin = normal,
+  config = config
 )
 ```
 
@@ -82,9 +87,13 @@ CAMDAC-ASM requires a file of heterozygous SNP loci against which CpGs will be p
 First, attach your SNP loci file to the tumor object with `attach_output()`, then run `asm_pipeline()`:
 ```{r}
 # Setup CAMDAC samples
-tumor <- CamSample(id="tumor", sex="XY", bam=b_tumor)
-normal <- CamSample(id="normal", sex="XY", bam=b_normal)
-config <- CamConfig(outdir="./results", ref="./pipeline_files", bsseq="wgbs", lib="pe", cores=10)
+tumor <- CamSample(id = "tumor", sex = "XY", bam = b_tumor)
+normal <- CamSample(id = "normal", sex = "XY", bam = b_normal)
+config <- CamConfig(
+  outdir = "./results", ref = "./pipeline_files", bsseq = "wgbs", lib = "pe", cores = 10,
+  min_cov = 1, # For test data
+  regions = regions
+) # For arapid testing)
 
 # Add SNPs
 asm_snps_file <- system.file("testdata", "test_het_snps.tsv", package = "CAMDAC")
@@ -101,13 +110,42 @@ attach_output(tumor, config, "cna", cna_file)
 Finally, run the allele-specific methylation pipeline:
 ```{r}
 asm_pipeline(
-  tumor=tumor,
-  infiltrates=normal,
-  origin=normal,
-  config=config
+  tumor = tumor,
+  infiltrates = normal,
+  origin = normal,
+  config = config
 )
 ```
 
 ## Using SNPs called from previous CAMDAC runs
 
-If you have already run the CAMDAC pipeline in tumor-normal mode, then the tumor object's SNP files will be used by default.
+If you have already run the CAMDAC pipeline in tumor-normal mode, then the germline object's SNP files will be used by default. The simplest run from BAM to ASM is shown below using matched normals for infiltrates and DMPs:
+
+```{r}
+b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
+b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
+regions <- system.file("testdata", "test_wgbs_segments.bed", package = "CAMDAC") # speed up tests
+
+tumor <- CamSample(id = "T", sex = "XY", bam = b_tumor)
+normal <- CamSample(id = "N", sex = "XY", bam = b_normal)
+config <- CamConfig(
+  outdir = "./test_results", bsseq = "wgbs", lib = "pe",
+  build = "hg38", n_cores = 10,
+  regions = regions,
+  min_cov = 1, # For test data
+  cna_caller = "ascat" # Battenberg always recommended, however ASCAT used here for rapid testing.
+)
+
+# Run main CAMDAC generate SNP files for ASM
+# Deconvolution skipped here for simplicity.
+pipeline(tumor, germline = normal, infiltrates = NULL, origin = NULL, config)
+
+# Run ASM pipeline
+asm_pipeline(
+  tumor = tumor,
+  germline = normal,
+  infiltrates = normal,
+  origin = normal,
+  config = config
+)
+```

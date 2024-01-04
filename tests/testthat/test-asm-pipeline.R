@@ -1,7 +1,7 @@
 test_that("ASM pipeline runs", {
   # Setup config
   asm_config <- CamConfig(
-    outdir = "./result_asm_full", bsseq = "wgbs", lib = "pe",
+    outdir = "./result_asm", bsseq = "wgbs", lib = "pe",
     build = "hg38", n_cores = 3, min_cov = 1, cna_caller = "ascat"
   )
 
