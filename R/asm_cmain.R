@@ -178,7 +178,7 @@ cmain_asm_make_snps <- function(tumor, germline, infiltrates, origin, config) {
         fs::dir_create(fs::path_dir(o_asm_snps_file))
         data.table::fwrite(n_snp, o_asm_snps_file)
     }
-    loginfo("ASM SNPS file created from germline for: {tumor$patient_id}:{tumor$id}")
+    loginfo("ASM SNPS file created from germline for: %s:%s", tumor$patient_id, tumor$id)
 }
 
 cmain_asm_call_cna <- function(tumor, germline, config) {
@@ -200,7 +200,7 @@ cmain_asm_call_cna <- function(tumor, germline, config) {
     cmain_call_cna(tumor, config)
     cna_file <- get_fpath(tumor, config, "cna")
     attach_output(tumor, config, "asm_cna", cna_file)
-    loginfo("CNA file created for tumor: {tumor$patient_id}:{tumor$id}")
+    loginfo("CNA file created for tumor:  %s:%s", tumor$patient_id, tumor$id)
 }
 
 cmain_fit_meth_cna <- function(tumor, config) {
@@ -259,7 +259,7 @@ cmain_asm_deconvolve <- function(tumor, infiltrates, config) {
 
     # Filter: CN=0
     # Bulk filters not yet implemented: effective cov_t>= 3, is.na(mt-raw)
-    meth_c <- meth_c[ major_cn + minor_cn != 0, ]
+    meth_c <- meth_c[major_cn + minor_cn != 0, ]
 
     loginfo("Calculating ASM HDI")
     # Calculate m_t HDI # parallel, long-running function
