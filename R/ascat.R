@@ -65,51 +65,48 @@ annotate_normal <- function(tsnps, nsnps, min_cov) {
   setnames(nsnps, old = to_suffix, new = paste0(to_suffix, "_n"))
   setkey(nsnps, chrom, POS)
 
-  tsnps <-  merge(tsnps, nsnps, on = c("chrom","POS"))
+  tsnps <- merge(tsnps, nsnps, on = c("chrom", "POS"))
 
   tsnps <- tsnps[total_counts_n >= min_cov]
 
   return(tsnps)
 }
 
-annotate_normal_tumor_only <- function(tsnps, nsnps){
-
-  bool_to_hets <- function(tsnps){
+annotate_normal_tumor_only <- function(tsnps, nsnps) {
+  bool_to_hets <- function(tsnps) {
     # Call hets with probablistic model and filter
-    baf_set <- ifelse(tsnps$BAF < .5, (1-tsnps$BAF)*tsnps$total_counts, tsnps$BAF*tsnps$total_counts)
+    baf_set <- ifelse(tsnps$BAF < .5, (1 - tsnps$BAF) * tsnps$total_counts, tsnps$BAF * tsnps$total_counts)
     hets <- is_het(baf_set, tsnps$total_counts) == "Heterozygous"
     return(hets)
   }
 
   # If no SNP data for normal return tumor only data
-  if(is.null(nsnps)){ # Must be NULL due to object loading
-    tsnps = tsnps[ bool_to_hets(tsnps), ]
-    tsnps[, BAF_n := 0.5 ]
-    # Set a random fraction (100 or 0.2%) of het sites to hom to avoid ASCAT errors
-    tsnps[sample(.N, min(100, .N*0.002)), BAF_n := 0 ]
+  if (is.null(nsnps)) { # Must be NULL due to object loading
+    tsnps <- tsnps[bool_to_hets(tsnps), ]
+    tsnps[, BAF_n := 0.5]
     # Randomize
-    tsnps[, BAFr_n := randomise_BAF(BAF_n) ]
-    tsnps[, total_counts_n := total_counts ]
-    tsnps[, total_depth_n := total_depth ]
-    tsnps[, LogR_n := 0 ]
+    tsnps[, BAFr_n := randomise_BAF(BAF_n)]
+    tsnps[, total_counts_n := total_counts]
+    tsnps[, total_depth_n := total_depth]
+    tsnps[, LogR_n := 0]
     return(tsnps)
   }
 
   # Annotate counts depending on dataset available
   setnames(nsnps, "total_counts", "total_counts_n", T)
   setnames(nsnps, "BAF", "BAF_n", T)
-  if('BAF_n' %in% names(nsnps)){
-    nsnps$BAFr_n = randomise_BAF(nsnps$BAF_n)
-  }else{
-    nsnps$BAF_n = NA
-    nsnps$BAFr_n = NA
+  if ("BAF_n" %in% names(nsnps)) {
+    nsnps$BAFr_n <- randomise_BAF(nsnps$BAF_n)
+  } else {
+    nsnps$BAF_n <- NA
+    nsnps$BAFr_n <- NA
   }
 
-  nsnps$LogR_n = 0
-  tsnps = merge(tsnps, nsnps, by=c("chrom", "POS"))
+  nsnps$LogR_n <- 0
+  tsnps <- merge(tsnps, nsnps, by = c("chrom", "POS"))
 
-  if(!('total_counts_n' %in% names(tsnps))){
-    tsnps[, total_counts_n := total_counts ]
+  if (!("total_counts_n" %in% names(tsnps))) {
+    tsnps[, total_counts_n := total_counts]
   }
 
   return(tsnps)
@@ -117,28 +114,27 @@ annotate_normal_tumor_only <- function(tsnps, nsnps){
 
 # Anscombe transform the logr to stabilise variance for tumor-only LogR
 anscombe_transform <- function(x) {
-    return(2*sqrt(x + 3/8))
-    }
+  return(2 * sqrt(x + 3 / 8))
+}
 
-logr_to_ansc <- function(logr){
-
-    trans = anscombe_transform(2^logr)
-    trans = trans - median(trans, na.rm=T) # Rescale so LogR median is 0
-    return( trans )
+logr_to_ansc <- function(logr) {
+  trans <- anscombe_transform(2^logr)
+  trans <- trans - median(trans, na.rm = T) # Rescale so LogR median is 0
+  return(trans)
 }
 
 
 # Calculate the tumour LogR from the tumour and normal sample
-calculate_logr <- function(sample_cov, normal_cov, is_autosome=NULL) {
-
+calculate_logr <- function(sample_cov, normal_cov, is_autosome = NULL) {
   # If in tumor only mode
-  if(all(is.na(normal_cov))){
+  if (all(is.na(normal_cov))) {
     stopifnot(length(is_autosome) == length(sample_cov))
 
     # For LogR, take median across autosomes
-    med_cov = median(sample_cov[is_autosome], na.rm = T)
+    med_cov <- median(sample_cov[is_autosome], na.rm = T)
     LogR <- round(
-      log2(sample_cov) - log2(med_cov), digits=3
+      log2(sample_cov) - log2(med_cov),
+      digits = 3
     )
 
     # Use anscombe's transform to stabilise LogR variance
@@ -184,7 +180,7 @@ annotate_gc <- function(tsample, gc_refs, min_window = 100, max_window = 10000, 
     gcdf <- data.table::fread(gc_file, showProgress = FALSE)[, .(seqnames, start, end, GC)]
     setkey(gcdf, seqnames, start, end)
     overlap <- data.table::foverlaps(dt, gcdf)
-    overlap = overlap[complete.cases(overlap)]
+    overlap <- overlap[complete.cases(overlap)]
     gc_corr <- abs(cor(overlap$GC, overlap$LogR))
 
     return(list(gc_corr = gc_corr, GC = overlap$GC, window = window_size))
@@ -194,7 +190,7 @@ annotate_gc <- function(tsample, gc_refs, min_window = 100, max_window = 10000, 
 
   logging::loginfo("GC correlation check complete")
   best_corr <- gc_correlations[[which.max(sapply(gc_correlations, "[[", "gc_corr"))]]
-  return(cbind(tsample, data.table(GC = best_corr$GC, GC_window=best_corr$window, GC_corr=best_corr$gc_corr)))
+  return(cbind(tsample, data.table(GC = best_corr$GC, GC_window = best_corr$window, GC_corr = best_corr$gc_corr)))
 }
 
 annotate_repli <- function(tsample, repli_file) {
@@ -250,7 +246,6 @@ spline_regress_logr <- function(LogR, GC, repli) {
 
 # Function from ASCAT/CAMDAC-RRBS
 split_genome_WGBS <- function(chrom, POS) {
-
   # Convert chromosomes to numeric, including X and Y
   # suppressWarnings() used to stop warning that NAs introduced after coercion.
   # This is simply an effect of the way fcase handles the final condition. No NAs present.
@@ -496,7 +491,6 @@ write_acf_and_ploidy_file <- function(tsnps, ascat.output, ascat.frag, sample_pr
 }
 
 run_ascat.m2 <- function(tumour, tsnps, outdir, rho_manual = NA, psi_manual = NA, penalty = 200) {
-
   sample_prefix <- paste(tumour$patient_id, tumour$id, sep = ".")
 
   # Load ASCAT object
@@ -512,8 +506,10 @@ run_ascat.m2 <- function(tumour, tsnps, outdir, rho_manual = NA, psi_manual = NA
   # ascat.plotRawData(ascat.bc, img.dir=outdir, img.prefix=sample_prefix) # base ASCAT plotter
   ascat.m.plotRawData(ascat.bc, outdir = outdir)
 
-  # Perform ASPCF segmentation
-  gg <- list(germlinegenotypes = matrix(assign_genotypes(ascat.bc$Germline_BAF, as_logical = T)))
+  # Get germline genotypes
+  gg <- get_germline_geno(ascat.bc)
+
+  # Call ASPCF
   ascat.frag <- ASCAT::ascat.aspcf(ascat.bc,
     ascat.gg = gg, penalty = penalty,
     out.dir = outdir
@@ -604,15 +600,15 @@ winsorize <- function(BAF) {
 }
 
 # probabilistic approach to assign heterozygous SNPs directly from tumour BAF profiles
-is_het <- function(x, y, pbin=0.01, probHom=.99, na.rm=TRUE) {
-  flag <- logical(length=length(x))
-  flag <- !(pbinom(unlist(x),size=unlist(y),prob=probHom,log.p=FALSE)>pbin)
-  flag <- ifelse(flag==TRUE, "Heterozygous", "Homozygous")
+is_het <- function(x, y, pbin = 0.01, probHom = .99, na.rm = TRUE) {
+  flag <- logical(length = length(x))
+  flag <- !(pbinom(unlist(x), size = unlist(y), prob = probHom, log.p = FALSE) > pbin)
+  flag <- ifelse(flag == TRUE, "Heterozygous", "Homozygous")
   return(flag)
 }
 
-bind_snps_protocol <- function(tsnps, normal, config){
-    # Annotate tumour SNPs
+bind_snps_protocol <- function(tsnps, normal, config) {
+  # Annotate tumour SNPs
   # Four modes:
   # 1) Default mode: annotate tumour SNPs with normal SNPs
   # 2) Position only mode: ignore BAF and use to select SNP loci (BAFr_n=F)
@@ -622,7 +618,7 @@ bind_snps_protocol <- function(tsnps, normal, config){
     # No normal mode
     loginfo("No germline normal. Tumor-only SNP profile")
     # TODO: Refactor. Currently filters SNPs on tumor set, or not at all
-    tsnps <- annotate_normal_tumor_only(tsnps, nsnps=NULL)
+    tsnps <- annotate_normal_tumor_only(tsnps, nsnps = NULL)
     return(tsnps)
   }
 
@@ -631,23 +627,38 @@ bind_snps_protocol <- function(tsnps, normal, config){
   nsnps_f <- get_fpath(normal, config, "snps")
   nsnps <- fread_chrom(nsnps_f)
 
-  default_mode = all(c("chrom", "POS", "ref", "alt", "BAF", "BAFr") %in% names(nsnps))
+  default_mode <- all(c("chrom", "POS", "ref", "alt", "BAF", "BAFr") %in% names(nsnps))
 
-  if(!default_mode){
+  if (!default_mode) {
     loginfo("Normal SNP profile is external. Applying to tumor only mode")
-    tsnps <- annotate_normal_tumor_only(tsnps, nsnps=nsnps)
-  }else{
+    tsnps <- annotate_normal_tumor_only(tsnps, nsnps = nsnps)
+  } else {
     tsnps <- annotate_normal(tsnps, nsnps, min_cov = config$min_cov)
   }
 
   return(tsnps)
 }
 
-select_heterozygous_snps <- function(tsnps){
+select_heterozygous_snps <- function(tsnps) {
   # Used to select het SNPs from T-N prior to Battenberg.
   # However, this breaks ASCAT, so should be used with caution.
   # Note that ASCAT.m will select at 0.1 <> 0.9 as germline hom stretches required
   # This must therefore be higher. Does not influence battenberg.m
-  tsnps = tsnps[ BAF_n >= 0.08 & BAF_n <= 0.92 ]
+  tsnps <- tsnps[BAF_n >= 0.08 & BAF_n <= 0.92]
   return(tsnps)
+}
+
+
+get_germline_geno <- function(ascat.bc) {
+  gg <- list(germlinegenotypes = matrix(assign_genotypes(ascat.bc$Germline_BAF, as_logical = T)))
+
+  # ASCAT will not run if no germline homozygous stretches are found. This is a problem for test data.
+  # We insert a dummy stretch (3 SNPs) at the start of chromosome 1 it avoid this error.
+  ghs <- ASCAT:::predictGermlineHomozygousStretches(ascat.bc$chr, gg$germlinegenotypes)
+
+  if (length(ghs) == 0) {
+    gg$germlinegenotypes[1:3] <- T
+  }
+
+  return(gg)
 }
