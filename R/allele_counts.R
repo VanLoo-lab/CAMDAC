@@ -36,12 +36,6 @@ get_reads_in_segments <- function(bam_file, segments, min_mapq, paired_end = FAL
     asMates <- FALSE
   }
 
-  # Set segment chromosome names based on sequence style in BAM
-  # Required to read BAM correctly e.g. hg38 vs GRCh38 contigs
-  is_ucsc <- startsWith(seqnames(seqinfo(BamFile(bam_file)))[[1]], "chr")
-  bamstyle <- ifelse(is_ucsc, "UCSC", "NCBI")
-  GenomeInfoDb::seqlevelsStyle(segments) <- bamstyle
-
   # Set parameters and read BamFile.
   #    ScanBamParam "whats" options are available via scanBamWhat()
   param <- Rsamtools::ScanBamParam(which = segments, what = what, flag = flag, mapqFilter = min_mapq)
@@ -57,6 +51,7 @@ get_reads_in_segments <- function(bam_file, segments, min_mapq, paired_end = FAL
   )
 
   # Format BAM to ucsc format if not already
+  is_ucsc <- startsWith(seqnames(seqinfo(BamFile(bam_file)))[[1]], "chr")
   if (!is_ucsc & nrow(bam_dt) > 0) {
     bam_dt$rname <- paste0("chr", bam_dt$rname)
   }
@@ -818,6 +813,19 @@ filter_multi_snp_loci <- function(pileup_summary) {
   return(pileup_summary)
 }
 
+clean_and_limit_segments <- function(seg, bam_file) {
+  # Set segment chromosome names based on sequence style in BAM
+  # Required to read BAM correctly:
+  #  e.g.: BAM having hg38 vs GRCh38 contigs 
+  #  e.g.: Segments having chromosomes not currently in BAM
+  bchroms <- seqnames(seqinfo(BamFile(bam_file)))
+  is_ucsc <- startsWith(bchroms[[1]], "chr")
+  bamstyle <- ifelse(is_ucsc, "UCSC", "NCBI")
+  GenomeInfoDb::seqlevelsStyle(seg) <- bamstyle
+  GenomeInfoDb::seqlevels(seg, pruning.mode="coarse") <- bchroms 
+  return(seg)
+}
+
 # Wrapper ----
 
 #' @export
@@ -829,6 +837,12 @@ cwrap_get_allele_counts <- function(bam_file, seg, loci_dt = NA, paired_end, dro
     if (is.na(loci_dt)) {
       return(empty_count_alleles_result())
     }
+  }
+
+  # Limit segments to chromosomes covered in BAM file
+  seg <- clean_and_limit_segments(seg, bam_file)
+  if(length(seg) == 0) {
+    return(empty_count_alleles_result())
   }
 
   # Read BAM and annotate SNP and CPG loci
@@ -883,3 +897,4 @@ cwrap_get_allele_counts <- function(bam_file, seg, loci_dt = NA, paired_end, dro
 
   return(result)
 }
+

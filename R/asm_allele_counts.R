@@ -34,7 +34,8 @@ cwrap_asm_get_allele_counts <- function(
     bam_dt <- annotate_bam_with_loci_asm(bam_dt, loci_dt, drop_ccgg, paired_end)
 
     # Get qname to cpg mapping
-    qname_hap_cg <- unique(bam_dt[, .(qname, hap_id, chrom, start, end)])
+    qname_hap_cg <- unique(bam_dt[, .(qname, hap_id, chrom=chrom, start=start, end=end)])
+    qname_hap_cg$chrom = gsub("chr", "", qname_hap_cg$chrom)
 
     # Split by ref and alt after filtering
     ref_bam <- bam_dt[hap_is_ref == T]
