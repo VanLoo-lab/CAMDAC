@@ -269,11 +269,11 @@ load_clonal_bb <- function(bb_dir) {
   pp$fit <- round(ff[is.best == T]$distance * 100, 3)
 
   # Load cna file
-  cna_file <- fs::dir_ls(bb_dir, glob = "*_subclones.txt")
-  cna_file <- cna_file[!grepl("chrX", cna_file)]
+  cna_file <- fs::dir_ls(bb_dir, recurse=T, regexp = "(copynumber|subclones).txt")
+  cna_file <- cna_file[!grepl("chrX", cna_file)][[1]]
   bb_cna <- data.table::fread(cna_file)
   bb_cna_fields <- c(
-    "chr", "startpos", "endpos", "ntot", "nMaj1_A", "nMin1_A",
+    "chr", "startpos", "endpos", "nMaj1_A", "nMin1_A",
     "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A"
   )
   bb_cna <- bb_cna[, ..bb_cna_fields]
