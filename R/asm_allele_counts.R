@@ -22,6 +22,9 @@ cwrap_asm_get_allele_counts <- function(
     # Overlap with SNP loci
     bam_dt <- phase_reads_to_snps(bam_dt, snps_gr)
     bam_dt <- select_read_snp_pair(bam_dt)
+    # If both R1 and R2 overlap the same SNP, this code selects one
+    # This throws away information at CpGs where one read informs of CpGs the other does not.
+    # As such, we should still avoid double-counting downstream
 
     # Assign alleles using CAMDAC rules
     bam_dt[, hap_is_ref := assign_het_allele(hap_bsseq, hap_ref, hap_alt, "ref")]
@@ -30,8 +33,11 @@ cwrap_asm_get_allele_counts <- function(
     # Get haplotype stats
     hap_stats <- asm_hap_stats(bam_dt)
 
-    # Annotate BAM with loci
+    # Annotate BAM with CpG and SNP loci
     bam_dt <- annotate_bam_with_loci_asm(bam_dt, loci_dt, drop_ccgg, paired_end)
+
+    # For each CpG site, only one read can be counted
+    bam_dt <- fix_pe_overlap_at_loci(bam_dt)
 
     # Get qname to cpg mapping
     qname_hap_cg <- unique(bam_dt[, .(qname, hap_id, chrom=chrom, start=start, end=end)])
@@ -91,12 +97,12 @@ haps_as_numeric <- function(v) {
 # FUTURE: Select based on counts
 select_read_snp_pair <- function(bam_dt) {
     # Reads may map to multiple SNPs.
-    # Ensure each read is represented only once.
-    unique(bam_dt, by = "qname")
+    # Ensure each read (R1 and R2) is represented only once, selecting the SNP with the highest coverage.
+    unique(bam_dt, by = c("qname", "flag"))
 }
 
 phase_reads_to_snps <- function(bam_dt, snps_gr) {
-    # Find overlapping read pairs between BAM and SNPs
+    # Find overlap between reads and SNP pairs
     snps_dt <- data.table(data.frame(snps_gr))
     setnames("seqnames", "chrom", x = snps_dt)
     setkey(bam_dt, chrom, start, end)
@@ -181,7 +187,7 @@ asm_hap_stats <- function(bam_dt) {
     bam_dt <- bam_dt[hap_is_ref == T | hap_is_alt == T]
 
     # Count reads aligned to input haplotype/SNP
-    stats <- bam_dt[, .(hap_BAF = sum(hap_allele == hap_alt) / .N, hap_reads = .N), by = c("chrom", "hap_ref", "hap_alt", "hap_POS", "hap_id")]
+    stats <- bam_dt[, .(hap_BAF = sum(hap_is_alt) / .N, hap_reads = .N), by = c("chrom", "hap_ref", "hap_alt", "hap_POS", "hap_id")]
     stats <- merge(stats, unexp_dt, all.x = T)
 
     # Ensure BAM chrom field fits expected format for downstream joins

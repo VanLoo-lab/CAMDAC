@@ -30,7 +30,6 @@ asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NU
   # Run ASM deconvolution
   cmain_asm_deconvolve(tumor, infiltrates, config)
 
-  # TODO: How are CG-SNPs handled at allele counting stage for ASM?
   # Run ASM differential methylation within-sample
   for (s in sample_list) {
     if (!is.null(s)) {

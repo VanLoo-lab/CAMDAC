@@ -283,3 +283,36 @@ panel_meth_from_beta <- function(mat, chrom, start, end, cov, props, cores, min_
 
   return(panel)
 }
+
+#' Panel ASM from counts
+#' Basic function to create an ASM methylation panel from allele count or ASM meth files
+#' WARNING: In active development.
+#' @param c1 First ASM allele counts file to merge
+#' @param c2 Second ASM allele counts file to merge
+panel_asm_from_counts <- function(c1, c2) {
+    protocol_make_asm_meth <- function(x) {
+        # Select DNA methylation fields
+        x[
+            width == 2,
+            .(chrom, start, end, alt_total_counts_m, ref_total_counts_m, alt_m, ref_m)
+        ]
+    }
+
+    if ("CHR" %in% names(c1)) {
+        am1 <- protocol_make_asm_meth(c1)
+    }
+
+    if ("CHR" %in% names(c2)) {
+        am2 <- protocol_make_asm_meth(c2)
+    }
+
+    amm <- merge(am1, am2, by = c("chrom", "start", "end"), suffixes = c(".1", ".2"), all = T)
+
+
+    outdt <- amm[, .(chrom, start, end)]
+    outdt$alt_total_counts_m <- rowSums(amm[, .(alt_total_counts_m.1, alt_total_counts_m.2)], na.rm = T)
+    outdt$ref_total_counts_m <- rowSums(amm[, .(ref_total_counts_m.1, ref_total_counts_m.2)], na.rm = T)
+    outdt$alt_m <- rowMeans(amm[, .(alt_m.1, alt_m.2)], na.rm = T)
+    outdt$ref_m <- rowMeans(amm[, .(ref_m.1, ref_m.2)], na.rm = T)
+    return(outdt)
+}

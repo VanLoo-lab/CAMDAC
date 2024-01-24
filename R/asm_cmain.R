@@ -120,6 +120,15 @@ cmain_asm_make_methylation <- function(sample, config) {
 }
 
 
+fread_chrom_if_char = function(x) {
+    if (is.character(x)) {
+        fread_chrom(x)
+    } else {
+        x
+    }
+}
+
+
 cmain_asm_make_snps <- function(tumor, germline, infiltrates, origin, config) {
     # Check that ASM snps file is availabe for tumor. If so, return NULL
     asm_snps_file <- get_fpath(tumor, config, "asm_snps")

@@ -245,9 +245,9 @@ cmain_run_ascat <- function(tumour, config) {
   cna_settings <- config$cna_settings
 
   # Set Rho and Psi to NA if not given (required by ASCAT)
-  if (!is.null(cna_settings$ascat_purity) & !is.null(cna_settings$ascat_ploidy)) {
-    preset_rho <- cna_settings$ascat_purity
-    preset_psi <- cna_settings$ascat_ploidy
+  if (!is.null(cna_settings$rho) & !is.null(cna_settings$psi)) {
+    preset_rho <- cna_settings$rho
+    preset_psi <- cna_settings$psi
   } else {
     preset_rho <- NA
     preset_psi <- NA
@@ -329,11 +329,12 @@ cmain_run_battenberg <- function(tumour, config) {
   # Set beagle software path. CAMDAC config creation fits by default.
   beaglejar <- config$beaglejar
 
-  # Set default RHO and PSI based on config
-  if (!is.null(config$ascat_rho_manual) & !is.null(config$ascat_psi_manual)) {
+  # Set default RHO (purity) and PSI (ploidy) based on config
+  cna_settings = config$cna_settings
+  if (!is.null(cna_settings$rho) & !is.null(cna_settings$psi)) {
     use_preset_rho_psi <- T
-    preset_rho <- config$ascat_rho_manual
-    preset_psi <- config$ascat_psi_manual
+    preset_rho <- cna_settings$rho
+    preset_psi <- cna_settings$psi
   } else {
     use_preset_rho_psi <- F
     preset_rho <- NA
