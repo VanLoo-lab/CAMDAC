@@ -69,8 +69,8 @@ call_dmps <- function(pmeth, nmeth, effect_size = 0.2, prob = 0.99, itersplit = 
   res <- cbind(
     pmeth,
     data.table(prob_DMP, DMP_b, DMP_t,
-      ndmp_m = nmeth$m_n,
-      ndmp_cov = nmeth$cov_n,
+      ndmp_m = nmeth$m,
+      ndmp_cov = nmeth$cov,
       ndmp_ml = nmeth$m_x_low,
       ndmp_mh = nmeth$m_x_high
     )
@@ -226,18 +226,22 @@ call_dmrs <- function(tmeth_dmps, regions_annotations, itersplit = 3e5, min_DMP_
   split_factor <- make_split_factor(nrow(regions_annotations), itersplit)
   regions_annotations <- split(regions_annotations, split_factor)
 
+  #   Set warn=2 to ensure foreach fails if any of the parallel workers are terminated or raise a warning.
+  #   without this option, foreach simply returns a warning and the pipeline continues. Essential for memory warning terminations.
+  options(warn = 2)
   # Calculate DMR data for CpGs in parallel
   doParallel::registerDoParallel(cores = n_cores)
   dmrs <- foreach(regions_subset = regions_annotations, .combine = "rbind") %dopar% {
     call_dmr_routine(tmeth_dmps, regions_subset, min_DMP_counts, min_consec_DMP)
   }
   doParallel::stopImplicitCluster()
+  options(warn = 0)
 
   return(dmrs)
 }
 
 # Note: mbdiff and mtdiff are calculated tumor - normal
-dmp_call_pipe <- function(mbdiff, M_n, UM_n, M, UM, mtdiff = NULL, effect_size = 0.2, prob = 0.99, itersplit = 1e5) {
+dmp_call_pipe <- function(mbdiff, M_n, UM_n, M, UM, mtdiff = NULL, effect_size = 0.2, prob = 0.99, itersplit = 1e5, ncores=5) {
   # Calculate bulk DMP probability from counts
   phypo <- calc_prob_dmp(M_n, UM_n, M, UM, ncores = ncores, itersplit = itersplit)
 
