@@ -178,9 +178,6 @@ fix_pe_overlap_at_loci <- function(bam_dt) {
   #    than their R2 counterparts. As we aren't using PE overlaps, filter R2 to see if it improves score
   drop_overlap_read_flag <- c(147, 163) #<- c(99,83)
 
-  # Set key for faster lookup :: 210516 Seems to cause CAMP memory allocation error? Trying withotu.
-  # setkey(bam_dt, chrom, width, start, groupid)
-
   # Get data table of duplicated reads,
   dups <- bam_dt[, .N, by = .(chrom, width, start, groupid)][N > 1, .(start, groupid)]
   bam_dt <- bam_dt[
