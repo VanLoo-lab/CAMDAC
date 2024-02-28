@@ -57,8 +57,6 @@ cmain_count_alleles <- function(sample, config) {
     ac_file <- cwrap_get_allele_counts(bam_file, seg, loci_dt, paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov)
     tmp <- tempfile(tmpdir = tempdir, fileext = ".fst")
     fst::write_fst(ac_file, tmp)
-    rm(loci_dt, ac_file, seg)
-    gc()
     return(tmp)
   }
   options(warn = 0)
@@ -342,9 +340,12 @@ cmain_run_battenberg <- function(tumour, config) {
   }
 
   # Limit number of cores to 6 to avoid battenberg memory errors.
-  # TODO: Allele counts with 10 cores worked but battenberg with 10 gave OOM error. Setting nthreads to 5 for now.
-  logwarn("Battenberg is currently limited to 6 cores to avoid memory errors.")
-  bb_cores <- ifelse(config$n_cores <= 6, config$n_cores, 6)
+  # Note. Battenberg cores > 6 gives out of memory error
+  javajre = ifelse(is.null(cna_settings$java), "java", cna_settings$java)
+  bb_cores = ifelse(is.null(cna_settings$cores), 6, cna_settings$cores)
+  if (bb_cores > 6){
+    logwarn("Battenberg may raise out of memory errors if given too many cores.")
+  }
   min_normal_depth <- config$min_cov
 
   # Run battenberg
@@ -353,7 +354,7 @@ cmain_run_battenberg <- function(tumour, config) {
     beagleref.template, beagleplink.template,
     phasing_gamma = 2, nthreads = bb_cores,
     use_preset_rho_psi = use_preset_rho_psi, preset_rho = preset_rho,
-    min_normal_depth = min_normal_depth, preset_psi = preset_psi
+    min_normal_depth = min_normal_depth, preset_psi = preset_psi, javajre = javajre
   )
 
   loginfo("Saving results")

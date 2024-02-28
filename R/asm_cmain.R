@@ -56,7 +56,6 @@ cmain_asm_allele_counts <- function(sample, config) {
         tmp <- tempfile(tmpdir = tempdir, fileext = ".qs")
         qs::qsave(ac_file, tmp)
         rm(loci_dt, ac_file, seg)
-        gc()
         return(tmp)
     }
     options(warn = 0)
@@ -120,7 +119,7 @@ cmain_asm_make_methylation <- function(sample, config) {
 }
 
 
-fread_chrom_if_char = function(x) {
+fread_chrom_if_char <- function(x) {
     if (is.character(x)) {
         fread_chrom(x)
     } else {
@@ -426,6 +425,7 @@ cmain_asm_ss_dmps <- function(sample, config) {
     }
 
     # Make DMP call
+    # TODO: Use ncores arg from config
     dmp_call <- dmp_call_pipe(asm_b_diff, M_ref, UM_ref, M_alt, UM_alt, asm_t_diff, effect_size, prob, itersplit)
 
     # Reformat and merge

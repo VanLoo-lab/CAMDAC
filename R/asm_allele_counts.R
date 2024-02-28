@@ -47,7 +47,6 @@ cwrap_asm_get_allele_counts <- function(
     ref_bam <- bam_dt[hap_is_ref == T]
     alt_bam <- bam_dt[hap_is_alt == T]
     rm(bam_dt)
-    gc() # Remove bam and free up memory
 
     # Get counts for reads phased to each allele
     alt_cg <- asm_bam_to_counts(alt_bam, "alt", loci_dt,
