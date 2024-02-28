@@ -36,6 +36,13 @@ b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
 tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
 normal <- CamSample(id="N", sex="XY", bam=b_normal)
 config <- CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
+config <- CamConfig(
+  outdir="./results_test", bsseq="wgbs", lib="pe",
+  build="hg38", n_cores=10, 
+  cna_caller="ascat", # Specific for test data
+  min_cov=1, # Specific for test data
+  cna_settings=list("rho"=.5, "psi"=2) # Specific for test data
+)
 ```
 
 When defining `CamSample` objects, samples must have a unique `id` value between runs otherwise data will be overwritten. Alternatively, users may use the `patient` argument to separate samples the same `id`.
