@@ -657,7 +657,8 @@ get_germline_geno <- function(ascat.bc) {
   ghs <- ASCAT:::predictGermlineHomozygousStretches(ascat.bc$chr, gg$germlinegenotypes)
 
   if (length(ghs) == 0) {
-    gg$germlinegenotypes[1:3] <- T
+    logwarn("No shared SNPs identified. Adding false genotypes for test data.")
+    gg$germlinegenotypes[1:500] = T
   }
 
   return(gg)
