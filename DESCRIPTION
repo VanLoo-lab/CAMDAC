@@ -52,9 +52,7 @@ Imports:
     scales,
     rtracklayer,
     R.utils,
-    Battenberg
-Depends: 
-    R (>= 3.6.2),
+    Battenberg,
     data.table (>= 1.14.6),
     foreach,
     GenomicRanges,
@@ -67,6 +65,8 @@ Depends:
     stringr,
     png,
     MASS
+Depends:
+    R (>= 3.6.2)
 Remotes: 
     ASCAT=VanLoo-Lab/ascat/ASCAT@v2.5.3,
     Battenberg=NMNS93/battenberg@dev

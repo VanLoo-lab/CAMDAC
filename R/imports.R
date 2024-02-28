@@ -5,6 +5,19 @@
 #' @import ggplot2
 #' @import foreach
 #' @import doParallel
+#' @import GenomicRanges
+#' @import GenomicAlignments
+#' @import logging
+#' @import ggplot2
+#' @import dplyr
+#' @import gridExtra
+#' @import stringr
+#' @import png
+#' @import MASS
+#' @import GenomeInfoDb
+#' @importFrom IRanges IRanges
+#' @import S4Vectors
+#' @import Rsamtools
 #' @importFrom grDevices adjustcolor dev.off png rgb
 #' @importFrom graphics abline axis par plot points rect text
 #' @importFrom stats cor frequency lm median na.omit optimize qbeta rbeta runif setNames
