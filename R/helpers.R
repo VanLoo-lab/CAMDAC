@@ -418,3 +418,47 @@ load_asm_snps_gr <- function(camsample, config) {
 
   return(snps_gr)
 }
+
+camdac_to_bedgraph <- function(x, outfile){
+    # Convert CAMDAC allele couns file to bedgraph format
+    # Output is headerless tab-delimited file with the fields 1=chr, 2=start, 3=M, 4=UM
+
+    # Set methylation and coverage fields based on input file name
+    fields = dplyr::case_when(
+        stringr::str_ends(x, "SNPs.CpGs.all.sorted.csv.gz") ~ c("total_counts_m", "m"),
+        stringr::str_ends(x, "m.csv.gz") ~ c("cov", "m"),
+        stringr::str_ends(x, "pure.csv.gz") ~ c("cov_t", "m_t")
+    )
+    if(all(is.na(fields))){
+        logger::log_warn("Unrecognised file format. No bedgraph created for {x}")
+        return(NULL)
+    }
+    counts_field = dplyr::sym(fields[1])
+    m_field = dplyr::sym(fields[2])
+
+    # Read data
+    x = data.table::fread(x)
+    # Ensure UCSC format
+    is_ucsc = grepl("chr", x$chrom[[1]])
+    if(!is_ucsc){
+        x$chrom = paste0("chr", x$chrom)
+    }
+
+    # Drop any SNP-only positions
+    x = x[(end - start)>0,]
+    
+    # Set start for CCGG sites (from RRBS)
+    x[, nstart := ifelse( (end - start) == 3, start + 1, start)] 
+
+    # Calculate total counts
+    xbg = x[, .(chrom, nstart)]
+    xbg$M = round(x[[counts_field]]*x[[m_field]],0)
+    xbg$UM = x[[counts_field]] - xbg$M
+    xbg = xbg[!is.na(M) & !is.na(UM),]
+
+    # Write out to bedgraph
+    data.table::fwrite(xbg, outfile, sep="\t", quote=F, col.names=F)
+
+    return(outfile)
+}
+
