@@ -5,13 +5,13 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>pipeline • CAMDAC</title>
+<title>CAMDAC pipeline • CAMDAC</title>
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="pipeline">
+<script src="../pkgdown.js"></script><meta property="og:title" content="CAMDAC pipeline">
 <meta property="og:description" content="CAMDAC">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CAMDAC</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
       </span>
     </div>
 
@@ -50,28 +50,28 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="../articles/allele-specific.html">allele-specific</a>
+      <a href="../articles/allele-specific.html">Allele-specific Methylation</a>
     </li>
     <li>
-      <a href="../articles/copy_number_alt.html">copy_number</a>
+      <a href="../articles/copy_number_alt.html">Alternative CNA calling</a>
     </li>
     <li>
-      <a href="../articles/output.html">output</a>
+      <a href="../articles/output.html">Results</a>
     </li>
     <li>
-      <a href="../articles/panels.html">panels</a>
+      <a href="../articles/panels.html">DNA methylation panels</a>
     </li>
     <li>
-      <a href="../articles/pipeline.html">pipeline</a>
+      <a href="../articles/pipeline.html">CAMDAC pipeline</a>
     </li>
     <li>
-      <a href="../articles/questions.html">questions</a>
+      <a href="../articles/questions.html">FAQs</a>
     </li>
     <li>
-      <a href="../articles/setup.html">setup</a>
+      <a href="../articles/setup.html">Installation</a>
     </li>
     <li>
-      <a href="../articles/visualisation.html">visualisation</a>
+      <a href="../articles/visualisation.html">Visualisation</a>
     </li>
   </ul>
 </li>
@@ -92,7 +92,7 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>pipeline</h1>
+      <h1 data-toc-skip>CAMDAC pipeline</h1>
             
       
       
@@ -126,7 +126,14 @@
 <span></span>
 <span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"T"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_tumor</span><span class="op">)</span></span>
 <span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamSample.html">CamSample</a></span><span class="op">(</span>id<span class="op">=</span><span class="st">"N"</span>, sex<span class="op">=</span><span class="st">"XY"</span>, bam<span class="op">=</span><span class="va">b_normal</span><span class="op">)</span></span>
-<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>, build<span class="op">=</span><span class="st">"hg38"</span>, n_cores<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span>outdir<span class="op">=</span><span class="st">"./results"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>, build<span class="op">=</span><span class="st">"hg38"</span>, n_cores<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CamConfig.html">CamConfig</a></span><span class="op">(</span></span>
+<span>  outdir<span class="op">=</span><span class="st">"./results_test"</span>, bsseq<span class="op">=</span><span class="st">"wgbs"</span>, lib<span class="op">=</span><span class="st">"pe"</span>,</span>
+<span>  build<span class="op">=</span><span class="st">"hg38"</span>, n_cores<span class="op">=</span><span class="fl">10</span>, </span>
+<span>  cna_caller<span class="op">=</span><span class="st">"ascat"</span>, <span class="co"># Specific for test data</span></span>
+<span>  min_cov<span class="op">=</span><span class="fl">1</span>, <span class="co"># Specific for test data</span></span>
+<span>  cna_settings<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"rho"</span><span class="op">=</span><span class="fl">.5</span>, <span class="st">"psi"</span><span class="op">=</span><span class="fl">2</span><span class="op">)</span> <span class="co"># Specific for test data</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>When defining <code>CamSample</code> objects, samples must have a unique <code>id</code> value between runs otherwise data will be overwritten. Alternatively, users may use the <code>patient</code> argument to separate samples the same <code>id</code>.</p>
 <p>To run the pipeline:</p>
 <pre><code><span><span class="fu"><a href="../reference/pipeline.html">pipeline</a></span><span class="op">(</span></span>

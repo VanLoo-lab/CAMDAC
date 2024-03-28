@@ -5,13 +5,13 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>allele-specific • CAMDAC</title>
+<title>Allele-specific Methylation • CAMDAC</title>
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="allele-specific">
+<script src="../pkgdown.js"></script><meta property="og:title" content="Allele-specific Methylation">
 <meta property="og:description" content="CAMDAC">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CAMDAC</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
       </span>
     </div>
 
@@ -50,28 +50,28 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="../articles/allele-specific.html">allele-specific</a>
+      <a href="../articles/allele-specific.html">Allele-specific Methylation</a>
     </li>
     <li>
-      <a href="../articles/copy_number_alt.html">copy_number</a>
+      <a href="../articles/copy_number_alt.html">Alternative CNA calling</a>
     </li>
     <li>
-      <a href="../articles/output.html">output</a>
+      <a href="../articles/output.html">Results</a>
     </li>
     <li>
-      <a href="../articles/panels.html">panels</a>
+      <a href="../articles/panels.html">DNA methylation panels</a>
     </li>
     <li>
-      <a href="../articles/pipeline.html">pipeline</a>
+      <a href="../articles/pipeline.html">CAMDAC pipeline</a>
     </li>
     <li>
-      <a href="../articles/questions.html">questions</a>
+      <a href="../articles/questions.html">FAQs</a>
     </li>
     <li>
-      <a href="../articles/setup.html">setup</a>
+      <a href="../articles/setup.html">Installation</a>
     </li>
     <li>
-      <a href="../articles/visualisation.html">visualisation</a>
+      <a href="../articles/visualisation.html">Visualisation</a>
     </li>
   </ul>
 </li>
@@ -92,7 +92,7 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>allele-specific</h1>
+      <h1 data-toc-skip>Allele-specific Methylation</h1>
             
       
       
@@ -114,20 +114,7 @@
 <li>Call allele-specific differential methylation within samples</li>
 <li>Call allele-specific differential methylation between samples</li>
 </ol>
-<p>Results from this pipeline are found in the results directory under ‘PATIENT/AlleleSpecific’ and ‘PATIENT/Methylation’:</p>
-<ul>
-<li>*asm_counts.csv.gz - The number of reads supporting each allele at each CpG</li>
-<li>*asm_hap_stats.csv.gz - Summary statistics for each phased SNP</li>
-<li>*asm_phase_map.csv.gz - A mapping if read-CpG-SNP phasing</li>
-<li>*snps.txt - The heterozygous SNP loci input for ASM analysis</li>
-<li>*cna.csv - The tumor allele-specific copy number solution. See format in <code>vignettes("pipeline")</code>.</li>
-<li>*asm_cg_cn.csv - Phased CpG copy number state</li>
-<li>*asm_m.csv - Phased CpG bulk methylatio</li>
-<li>*asm_m_pure.csv - Phased CpG pure methylation</li>
-<li>*asm_m_within_diff.csv - Within-sample differential methylation</li>
-<li>*asm_m_between_diff.csv - Between-sample differential methylation</li>
-<li>*asm_meta.csv - Description of all input parameters for CAMDAC ASM run.</li>
-</ul>
+<p>Results from this pipeline are found in the results directory under ‘PATIENT/AlleleSpecific’ and ‘PATIENT/Methylation’. See output file headings below for files and their content.</p>
 </div>
 <div class="section level2">
 <h2 id="camdac-asm-from-bam-files">CAMDAC-ASM from BAM files<a class="anchor" aria-label="anchor" href="#camdac-asm-from-bam-files"></a>
@@ -242,6 +229,32 @@
 <span>  origin <span class="op">=</span> <span class="va">normal</span>,</span>
 <span>  config <span class="op">=</span> <span class="va">config</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="asm-output-file-headings">ASM output file headings<a class="anchor" aria-label="anchor" href="#asm-output-file-headings"></a>
+</h2>
+<div class="section level3">
+<h3 id="allelespecific">AlleleSpecific<a class="anchor" aria-label="anchor" href="#allelespecific"></a>
+</h3>
+<ul>
+<li>*asm_counts.csv.gz - The number of reads supporting each allele at each CpG</li>
+<li>*asm_hap_stats.csv.gz - Summary statistics for each phased SNP</li>
+<li>*asm_phase_map.csv.gz - A mapping of CpG-SNP phased pairs per read</li>
+<li>*snps.txt - The heterozygous SNP loci input for ASM analysis</li>
+<li>*cna.csv - For the tumour, the allele-specific copy number profile. See format in <code>vignettes("pipeline")</code>.</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="methylation">Methylation/<a class="anchor" aria-label="anchor" href="#methylation"></a>
+</h3>
+<ul>
+<li>*asm_meth.csv.gz - Allele-specific methylation rates for bulk samples</li>
+<li>*asm_ss_dmp.csv.gz - Single sample differential allele-specific methylation</li>
+<li>*asm_meth_cna.csv.gz - For the tumour, ASM rates with annotated copy number states</li>
+<li>*asm_meth_pure.csv.gz - For the tumour, pure methylation rates for each allele</li>
+<li>*asm_dmp.csv.gz - Differential allele-specific methylation between tumor and origin sample</li>
+</ul>
+</div>
 </div>
   </div>
 
