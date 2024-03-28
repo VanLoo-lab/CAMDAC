@@ -1,0 +1,18 @@
+articles:
+- title: Pipeline
+  navbar: ~
+  contents:
+  - setup
+  - pipeline
+  - output
+  - visualisation
+- title: FAQs
+  navbar: ~
+  contents:
+  - questions
+- title: Extra
+  navbar: ~
+  contents:
+  - panels
+  - copy_number_alt
+  - allele-specific

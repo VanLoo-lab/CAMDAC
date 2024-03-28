@@ -1,5 +1,5 @@
 ---
-title: "visualisation"
+title: "Visualisation"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{visualisation}
@@ -7,15 +7,49 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
+
 
 ```{r setup}
 library(CAMDAC)
 ```
 
-WIP
+CAMDAC produces several output files that visualise the copy number state.  DNA methylation rates can be passed to external packages for visualisation. For a quick view of DMRs in R:
+
+```{r}
+library(data.table)
+library(ggplot2)
+
+# Show DMPs around a region
+dmr <- data.table(dmr) # Object from CAMDAC output *annotated_DMRs.fst
+dmp <- data.table(dmp) # Object from CAMDAC *results_per_CpG.fst
+chrome <- dmr[1, ]$chrom
+starte <- dmr[1, ]$start
+ende <- dmr[1, ]$end
+offset <- 1000 # Offset 1kB either side of region
+dmp <- data.table(dmp)
+dm_regions <- dmp[chrom == as.character(chrome) & start >= (starte - offset) & end <= (ende + offset), ]
+
+# Using ggplot, generate a geom where the m_t values are
+tplt <- ggplot(dm_regions, aes(x = start)) +
+  geom_point(aes(y = m_t), color = "skyblue") +
+  geom_point(aes(y = m_n), color = "grey") +
+  geom_vline(aes(xintercept = start, color = DMP_t)) +
+  theme_classic() +
+  scale_color_manual(values = c("skyblue", "blue")) +
+  scale_y_continuous(limits = c(0, 1)) +
+  geom_vline(xintercept = c(start, end), color = "red", linetype = "dashed") +
+  labs(x = dm_regions$chrom[[1]])
+tplt
+```
+
+![CAMDAC DMR Visualization](docs/images/camdac_dmr_vis.png)
+
+Here, light blue dots are the pure tumour, while light-grey are the normal. The red dash is the DMR region and the vertical lines are hypomethylated DMPs (blue) and hypermethylated DMPs (light blue).

@@ -1,5 +1,5 @@
 ---
-title: "panels"
+title: "DNA methylation panels"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{panels}

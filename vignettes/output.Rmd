@@ -1,5 +1,5 @@
 ---
-title: "output"
+title: "Results"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{output}

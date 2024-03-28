@@ -1,5 +1,5 @@
 ---
-title: "allele-specific"
+title: "Allele-specific Methylation"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{allele-specific}
@@ -27,19 +27,7 @@ This tutorial steps through the ASM analysis pipeline. Briefly:
 4. Call allele-specific differential methylation within samples
 5. Call allele-specific differential methylation between samples
 
-Results from this pipeline are found in the results directory under 'PATIENT/AlleleSpecific' and 'PATIENT/Methylation':
-
-- *asm_counts.csv.gz - The number of reads supporting each allele at each CpG
-- *asm_hap_stats.csv.gz - Summary statistics for each phased SNP
-- *asm_phase_map.csv.gz - A mapping if read-CpG-SNP phasing
-- *snps.txt - The heterozygous SNP loci input for ASM analysis 
-- *cna.csv - The tumor allele-specific copy number solution. See format in `vignettes("pipeline")`.
-- *asm_cg_cn.csv - Phased CpG copy number state
-- *asm_m.csv - Phased CpG bulk methylatio
-- *asm_m_pure.csv - Phased CpG pure methylation
-- *asm_m_within_diff.csv - Within-sample differential methylation
-- *asm_m_between_diff.csv - Between-sample differential methylation
-- *asm_meta.csv - Description of all input parameters for CAMDAC ASM run.
+Results from this pipeline are found in the results directory under 'PATIENT/AlleleSpecific' and 'PATIENT/Methylation'. See output file headings below for files and their content.
 
 ## CAMDAC-ASM from BAM files
 
@@ -149,3 +137,20 @@ asm_pipeline(
   config = config
 )
 ```
+
+## ASM output file headings
+
+### AlleleSpecific
+
+- *asm_counts.csv.gz - The number of reads supporting each allele at each CpG
+- *asm_hap_stats.csv.gz - Summary statistics for each phased SNP
+- *asm_phase_map.csv.gz - A mapping of CpG-SNP phased pairs per read
+- *snps.txt - The heterozygous SNP loci input for ASM analysis 
+- *cna.csv - For the tumour, the allele-specific copy number profile. See format in `vignettes("pipeline")`.
+
+### Methylation/
+- *asm_meth.csv.gz - Allele-specific methylation rates for bulk samples
+- *asm_ss_dmp.csv.gz - Single sample differential allele-specific methylation
+- *asm_meth_cna.csv.gz - For the tumour, ASM rates with annotated copy number states
+- *asm_meth_pure.csv.gz - For the tumour, pure methylation rates for each allele
+- *asm_dmp.csv.gz - Differential allele-specific methylation between tumor and origin sample
