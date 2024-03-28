@@ -110,6 +110,20 @@ cmain_asm_make_methylation <- function(sample, config) {
         .(chrom, start, end, alt_total_counts_m, ref_total_counts_m, alt_m, ref_m)
     ]
 
+
+    # Set counts and m as hdi fields
+    hdi_fields <- c("total_counts_m", "m")
+    # Append HDI
+    # Get table of only meth_c values eligible for HDI calculation (i.e. counts present)
+    ix_asm_hdi <- sel_asm_hdi_pass(asm_meth, "ref", hdi_fields) # Select sites eligible for HDI
+    ref_hdi <- calculate_asm_hdi_bulk(asm_meth[ix_asm_hdi, ], "ref") # Calculate HDI
+    asm_meth[ix_asm_hdi, colnames(ref_hdi)] <- data.frame(ref_hdi) # Assign HDI at eligible sites
+
+    # Repeat as above for alt allele
+    ix_asm_hdi <- sel_asm_hdi_pass(asm_meth, "alt", hdi_fields) # Select sites eligible for HDI
+    alt_hdi <- calculate_asm_hdi_bulk(asm_meth[ix_asm_hdi, ], "alt") # Calculate HDI
+    asm_meth[ix_asm_hdi, colnames(alt_hdi)] <- data.frame(alt_hdi) # Assign HDI at eligible sites
+
     # Save ASM methylation
     asm_meth_outfile <- get_fpath(sample, config, "asm_meth")
     fs::dir_create(fs::path_dir(asm_meth_outfile))
@@ -331,14 +345,16 @@ calculate_asm_m_t_hdi <- function(meth_c, n_cores, itersplit = 1e5) {
             matrix(nrow = nrow(v), ncol = 0)
         )
 
+        # Set hdi fields for tumour
+        hdi_fields = c("total_counts_m", "m_t", "total_counts_m_i", "m_i", "CN")
         # Get table of only meth_c values eligible for HDI calculation (i.e. counts present)
-        ix_asm_hdi <- sel_asm_hdi_pass(v, "ref") # Select sites eligible for HDI
-        ref_hdi <- calculate_asm_hdi(v[ix_asm_hdi, ], "ref") # Calculate HDI
+        ix_asm_hdi <- sel_asm_hdi_pass(v, "ref", hdi_fields) # Select sites eligible for HDI
+        ref_hdi <- calculate_asm_hdi_pure(v[ix_asm_hdi, ], "ref") # Calculate HDI
         res[ix_asm_hdi, colnames(ref_hdi)] <- data.frame(ref_hdi) # Assign HDI at eligible sites
 
         # Repeat as above for alt allele
-        ix_asm_hdi <- sel_asm_hdi_pass(v, "alt") # Select sites eligible for HDI
-        alt_hdi <- calculate_asm_hdi(v[ix_asm_hdi, ], "alt") # Calculate HDI
+        ix_asm_hdi <- sel_asm_hdi_pass(v, "alt", hdi_fields) # Select sites eligible for HDI
+        alt_hdi <- calculate_asm_hdi_pure(v[ix_asm_hdi, ], "alt") # Calculate HDI
         res[ix_asm_hdi, colnames(alt_hdi)] <- data.frame(alt_hdi) # Assign HDI at eligible sites
 
         # Return result for binding
@@ -351,7 +367,7 @@ calculate_asm_m_t_hdi <- function(meth_c, n_cores, itersplit = 1e5) {
     return(meth_c)
 }
 
-sel_asm_hdi_pass <- function(x, allele) {
+sel_asm_hdi_pass <- function(x, allele, hdi_fields) {
     # Helper function to select sites eligible for HDI calculation for a signle allele
 
     # Return TRUE if allele field has counts, pure, count_i, meth_i and CN data present, otherwise return false
@@ -359,12 +375,32 @@ sel_asm_hdi_pass <- function(x, allele) {
     col_prefix <- ifelse(allele == "ref", "ref_", "alt_")
     fields <- paste0(
         col_prefix,
-        c("total_counts_m", "m_t", "total_counts_m_i", "m_i", "CN")
+        hdi_fields
     )
     complete.cases(x[, ..fields])
 }
 
-calculate_asm_hdi <- function(meth_c, allele) {
+calculate_asm_hdi_bulk <- function(meth_c, allele, itersplit=1e5){
+
+    col_prefix <- ifelse(allele == "ref", "ref_", "alt_")
+    counts <- paste0(col_prefix, "total_counts_m")
+    meth <- paste0(col_prefix, "m")
+        # Generate inputs for HDI calculation
+    M <- round(meth_c[[counts]] * meth_c[[meth]], 0)
+    UM <- meth_c[[counts]] - M
+    # Calculate ASM hdi for bulk data
+    u_hdi <- unique_calculate_counts_hdi(M, UM, n_cores = n_cores, itersplit = itersplit)
+    u_hdi <- round(u_hdi, digits = 5)
+    names(u_hdi) = c("M", "UM", paste0(col_prefix, "m_lo"), paste0(col_prefix, "m_hi"))
+    # Map back to original M and UM values
+    inpdf = data.frame(M=M, UM=UM)
+    u_inpdf = merge(inpdf, u_hdi, by=c("M", "UM"), all.x=TRUE)
+    return(u_inpdf[, 3:4])
+
+}
+
+calculate_asm_hdi_pure <- function(meth_c, allele, itersplit=1e5) {
+
     # Helper function to calculate HDI for a single allele
     # Set fields based on allele
     col_prefix <- ifelse(allele == "ref", "ref_", "alt_")
