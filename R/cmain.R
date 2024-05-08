@@ -161,9 +161,15 @@ cmain_bind_snps <- function(tumour, normal, config) {
     tsnps <- select_heterozygous_snps(tsnps)
   }
 
-  # Calculate LogR
+  # Set autosome status for calculating LogR
   is_autosome <- !(tsnps$chrom %in% c("X", "Y", "23", "24"))
-  normal_cov <- ifelse(is.null(normal), NA, tsnps$total_counts_n)
+  # Set normal cov for calculating LogR
+  if(is.null(normal)) {
+    normal_cov <- NA
+  } else {
+    normal_cov <- tsnps$total_counts_n
+  }
+  # Call LogR function
   tsnps$LogR <- calculate_logr(tsnps$total_counts, normal_cov, is_autosome)
 
   # Correct LogR with GC and replication timing
