@@ -1,4 +1,6 @@
-
+#' Sort a data table with genomic coordinates
+#' @param dt An object that is a data.table
+#' @param with_chr A boolean to indicate whether the chrom field has UCSC (TRUE) or NCBI (FALSE) format
 #' @export
 sort_genomic_dt <- function(dt, with_chr = F) {
   if (with_chr) {
