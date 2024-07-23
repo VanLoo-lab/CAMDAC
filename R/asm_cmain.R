@@ -445,7 +445,7 @@ cmain_asm_ss_dmps <- function(sample, config) {
     prob <- 0.99
 
     # Calculate differential methylation given effect size
-    asm_b_diff <- dt[["ref_m"]] - dt[["alt_m"]]
+    asm_b_diff <- dt[["alt_m"]] - dt[["ref_m"]]
 
     # Calculate DMP probability from bulk data
     # Probabilities are calculated on bulk counts
