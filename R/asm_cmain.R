@@ -394,8 +394,12 @@ calculate_asm_hdi_bulk <- function(meth_c, allele, itersplit=1e5){
     names(u_hdi) = c("M", "UM", paste0(col_prefix, "m_lo"), paste0(col_prefix, "m_hi"))
     # Map back to original M and UM values
     inpdf = data.frame(M=M, UM=UM)
-    u_inpdf = merge(inpdf, u_hdi, by=c("M", "UM"), all.x=TRUE)
-    return(u_inpdf[, 3:4])
+    # add id field to keep the original row order 
+    inpdf$id  <- 1:nrow(inpdf)
+    u_inpdf = merge(inpdf, u_hdi, by=c("M", "UM"), all.x=TRUE, sort=FALSE)
+    # output should match the input row order      
+    out <- u_inpdf[order(u_inpdf$id), ]
+    return(out[, 4:5])
 
 }
 
