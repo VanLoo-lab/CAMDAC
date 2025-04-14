@@ -1,5 +1,5 @@
 # Use a lightweight R base image
-FROM rocker/r-ver:4.3.0
+FROM rocker/r-ver:4.4.0
 # Set the working directory
 WORKDIR /app
 
@@ -19,22 +19,30 @@ RUN git clone https://github.com/cancerit/alleleCount.git \
 RUN echo 'export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
 RUN echo 'export PATH=/usr/local/bin:$PATH' >> ~/.bashrc
 
+# Set WORKDIR
+WORKDIR /app
+
 # Install CAMDAC
 RUN R -q -e 'install.packages("remotes")'
-RUN R -q -e 'remotes::install_github("VanLoo-lab/CAMDAC@wgbs", lib="/usr/local/lib/R/site-library")'
+RUN R -q -e 'install.packages("devtools")'
+
+# Create ~/.R directory and configure Makevars file for R-specific flags.
+#   Required for bioconductor packages used in Battenberg install.
+RUN mkdir -p /root/.R && \
+    echo 'CXXFLAGS=-Wall -Wno-format-security' >> /root/.R/Makevars && \
+    echo 'CFLAGS=-Wall -Wno-format-security' >> /root/.R/Makevars
+
+# Copy only DESCRIPTION and (optionally) NAMESPACE to install deps first
+COPY DESCRIPTION NAMESPACE* ./
+RUN R -q -e 'remotes::install_deps(".", dependencies = TRUE, upgrade = "never", lib = "/usr/local/lib/R/site-library")'
+
+# Now copy the rest of your project (code layer)
+# COPY . /app
 
 # Install CAMDAC References from repository [Deprecated]
+# Optionally install CAMDAC if it's not a local package (e.g., separate install)
+# RUN Rscript -e 'remotes::install_github("VanLoo-lab/CAMDAC@wgbs", lib="/usr/local/lib/R/site-library")'
 #RUN R -q -e 'library(CAMDAC);CAMDAC::download_pipeline_files(bsseq="wgbs", directory="pipeline_files/")'
-
-# Install CAMDAC references from local WGBS files
-# Copy local WGBS pipeline files and extract for CAMDAC
-RUN mkdir -p /opt/pipeline_files
-COPY ./camdac_wgbs_pipeline_files.tar.gz /opt/camdac_wgbs_pipeline_files.tar.gz
-RUN tar -zxvf /opt/camdac_wgbs_pipeline_files.tar.gz -C /opt/pipeline_files
-RUN rm /opt/camdac_wgbs_pipeline_files.tar.gz
-
-# Set the working directory
-WORKDIR /app
 
 # Set command to be use
 CMD ["/usr/local/bin/Rscript"]
