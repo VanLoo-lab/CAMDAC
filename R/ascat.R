@@ -187,9 +187,13 @@ annotate_gc <- function(tsample, gc_refs, min_window = 100, max_window = 10000, 
   }
   doParallel::stopImplicitCluster()
 
+  # Select best GC correlation window
+  gcc_ <- sapply(gc_correlations, "[[", "gc_corr")
+  gcc_vec <- unlist(gcc_)
+  best_corr_index <- which.max(gcc_vec)
+  best_corr <- gc_correlations[[best_corr_index]]
 
   logging::loginfo("GC correlation check complete")
-  best_corr <- gc_correlations[[which.max(sapply(gc_correlations, "[[", "gc_corr"))]]
   return(cbind(tsample, data.table(GC = best_corr$GC, GC_window = best_corr$window, GC_corr = best_corr$gc_corr)))
 }
 
