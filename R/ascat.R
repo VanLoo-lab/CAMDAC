@@ -189,7 +189,7 @@ annotate_gc <- function(tsample, gc_refs, min_window = 100, max_window = 10000, 
 
   # Select best GC correlation window
   gcc_ <- sapply(gc_correlations, "[[", "gc_corr")
-  gcc_vec <- unlist(gcc_)
+  gcc_vec <- sapply(gcc_, function(x) if (is.null(x)) NA_real_ else as.numeric(x))
   best_corr_index <- which.max(gcc_vec)
   best_corr <- gc_correlations[[best_corr_index]]
 
@@ -236,7 +236,7 @@ annotate_repli <- function(tsample, repli_file) {
   # Combine with original dataframe and return
   result <- cbind(tsample, data.table(repli = nearest_repli[[best_line]]))
 
-  return(result)
+  return(data.table(result))
 }
 
 spline_regress_logr <- function(LogR, GC, repli) {
@@ -508,7 +508,7 @@ run_ascat.m2 <- function(tumour, tsnps, outdir, rho_manual = NA, psi_manual = NA
 
   # Plot raw data
   # ascat.plotRawData(ascat.bc, img.dir=outdir, img.prefix=sample_prefix) # base ASCAT plotter
-  ascat.m.plotRawData(ascat.bc, outdir = outdir)
+  ascat.mw.plotRawData(ascat.bc, outdir = outdir)
 
   # Get germline genotypes
   gg <- get_germline_geno(ascat.bc)
@@ -521,7 +521,7 @@ run_ascat.m2 <- function(tumour, tsnps, outdir, rho_manual = NA, psi_manual = NA
 
   # Plot segmented data
   # ascat.plotSegmentedData(ascat.frag, img.dir=outdir, img.prefix=sample_prefix) # base ASCAT plotter
-  ascat.m.plotSegmentedData(ascat.frag, fname = sample_prefix, outdir = outdir)
+  ascat.mw.plotSegmentedData(ascat.frag, fname = sample_prefix, outdir = outdir)
 
   # Run ASCAT
   ascat.output <- ASCAT::ascat.runAscat(ascat.frag,
@@ -662,7 +662,7 @@ get_germline_geno <- function(ascat.bc) {
 
   if (length(ghs) == 0) {
     logwarn("No shared SNPs identified. Adding false genotypes for test data.")
-    gg$germlinegenotypes[1:500] = T
+    gg$germlinegenotypes[1:1000] = T
   }
 
   return(gg)

@@ -10,7 +10,7 @@
 #' @return Produces png files showing the logR and BAF values for tumour and germline samples
 #' @author Peter Van Loo
 #' @noRd
-ascat.m.plotRawData <- function(ASCATobj, outdir, pch = 10, cex = 0.2, lim_logR = 2.5) {
+ascat.mw.plotRawData <- function(ASCATobj, outdir, pch = 10, cex = 0.2, lim_logR = 2.5) {
   print.noquote("Plotting tumor data")
   for (i in 1:dim(ASCATobj$Tumor_LogR)[2]) {
     colls <- ifelse(ASCATobj$Germline_BAF[, i] < 0.85 & ASCATobj$Germline_BAF[, i] > 0.15, "red", "red")
@@ -128,7 +128,7 @@ ascat.m.plotRawData <- function(ASCATobj, outdir, pch = 10, cex = 0.2, lim_logR 
 #' @return Produces png files showing the logR and BAF values for tumour and germline samples
 #' @author Peter Van Loo
 #' @noRd
-ascat.m.plotSegmentedData <- function(ASCATobj, fname = "", outdir, lim_logR = 2) {
+ascat.mw.plotSegmentedData <- function(ASCATobj, fname = "", outdir, lim_logR = 2) {
   for (arraynr in 1:dim(ASCATobj$Tumor_LogR)[2]) {
     outfile_t <- fs::path(outdir, paste(ASCATobj$samples[arraynr], ".ASPCF.png",
       sep = ""
@@ -194,7 +194,7 @@ ascat.m.plotSegmentedData <- function(ASCATobj, fname = "", outdir, lim_logR = 2
 
 # Copied and adjusted from Tom's github repo:
 # https://github.com/tlesluyes/ascat/blob/dc53b739504be83d309be6cffa62c16a1de770df/ASCAT/R/ascat.plots.R#L389
-ascat.m.plotAdjustedAscatProfile <- function(camdac_cna, outfile_name, sample_id = "SAMPLE", REF = "hg38", y_limit = 5, plot_unrounded = F, battenberg = F, ascat_colours = F) {
+ascat.mw.plotAdjustedAscatProfile <- function(camdac_cna, outfile_name, sample_id = "SAMPLE", REF = "hg38", y_limit = 5, plot_unrounded = F, battenberg = F, ascat_colours = F) {
   # convert CAMDAC_CNA to expected values
   ASCAT_output_object <- list()
   ASCAT_output_object$segments_raw <- data.frame(
