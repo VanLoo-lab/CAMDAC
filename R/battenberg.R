@@ -287,6 +287,8 @@ battenberg_wgbs_wrapper <- function(tumourname,
 
   # Set analysis variables
   chrom_names <- Battenberg::get.chrom.names(imputeinfofile, TRUE)
+  # Retain autosomes only. Update to latest battenberg DEV to support ChrX
+  chrom_names <- chrom_names[!(chrom_names %in% c("X","Y"))]
   logr_file <- paste(tumourname, "_mutantLogR.tab", sep = "")
   externalhaplotypeprefix <- ifelse(!is.na(externalhaplotypefile), paste0(normalname, "_external_haplotypes_chr"), NA)
 
