@@ -71,6 +71,6 @@ Imports:
 Depends:
     R (>= 3.6.2)
 Remotes: 
-    ASCAT=NMNS93/ASCAT@v2.5deva,
+    ASCAT=NMNS93/ASCAT@v2.5deva/ASCAT,
     Battenberg=NMNS93/battenberg@dev
 VignetteBuilder: rmarkdown
