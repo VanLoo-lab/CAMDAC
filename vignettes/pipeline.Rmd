@@ -59,4 +59,39 @@ pipeline(
 )
 ```
 
+## Run the CAMDAC pipeline on test WGBS data
+
+The following setup has been created to enable WGBS pipeline testing:
+```{r}
+# Run test
+tbam <- system.file(
+  "testdata", "tumour_beds_min.sorted.bam", package = "CAMDAC"
+)
+nbam <- system.file(
+  "testdata", "normal_beds_min.sorted.bam", package = "CAMDAC"
+)
+regions <- system.file("testdata", "test_beds_segments.bed", package = "CAMDAC")
+
+tumor <- CamSample(id = "T", sex = "XY", bam = tbam)
+normal <- CamSample(id = "N", sex = "XY", bam = nbam)
+
+config <- CamConfig(
+    refs = fs::path("/app/pipeline_files/wgbs"),
+    outdir = "./result_test_battenberg/",
+    bsseq = "wgbs",
+    build = "hg38",
+    lib = "pe",
+    regions = regions,
+    cna_caller = 'battenberg',
+    cna_settings = list(
+      'beaglemaxmem' = 4
+    ),
+    n_cores = 1,
+    min_cov = 1 # Required to capture sufficient SNPs from test
+)
+
+pipeline(
+  tumor, germline = normal, infiltrates = normal, origin = normal, config
+)
+```
 Next, see `vignette("output")` for a detailed summary of CAMDAC results files.
