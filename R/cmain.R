@@ -349,6 +349,7 @@ cmain_run_battenberg <- function(tumour, config) {
   # Note. Battenberg cores > 6 gives out of memory error
   javajre = ifelse(is.null(cna_settings$java), "java", cna_settings$java)
   bb_cores = ifelse(is.null(cna_settings$cores), 6, cna_settings$cores)
+  beaglemaxmem = ifelse(is.null(cna_settings$beaglemaxmem), 10, cna_settings$beaglemaxmem)
   if (bb_cores > 6){
     logwarn("Battenberg may raise out of memory errors if given too many cores.")
   }
@@ -360,7 +361,8 @@ cmain_run_battenberg <- function(tumour, config) {
     beagleref.template, beagleplink.template,
     phasing_gamma = 2, nthreads = bb_cores,
     use_preset_rho_psi = use_preset_rho_psi, preset_rho = preset_rho,
-    min_normal_depth = min_normal_depth, preset_psi = preset_psi, javajre = javajre
+    min_normal_depth = min_normal_depth, preset_psi = preset_psi, javajre = javajre,
+    beaglemaxmem = beaglemaxmem
   )
 
   loginfo("Saving results")

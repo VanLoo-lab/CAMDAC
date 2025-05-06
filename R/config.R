@@ -31,7 +31,7 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #' @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP selection.
 #' @param overwrite Config to overwrite files if they already exist.
 #' @param cna_caller The CNA caller to use. "ascat" or "battenberg". Default is "battenberg"
-#' @param cna_settings A list of settings to pass to the CNA caller. rho, psi, java
+#' @param cna_settings A list of settings to pass to the CNA caller. rho, psi, java, beaglemaxmem
 #' @export
 CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
                       refs = NULL, n_seg_split = 50, min_mapq = 1, min_cov = 3, overwrite = FALSE,
