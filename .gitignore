@@ -44,3 +44,5 @@ test_wgbs_asm/
 result*
 CAMDAC_manual/
 *.log.lintr
+data/
+bin/
