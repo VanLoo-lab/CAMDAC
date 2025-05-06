@@ -511,6 +511,7 @@ run_ascat.m2 <- function(tumour, tsnps, outdir, rho_manual = NA, psi_manual = NA
   ascat.mw.plotRawData(ascat.bc, outdir = outdir)
 
   # Get germline genotypes
+  # gg$germlinegenotypes = N x 1 matrix of booleans where FALSE == Heterozygous
   gg <- get_germline_geno(ascat.bc)
 
   # Call ASPCF
