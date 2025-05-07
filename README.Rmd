@@ -34,8 +34,7 @@ View the full documentation at [https://vanloo-lab.github.io/CAMDAC/](https://va
 CAMDAC can be installed from an R console:
 
 ``` r
-remotes::install_github("VanLoo-lab/CAMDAC@wgbs")
-CAMDAC::download_pipeline_files("wgbs", directory = "./refs")
+remotes::install_github("VanLoo-lab/CAMDAC")
 ```
 
 To run the tumor-normal deconvolution pipeline:

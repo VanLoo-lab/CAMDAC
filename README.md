@@ -26,8 +26,7 @@ View the full documentation at <https://vanloo-lab.github.io/CAMDAC/>.
 CAMDAC can be installed from an R console:
 
 ``` r
-remotes::install_github("VanLoo-lab/CAMDAC@wgbs")
-CAMDAC::download_pipeline_files("wgbs", directory = "./refs")
+remotes::install_github("VanLoo-lab/CAMDAC")
 ```
 
 To run the tumor-normal deconvolution pipeline:
@@ -35,18 +34,31 @@ To run the tumor-normal deconvolution pipeline:
 ``` r
 library(CAMDAC)
 
-# Get test data
-tumor_bam = system.file("testdata", "tumor.bam", package = "CAMDAC")
-normal_bam = system.file("testdata", "normal.bam", package = "CAMDAC")
+# Download pipeline files for WGBS or RRBS analysis
+# File URLs are listed in inst/extdata/pipeline_files_urls.txt
+CAMDAC::download_pipeline_files(bsseq = "rrbs", directory = "./refs")
+CAMDAC::download_pipeline_files(bsseq = "wgbs", directory = "./refs")
 
-# Run pipeline
-tumor = CamSample(id="T", sex="XY", bam=tumor_bam)
-normal = CamSample(id="N", sex="XY", bam=normal_bam)
-config = CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", refs="./refs", n_cores=10)
-CAMDAC::pipeline(tumor, germline=normal, infiltrates=normal, origin=normal, config)
+# Load test data paths
+tumor_bam <- system.file("testdata", "tumor.bam", package = "CAMDAC")
+normal_bam <- system.file("testdata", "normal.bam", package = "CAMDAC")
+
+# Setup pipeline for basic tumor-normal analysis
+tumor <- CamSample(id = "T", sex = "XY", bam = tumor_bam)
+normal <- CamSample(id = "N", sex = "XY", bam = normal_bam)
+config <- CamConfig(
+  outdir = "./results", bsseq = "rrbs", lib = "pe",
+  build = "hg38", refs = "./refs", n_cores = 1, cna_caller='ascat'
+)
+
+# Run CAMDAC ppeline
+CAMDAC::pipeline(
+  tumor, germline = normal, infiltrates = normal, origin = normal, config
+)
 ```
 
-For a more detailed walkthrough, see `vignette("pipeline")`.
+For a more detailed walkthrough with test data, see
+`vignette("pipeline")`.
 
 ## Development
 
