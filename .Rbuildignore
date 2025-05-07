@@ -16,3 +16,4 @@
 ^_pkgdown\.yml$
 ^\.github$
 ^test_.*$
+^vignettes/.+$
