@@ -79,9 +79,10 @@ devtools::document()
 # Run tests
 devtools::test()
 # Build readme
-devtools::build_readme()
+rmarkdown::render('README.Rmd', output_format='github_document', output_file='README.md')
 # Check package builds
 devtools::check()
 # Build documentation
-pkgdown::build_site(preview=FALSE)
+pkgdown::build_articles(override=list(destination='docs/html'))
+pkgdown::build_site(examples=FALSE, devel=TRUE, lazy=TRUE, preview=FALSE, override=list(destination='docs/html'))
 ```
