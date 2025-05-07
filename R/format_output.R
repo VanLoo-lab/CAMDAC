@@ -120,7 +120,7 @@ get_msp1_fragments <- function(dt, build, path_to_CAMDAC, outfile) {
     path_to_CAMDAC,
     paste0("pipeline_files/msp1_fragments/msp1_fragments_RRBS_", build, ".fst")
   )
-  fragments <- read_fst(path = msp1_fragments_file, as.data.table = TRUE)
+  fragments <- fst::read_fst(path = msp1_fragments_file, as.data.table = TRUE)
 
   # Assign CpG IDs
   dt[, CpG_ID := paste(CHR, start, end, sep = "_")]
@@ -216,7 +216,7 @@ get_msp1_fragments <- function(dt, build, path_to_CAMDAC, outfile) {
 
   # plot log10 fragment size distribution
   outfile <- paste0(outfile, "fragment_length_histogram.pdf")
-  p <- ggplot(df_fragments) +
+  p <- ggplot2::ggplot(df_fragments) +
     geom_histogram(aes(x = l, y = ..count..), col = "cornflowerblue", fill = "white", bins = 100) +
     theme_classic() +
     ylab("Number of fragments") +
