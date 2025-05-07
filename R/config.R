@@ -62,6 +62,13 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
   if (bsseq == "rrbs") {
     logwarn("CNA caller set to ASCAT for RRBS data")
     cna_caller <- "ascat"
+    logwarn("Library set to single-end(se) for RRBS data")
+    bsseq_lib <- "se"
+  }
+
+  if (bsseq == "wgbs"){
+    logwarn("Library set to paired-end(pe) for WGBS data")
+    bsseq_lib <- "pe"
   }
 
   return(list(
