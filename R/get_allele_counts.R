@@ -174,7 +174,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     rm(df_bam, cols,x)
  
     # Create Granges - Each row represents a single read 
-    gr_bam <- makeGRangesFromDataFrame(df_bam_dedup, keep.extra.columns = TRUE)
+    gr_bam <- makeGRangesFromDataFrame(df_bam_dedup, keep.extra.columns = TRUE, na.rm=TRUE)
     rm(df_bam_dedup)
         
     # Load reference CpG/SNP loci file
@@ -184,7 +184,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     if(UCSC == FALSE){seqlevelsStyle(loci_subset) <- "Ensembl"}
     
     # Extract info per CpG/SNP loci
-    overlaps <- mergeByOverlaps(gr_bam, loci_subset)
+    overlaps <- IRanges::mergeByOverlaps(gr_bam, loci_subset)
     rm(gr_bam, loci_subset)
         
     df_pileup <- data.table(qname=as.character(overlaps$qname), strand=as.character(strand(overlaps[,"gr_bam"])),
@@ -581,7 +581,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
   
   # Create file
   f_nm <- file.path(path_output, paste(patient_id, ".", sample_id, ".", i, ".SNPs.CpGs.fst", sep = ""))
-  write_fst(df_merged,  f_nm)
+  fst::write_fst(df_merged,  f_nm)
   cat(paste0("Written to: ", f_nm, "\n"))
 }
 
