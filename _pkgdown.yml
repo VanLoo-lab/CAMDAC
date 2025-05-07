@@ -16,3 +16,5 @@ articles:
   - panels
   - copy_number_alt
   - allele-specific
+  - deconvolution
+  - deconvolution-only
