@@ -34,7 +34,7 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #' @param cna_settings A list of settings to pass to the CNA caller. rho, psi, java, beaglemaxmem
 #' @export
 CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
-                      refs = NULL, n_seg_split = 50, min_mapq = 1, min_cov = 3, overwrite = FALSE,
+                      refs = NULL, n_seg_split = 50, min_mapq = 1, min_cov = 1, min_normal_cov=10, overwrite = FALSE,
                       cna_caller = "battenberg", cna_settings = NULL) {
   # Create output directory if it doesn't exist and set to absolute path
   fs::dir_create(outdir)
@@ -81,6 +81,7 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
     n_seg_split = n_seg_split,
     min_mapq = min_mapq,
     min_cov = min_cov,
+    min_normal_cov = min_normal_cov,
     overwrite = overwrite,
     beaglejar = bjar,
     regions = regions,
