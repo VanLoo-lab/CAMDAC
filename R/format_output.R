@@ -123,6 +123,7 @@ get_msp1_fragments <- function(dt, build, path_to_CAMDAC, outfile) {
   fragments <- fst::read_fst(path = msp1_fragments_file, as.data.table = TRUE)
 
   # Assign CpG IDs
+  dt = data.table::data.table(dt)
   dt[, CpG_ID := paste(CHR, start, end, sep = "_")]
   dt <- dt[!duplicated(CpG_ID), ]
 
