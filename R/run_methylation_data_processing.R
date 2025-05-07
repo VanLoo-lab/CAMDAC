@@ -194,7 +194,7 @@ if(!sample_id%in%normal_ids){
       n<- nrow(dt_normal_m)
       M=dt_normal_m$M_n;UM=dt_normal_m$UM_n
       vec <- cbind.data.frame(low=numeric(length=n), high=numeric(length=n))
-      vec[,1:2]<- do.call(rbind, mclapply(1:n, function(i,M,UM) 
+      vec[,1:2]<- do.call(rbind, parallel::mclapply(1:n, function(i,M,UM) 
           HDIofICDF(ICDFname=qbeta, credMass=.99, shape1=M[i]+1, shape2=UM[i]+1),
                                         mc.cores=n_cores, M=M, UM=UM))
       # Checkpoint
@@ -323,7 +323,7 @@ format_methylation_df <- function (dt,sample_id,normal_ids,path_output,n_cores,s
   n<- nrow(dt)
   M=dt$M;UM=dt$UM
   vec <- cbind.data.frame(low=numeric(length=n), high=numeric(length=n))
-  vec[,1:2]<- do.call(rbind, mclapply(1:n, function(i,M,UM) 
+  vec[,1:2]<- do.call(rbind, parallel::mclapply(1:n, function(i,M,UM) 
                       HDIofICDF(ICDFname=qbeta, credMass=.99, shape1=M[i]+1, shape2=UM[i]+1),
                                 mc.cores=n_cores, M=M, UM=UM))
 
@@ -447,12 +447,12 @@ plot_methylation_info <- function (df_sample, outfile) {
     #' @export
     
     ## Table
-    table_grob <- tableGrob(dt, rows = rep('', nrow(dt)), theme = ttheme_minimal(base_size=8,vjust=0, hjust=0))
+    table_grob <- gridExtra::tableGrob(dt, rows = rep('', nrow(dt)), theme = ttheme_minimal(base_size=8,vjust=0, hjust=0))
     ## Title
-    title_grob <- textGrob(title_v, gp = gpar(fontsize = fontsize_v),x=0,hjust=0)
+    title_grob <- grid::textGrob(title_v, gp = grid::gpar(fontsize = fontsize_v),x=0,hjust=0)
     ## Add title
-    table_grob <- gtable_add_rows(table_grob, heights = grobHeight(title_grob) + unit(5,'mm'), pos = 0)
-    table_grob <- gtable_add_grob(table_grob, title_grob, 1, 1, 1, ncol(table_grob), clip = "off")
+    table_grob <- gtable::gtable_add_rows(table_grob, heights = grid::grobHeight(title_grob) + unit(5,'mm'), pos = 0)
+    table_grob <- gtable::gtable_add_grob(table_grob, title_grob, 1, 1, 1, ncol(table_grob), clip = "off")
   }
   
   df_sample_tmp <- data.table(df_sample)
