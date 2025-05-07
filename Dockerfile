@@ -11,7 +11,7 @@ RUN apt-get update \
     && apt-get install -y libxml2 libodbc1 \
     && apt-get install -y libz-dev libbz2-dev bzip2-doc zlib1g-dev \
     && apt-get install -y liblzma-dev libcurl4-openssl-dev wget \
-    && apt-get install -y default-jre git curl bzip2
+    && apt-get install -y default-jre git curl bzip2 pandoc
 
 # Install alleleCounter
 RUN git clone https://github.com/cancerit/alleleCount.git \
