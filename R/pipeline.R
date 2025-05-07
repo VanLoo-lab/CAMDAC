@@ -97,7 +97,7 @@ preprocess_wgbs <- function(sample_list, config) {
 pipeline_rrbs <- function(tumor, germline, infiltrates, origin, config){
 
   # Preprocess RRBS normal samples
-  for (s in list(germline, infiltrates, origin, config)){
+  for (s in list(germline, infiltrates, origin)){
 
     # Go to next part of loop if its null
     if (is.null(s)) {
@@ -141,7 +141,8 @@ pipeline_rrbs <- function(tumor, germline, infiltrates, origin, config){
         get_allele_counts(
             i = a, patient_id = patient_id, sample_id = sample_id,
             sex = sex, bam_file = bam_file, mq = mq,
-            path, pipeline_files, build, n_cores, test = FALSE
+            path = path, path_to_CAMDAC = pipeline_files,
+            build = build, n_cores = n_cores, test = FALSE
         )
     }
 
@@ -199,6 +200,9 @@ pipeline_rrbs <- function(tumor, germline, infiltrates, origin, config){
 preprocess_rrbs_normal <- function(patient_id, sample_id, bam_file, min_tumor,
                               min_normal, mq, sex, path, pipeline_files, build, n_cores) {
 
+    # For normals, CAMDAC-RRBS expects same ID
+    normal_id = sample_id
+
     # Define expected allele counts.
     ac_file = file.path(
       path, patient_id, "Allelecounts", sample_id,
@@ -217,8 +221,6 @@ preprocess_rrbs_normal <- function(patient_id, sample_id, bam_file, min_tumor,
       }
 
       # Merge allele counts
-      # Set normal status based on whether sample and normal ID match
-      normal_id = sample_id
       is_normal <- ifelse(sample_id == normal_id, TRUE, FALSE)
       format_output(
           patient_id, sample_id, sex, is_normal, path, pipeline_files, build
@@ -228,24 +230,39 @@ preprocess_rrbs_normal <- function(patient_id, sample_id, bam_file, min_tumor,
     }
 
     # Create SNP files (normal) or run ASCAT (tumor)
-    run_ASCAT.m(
-        patient_id, sample_id, sex,
-        patient_matched_normal_id = normal_id,
-        path, pipeline_files, build,
-        min_normal, min_tumor,
-        n_cores, reference_panel_coverage = NULL
+    snp_file = file.path(
+        path, patient_id, "Copy_number", sample_id,
+        paste0(patient_id, ".", sample_id, ".SNPs.RData")
     )
+    if (!file.exists(snp_file)){
+      run_ASCAT.m(
+          patient_id = patient_id, sample_id = sample_id, sex = sex,
+          patient_matched_normal_id = normal_id,
+          path = path, path_to_CAMDAC = pipeline_files, build = build,
+          min_normal = min_normal, min_tumour = NULL,
+          n_cores = n_cores, reference_panel_coverage = NULL
+      )
+    } else {
+        loginfo("CAMDAC:::preprocess_rrbs_normal: %s already exists, skipping SNP prep.", snp_file)
+    }
 
     # Process methylation info for copy number profiling and plot summary.
-    run_methylation_data_processing(
-        patient_id, sample_id,
-        normal_infiltrates_proxy_id = normal_id,
-        normal_origin_proxy_id = normal_id,
-        path, min_normal, min_tumor, n_cores,
-        reference_panel_normal_infiltrates = NULL,
-        reference_panel_normal_origin = NULL
+    meth_file = file.path(
+        path, patient_id, "Methylation", sample_id, "dt_normal_m.RData"
     )
-                              }
+    if (!file.exists(meth_file)){
+        run_methylation_data_processing(
+            patient_id, sample_id,
+            normal_infiltrates_proxy_id = normal_id,
+            normal_origin_proxy_id = normal_id,
+            path, min_normal, min_tumor, n_cores,
+            reference_panel_normal_infiltrates = NULL,
+            reference_panel_normal_origin = NULL
+        )
+    } else {
+        loginfo("CAMDAC:::preprocess_rrbs_normal: %s already exists, skipping methylation prep.", meth_file)
+    }
+}
 
 
 preprocess_rrbs_tumor <- function(patient_id, sample_id, normal_id, bam_file, min_tumor,
