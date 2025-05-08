@@ -57,9 +57,9 @@ get_differential_methylation <-
                  "As such, you cannot set sample_id to your normal cell of origin sample ID.",
                  sep="\n"))
   }
-  if(detectCores()<n_cores){
+  if(parallel::detectCores()<n_cores){
       warning(paste0(n_cores, " cores selected but only ",
-      detectCores(), " detected on machine."))
+      parallel::detectCores(), " detected on machine."))
       
   }
   
@@ -167,7 +167,7 @@ get_differential_methylation <-
   # load annotations
   annotations_file = paste0(path_to_CAMDAC, "/pipeline_files/",
                             build, "_annotations/", build, "_all_regions_annotations.fst")
-  all_regions_anno <- read_fst(path = annotations_file, as.data.table = TRUE)                         
+  all_regions_anno <- fst::read_fst(path = annotations_file, as.data.table = TRUE)                         
   all_regions_anno[, chrom := factor(chrom, levels=c(1:22,"X","Y"), ordered=TRUE)]
   
   ## Group CpGs into bins, get bin methylation info and annotate Ensembl features
@@ -191,6 +191,9 @@ get_differential_methylation <-
                               anno_list=all_regions_anno, min_DMP_counts=min_DMP_counts_in_DMR, 
                               min_consec_DMP=min_consec_DMP_in_DMR,
                               n_cores=n_cores, bulk=bulk)
+      if (is.null(CAMDAC_DMRs)){
+        return(NULL)
+      }
       colnames(CAMDAC_DMRs)[grepl("^i\\.", colnames(CAMDAC_DMRs))] <- c("start", "end")
   
       # set filenames and filepaths
@@ -280,7 +283,7 @@ get_DMPs <- function (path, patient_id, sample_id, df, prob=0.99, n_cores) {
   result <- cbind(numeric(n))
 
   # Get DMPs
-  result[,1] <- mcmapply(function(alpha_n,beta_n,alpha_b,beta_b) {
+  result[,1] <- parallel::mcmapply(function(alpha_n,beta_n,alpha_b,beta_b) {
     prob_hypo <- NULL
     prob_hypo <- h(alpha_n = alpha_n, beta_n=beta_n, alpha_b=alpha_b, beta_b=beta_b)
     if(is.null(prob_hypo)){prob_hypo <- NA}
@@ -341,7 +344,7 @@ bin_CpGs <- function (path, patient_id, sample_id, dt, anno_list, n_cores) {
  
   cat("Concatenate annotated bins\n")
   # concatenate annotated CpG methylation
-  dt_anno_bins <- rbindlist(mclapply(1:l, function(i, df, ids){
+  dt_anno_bins <- rbindlist(parallel::mclapply(1:l, function(i, df, ids){
       x <- df[cluster_id==ids[i], ]
       x <- x[, segment := paste0(chrom,":",seg_start,"-",seg_end)]
       y <- x[, .(m_n= mean(m_n, na.rm=TRUE),
@@ -486,11 +489,19 @@ get_DMRs <- function (path, patient_id, sample_id, dt, anno_list,
   # extract all bin ids with coverage and number of unique bins
   ids <- results[!is.na(DMR), unique(cluster_id)]
   l <- length(ids)
+
+  # Report and return if no DMRs found
+  if (length(ids) == 0){
+    cat("No DMRs found with the current parameters.\n")
+    return(NULL)
+  } else {
+    cat(paste0("Number of DMRs found: ", length(ids), "\n"))
+  }
  
   cat("Concatenate DMR calls \n")
   # concatenate annotated CpG methylation
   if(bulk==FALSE){
-    dt_DMRs <- rbindlist(mclapply(1:l, function(i, df, ids){
+    dt_DMRs <- rbindlist(parallel::mclapply(1:l, function(i, df, ids){
       x <- df[cluster_id==ids[i], ]
       x <- x[, segment := paste0(chrom,":",seg_start,"-",seg_end)]
       y <- x[, .(m_n= ifelse(sum(!is.na(DMP_t))==0, as.numeric(NA), mean(m_n[!is.na(DMP_t)])),
@@ -510,7 +521,7 @@ get_DMRs <- function (path, patient_id, sample_id, dt, anno_list,
       return(y)
     }, df=ov, ids=ids, mc.cores=n_cores))
   } else {
-    dt_DMRs <- rbindlist(mclapply(1:l, function(i, df, ids){
+    dt_DMRs <- rbindlist(parallel::mclapply(1:l, function(i, df, ids){
       x <- df[cluster_id==ids[i], ]
       x <- x[, segment := paste0(chrom,":",seg_start,"-",seg_end)]
       y <- x[, .(m_b= ifelse(sum(!is.na(DMP_b))==0, as.numeric(NA), mean(m_b[!is.na(DMP_b)])),

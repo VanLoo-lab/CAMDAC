@@ -44,9 +44,9 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
                  "samples as this sample is a proxy for the normal methylation rate",
                  sep="\n"))
   }
-  if(detectCores()<n_cores){
+  if(parallel::detectCores()<n_cores){
       warning(paste0(n_cores, " cores selected but only ",
-      detectCores(), " detected on machine."))
+      parallel::detectCores(), " detected on machine."))
       
   }
 
@@ -159,7 +159,7 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
   CN_n=dt_mt$CG_CN_n
 
   # Compute the tumour methylation rate HDI 
-  HDI[,1:2] <- t(mcmapply(function(M_b,UM_b,M_n,UM_n,p,CN, CN_n)
+  HDI[,1:2] <- t(parallel::mcmapply(function(M_b,UM_b,M_n,UM_n,p,CN, CN_n)
                           HDIofMCMC(M_b,UM_b,M_n,UM_n,p,CN,CN_n, 0.99),
                           M_b,UM_b,M_n,UM_n,p,CN,CN_n,mc.cores=n_cores))             
   dt_mt[,  c("m_t_low", "m_t_high") := as.list(HDI)]
