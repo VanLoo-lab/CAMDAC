@@ -83,6 +83,6 @@ rmarkdown::render('README.Rmd', output_format='github_document', output_file='RE
 # Check package builds
 devtools::check()
 # Build documentation
-pkgdown::build_articles(override=list(destination='docs/html'))
-pkgdown::build_site(examples=FALSE, devel=TRUE, lazy=TRUE, preview=FALSE, override=list(destination='docs/html'))
+pkgdown::build_articles()
+pkgdown::build_site(examples=FALSE, devel=TRUE, lazy=TRUE, preview=FALSE)
 ```
