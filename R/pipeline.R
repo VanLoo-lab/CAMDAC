@@ -45,7 +45,7 @@ pipeline_wgbs <- function(tumor, germline = NULL, infiltrates = NULL, origin = N
   cmain_call_dmrs(tumor, config)
 
   # Log
-  loginfo("CAMDAC:::pipeline complete for %s", tumor$patient_id)
+  loginfo("CAMDAC WGBS pipeline complete for %s", tumor$patient_id)
 }
 
 #' Preprocess a list of CamSample objects for analysis
@@ -156,14 +156,22 @@ pipeline_rrbs <- function(tumor, germline, infiltrates, origin, config){
   }
 
   # Create SNP files and run ASCAT (tumor)
-  loginfo("CAMDAC:::ASCAT.m Tumor")
-  run_ASCAT.m(
-      patient_id, sample_id, sex,
-      patient_matched_normal_id = germline$id,
-      path, pipeline_files, build,
-      min_normal, min_tumor,
-      n_cores, reference_panel_coverage = NULL
-  )
+  cna_file = file.path(
+        path, patient_id, "Copy_number", sample_id,
+        paste0(patient_id, ".", sample_id, ".ascat.output.RData")
+    )
+  if (!file.exists(cna_file)){
+    loginfo("CAMDAC:::ASCAT.m Tumor")
+    run_ASCAT.m(
+        patient_id, sample_id, sex,
+        patient_matched_normal_id = germline$id,
+        path, pipeline_files, build,
+        min_normal, min_tumor,
+        n_cores, reference_panel_coverage = NULL
+    )
+  } else {
+      loginfo("CAMDAC:::pipeline:rrbs: %s already exists, skipping CNA", cna_file)
+  }
 
   # Process methylation info for copy number profiling and plot summary.
   loginfo("CAMDAC:::run_methylation_data_processing Tumor")
@@ -195,6 +203,8 @@ pipeline_rrbs <- function(tumor, germline, infiltrates, origin, config){
       min_DMP_counts_in_DMR = 5, min_consec_DMP_in_DMR = 4,
       n_cores, reseg = FALSE, bulk = FALSE
   )
+
+  loginfo("CAMDAC RRBS pipeline complete for %s", tumor$patient_id)
 }
 
 preprocess_rrbs_normal <- function(patient_id, sample_id, bam_file, min_tumor,
