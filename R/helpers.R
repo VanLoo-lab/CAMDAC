@@ -432,7 +432,7 @@ camdac_to_bedgraph <- function(x, outfile){
         stringr::str_ends(x, "pure.csv.gz") ~ c("cov_t", "m_t")
     )
     if(all(is.na(fields))){
-        logger::log_warn("Unrecognised file format. No bedgraph created for {x}")
+        logwarn("Unrecognised file format. No bedgraph created for {x}")
         return(NULL)
     }
     counts_field = dplyr::sym(fields[1])
