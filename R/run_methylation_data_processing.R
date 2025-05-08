@@ -417,7 +417,7 @@ plot_methylation_info <- function (df_sample, outfile) {
         scale_alpha_manual(name = "", values = c("SNP"=0.1,"non-SNP"=0.5)) +
         theme(legend.position="none") + ggtitle("A.") #+
  
-  p2 <- ggplot(data=df_sample, aes(x=m, y=..count..,color=class, fill = class)) + 
+  p2 <- ggplot(data=df_sample, aes(x=m, y=ggplot2::after_stat(count),color=class, fill = class)) + 
         theme_classic() + 
         geom_histogram(binwidth=0.025,alpha = 0.25) + 
         scale_x_continuous(name="CpG methylation rate", breaks=seq(0,1,.1)) +
@@ -491,7 +491,7 @@ plot_methylation_info <- function (df_sample, outfile) {
 #                                           "non-SNP CpG"="lightsalmon", "non-SNP CCGG"="lightblue")) +
 #   theme(axis.ticks.x = element_blank(),axis.text.x=element_text(size=8)) +
 #   ggtitle("E.") #+ theme(legend.position="none")
-  p5 <- ggplot(data=df_sample, aes(x=total_depth, y=..count..)) +
+  p5 <- ggplot(data=df_sample, aes(x=total_depth, y=ggplot2::after_stat(count))) +
         theme_classic() + 
         geom_histogram(bins=50,alpha = 0.25, col="grey15") + 
         scale_x_continuous(name= "CpG coverage", 

@@ -930,12 +930,12 @@ plot_BAF_and_LogR <- function (dt, outfile, downsample=1E5) {
     scale_x_continuous("SNP loci", minor_breaks = lines_pos$BAFloci, breaks = lines_pos$BAFloci, labels = NULL) +
     ggtitle("BAF") + theme(legend.title = element_text(hjust = 0.5)) + guides(color = guide_legend(override.aes = list(size=10)))
   
-  d_BAF_n <-ggplot(dt_sample, aes(x=BAF_n,y=..count..,color = flag, fill=flag)) + geom_density(alpha=0.25) +
+  d_BAF_n <-ggplot(dt_sample, aes(x=BAF_n,y=ggplot2::after_stat(count),color = flag, fill=flag)) + geom_density(alpha=0.25) +
     scale_color_manual(name = "SNP\nflag", values=c("CCGG"="red","CG"="orange3","neither"="cornflowerblue")) + 
     scale_fill_manual(name = "SNP\nflag", values=c("CCGG"="red","CG"="orange3","neither"="cornflowerblue")) + 
     theme_classic()
   
-  h_BAF_n <-ggplot(dt_sample, aes(x=BAF_n,y=..count..,color = flag, fill=flag)) + geom_histogram(bins=100) +
+  h_BAF_n <-ggplot(dt_sample, aes(x=BAF_n,y=ggplot2::after_stat(count),color = flag, fill=flag)) + geom_histogram(bins=100) +
     scale_color_manual(name = "SNP\nflag", values=c("CCGG"="red","CG"="orange3","neither"="cornflowerblue")) + 
     scale_fill_manual(name = "SNP\nflag", values=c("CCGG"="red","CG"="orange3","neither"="cornflowerblue")) + theme_classic()
   
@@ -978,7 +978,7 @@ plot_SNP_info <- function (dt, outfile, min) {
               axis.text.x = element_blank(), axis.ticks.x = element_blank())
   
   # Compare logR and logR corrected 
-  #p3 <- ggplot(dt, aes(y=..count..))+
+  #p3 <- ggplot(dt, aes(y=ggplot2::after_stat(count)))+
   #      ggtitle("C.")+ylab("Number of SNPs")+xlab("LogR")+
   #      theme_classic()+coord_cartesian(xlim=c(-2.5, 2.5)) +
   #      geom_histogram(aes(x=LogR_t, color="raw", fill="raw"),
@@ -1085,7 +1085,7 @@ plot_normal_SNP_info <- function (dt, outfile, min) {
   tmp <- dt[BAF>=0.15 & BAF <= 0.85 & !is.na(BAF),]
   tmp2 <- table(cut(tmp$BAF, breaks = (0.85-0.15)/0.01))
   tmp2 <- unname(tmp2[which.max(tmp2)])*9/10
-  p4 <- ggplot(data = tmp, aes(x=BAF,y=..count..,color = type,fill = type)) +
+  p4 <- ggplot(data = tmp, aes(x=BAF,y=ggplot2::after_stat(count),color = type,fill = type)) +
     geom_histogram(binwidth = 0.01, alpha = 0.25) + theme_minimal() +
     scale_color_manual(name = "", values = c("Homozygous" = "orange3", "Heterozygous" = "mediumpurple")) +
     scale_fill_manual(name = "", values = c("Homozygous" = "orange3", "Heterozygous" = "mediumpurple")) +

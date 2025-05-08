@@ -218,7 +218,7 @@ get_msp1_fragments <- function(dt, build, path_to_CAMDAC, outfile) {
   # plot log10 fragment size distribution
   outfile <- paste0(outfile, "fragment_length_histogram.pdf")
   p <- ggplot2::ggplot(df_fragments) +
-    geom_histogram(aes(x = l, y = ..count..), col = "cornflowerblue", fill = "white", bins = 100) +
+    geom_histogram(aes(x = l, y = ggplot2::after_stat(count)), col = "cornflowerblue", fill = "white", bins = 100) +
     theme_classic() +
     ylab("Number of fragments") +
     coord_cartesian(xlim = c(35, 1000)) + #+coord_cartesian(xlim=c(log10(40),3))+
