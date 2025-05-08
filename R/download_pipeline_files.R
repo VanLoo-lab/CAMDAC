@@ -39,11 +39,11 @@ download_pipeline_files <- function(bsseq, directory=NULL, quiet=TRUE){
   tryCatch({
     download.file(link, destfile=tf, method="wget", quiet=quiet)
   }, error=function(e){
-    logerror("Pipeline files for {bsseq} could not be downloaded from {link}.")
+    logerror("Pipeline files for %s could not be downloaded from %s.", bsseq, link)
     stop()
   })
   untar(tf, exdir=location)
   
-  loginfo("Pipeline files for {bsseq} downloaded to {location}")
+  loginfo("Pipeline files for %s downloaded to %s", bsseq, location)
   return(location)
 }
