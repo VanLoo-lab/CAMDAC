@@ -304,7 +304,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
     
     # Carry out segmentation
     gg = list(germlinegenotypes=ascat.bc$genotypes)
-    ascat.frag <- ascat.aspcf(ascat.bc, ascat.gg=gg, penalty=200)
+    ascat.frag <- ASCAT::ascat.aspcf(ascat.bc, ascat.gg=gg, penalty=200)
     # penalty = 200 recommended for sequencing data
 
     # fix issue with ascat.ascpcf renaming samples 
@@ -316,7 +316,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
     cat("\nASCAT copy number segmentation completed\n")
     
     # Run copy number caller a first time to get the distance matrix
-    ascat.output <- ascat.runAscat(ascat.frag, gamma = 1)
+    ascat.output <- ASCAT::ascat.runAscat(ascat.frag, gamma = 1)
     save(ascat.output, file = paste(patient_id, sample_id,"ascat.output.RData", sep = "."))
     num_het_SNPs = nrow(ascat.frag$Tumor_LogR_segmented)
     num_hom_SNPs = nrow(ascat.frag$Tumor_BAF_segmented[[1]])
@@ -337,7 +337,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
                       median_depth = median(dt_sample_SNPs$total_depth, na.rm=TRUE),
                       median_n_depth = median(dt_sample_SNPs$total_depth_n, na.rm=TRUE))
       rm(ascat.output, num_het_SNPs, num_hom_SNPs)
-      cat(format_delim(dt, delim = "\t", col_names = T),  file = f)
+      cat(readr::format_delim(dt, delim = "\t", col_names = T),  file = f)
       close(f); rm(dt,f,f.nm)
       cat(paste("\nPloidy, Purity and summary stats saved in ",
                 path_output,patient_id,".",sample_id,".ACF.and.ploidy.txt","\n",sep = ""))
@@ -637,7 +637,7 @@ LogR_correction = function(dt_sample,dt_SNPs,build,chr_names,min_normal,
   chrom_idx = 1:23
   if(build=="hg19"){replic_files = paste0(replic_timing_file_prefix, chrom_idx, ".fst")}
   if(build=="hg38"){replic_files = paste0(replic_timing_file_prefix, chrom_idx,"_",build,".fst")}
-  replic_data = data.table(do.call(rbind, mclapply(replic_files, fst::read_fst, mc.cores = n_cores)))
+  replic_data = data.table(do.call(rbind, parallel::mclapply(replic_files, fst::read_fst, mc.cores = n_cores)))
   
   # format replication timing data
   cols <- colnames(replic_data)
