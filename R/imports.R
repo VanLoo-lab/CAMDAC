@@ -96,6 +96,6 @@ utils::globalVariables(
     "CG_CN_n", "cluster_id", "seqnames", "gc_file", "BAFr", "total_counts_n", "alleles.SNP",
     "..cell_line_cols", "AF", "qual", "qual.SNP", "SNP", "UM_snuc", "all_counts", "other_counts",
     "selector", "nMaj1_A", "nMaj2_A", "nMin1_A", "nMin2_A", "chr", "startpos", "endpos",
-    "is.best", "..bb_cna_fields", "rBAF", "BAF_n", "count"
+    "is.best", "..bb_cna_fields", "rBAF", "BAF_n", "count", "density"
   )
 )

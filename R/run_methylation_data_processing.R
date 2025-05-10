@@ -406,7 +406,7 @@ HDIofICDF = function(ICDFname, credMass=0.99 , tol=1e-4, ... ) {
 plot_methylation_info <- function (df_sample, outfile) {
   
   alph <- ifelse(df_sample$class %in% c("SNP CpG", "SNP CCGG"), "SNP", "non-SNP")
-  p1 <- ggplot(data=df_sample, aes(x=m, y=..density.., color=class, fill = class, alpha=alph)) + 
+  p1 <- ggplot(data=df_sample, aes(x=m, y=after_stat(density), color=class, fill = class, alpha=alph)) + 
         ylab("Normalised density") + theme_classic() +
         geom_density(bw= 0.025) + 
         scale_x_continuous(name="CpG methylation rate", breaks=seq(0,1,.1)) +
