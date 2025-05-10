@@ -26,7 +26,7 @@ remotes::install_github("VanLoo-lab/CAMDAC")
 
 Download reference datasets required to run CAMDAC for RRBS and/or WGBS
 analysis [from the Zenodo repository:
-(10565423)](https://zenodo.org/records/10565423/). An R helper function
+(10565423)](https://zenodo.org/records/10565423). An R helper function
 is provided for convenience:
 
 ``` r
@@ -37,9 +37,8 @@ CAMDAC::download_pipeline_files(bsseq = "wgbs", directory = "./refs")
 Run the tumor-normal deconvolution pipeline with test data:
 
 > \[\!NOTE\]  
-> CAMDAC provides highly downsampled BAM files for testing the pipeline
-> which generate dummy results. For real analysis, please use your own
-> BAM files.
+> We provide downsampled BAM files for testing the pipeline. For
+> representative results, please use your own BAM files.
 
 ``` r
 library(CAMDAC)
