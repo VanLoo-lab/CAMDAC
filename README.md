@@ -4,14 +4,9 @@
 # CAMDAC
 
 Copy-number Aware Methylation Deconvolution Analysis of Cancer (CAMDAC)
-is an R library for deconvolving pure tumor methylation from bulk tumor
+is an R library for deconvolving bulk tumor DNA methylation (bisulfite)
 sequencing data ([Larose Cadieux et al., 2022,
 bioXriv](https://www.biorxiv.org/content/10.1101/2020.11.03.366252v2)).
-
-This branch performs CAMDAC analysis for whole genome bisulfite
-sequencing (WGBS) data. For Reduced Representation Bisulfite Sequencing
-(RRBS) data analysis, visit the [VanLoo-lab/CAMDAC main
-branch](https://github.com/VanLoo-lab/CAMDAC/tree/main).
 
 <!-- badges: start -->
 
@@ -19,7 +14,7 @@ branch](https://github.com/VanLoo-lab/CAMDAC/tree/main).
 
 ## Documentation
 
-View the full documentation at <https://vanloo-lab.github.io/CAMDAC/>.
+Visit <https://vanloo-lab.github.io/CAMDAC/>.
 
 ## Quickstart
 
@@ -29,29 +24,40 @@ CAMDAC can be installed from an R console:
 remotes::install_github("VanLoo-lab/CAMDAC")
 ```
 
-To run the tumor-normal deconvolution pipeline:
+Download reference datasets required to run CAMDAC for RRBS and/or WGBS
+analysis [from the Zenodo repository:
+(10565423)](https://zenodo.org/records/10565423/). An R helper function
+is provided for convenience:
+
+``` r
+CAMDAC::download_pipeline_files(bsseq = "rrbs", directory = "./refs")
+CAMDAC::download_pipeline_files(bsseq = "wgbs", directory = "./refs")
+```
+
+Run the tumor-normal deconvolution pipeline with test data:
+
+> \[\!NOTE\]  
+> CAMDAC provides highly downsampled BAM files for testing the pipeline
+> which generate dummy results. For real analysis, please use your own
+> BAM files.
 
 ``` r
 library(CAMDAC)
 
-# Download pipeline files for WGBS or RRBS analysis
-# File URLs are listed in inst/extdata/pipeline_files_urls.txt
-CAMDAC::download_pipeline_files(bsseq = "rrbs", directory = "./refs")
-CAMDAC::download_pipeline_files(bsseq = "wgbs", directory = "./refs")
-
-# Load test data paths
 tumor_bam <- system.file("testdata", "tumor.bam", package = "CAMDAC")
 normal_bam <- system.file("testdata", "normal.bam", package = "CAMDAC")
 
-# Setup pipeline for basic tumor-normal analysis
+# Select samples for basic tumor-normal analysis
 tumor <- CamSample(id = "T", sex = "XY", bam = tumor_bam)
 normal <- CamSample(id = "N", sex = "XY", bam = normal_bam)
+
+# Configure pipeline
 config <- CamConfig(
   outdir = "./results", bsseq = "rrbs", lib = "pe",
   build = "hg38", refs = "./refs", n_cores = 1, cna_caller='ascat'
 )
 
-# Run CAMDAC ppeline
+# Run CAMDAC
 CAMDAC::pipeline(
   tumor, germline = normal, infiltrates = normal, origin = normal, config
 )
@@ -60,22 +66,33 @@ CAMDAC::pipeline(
 For a more detailed walkthrough with test data, see
 `vignette("pipeline")`.
 
-## Development
+## Contributing
+
+To contribute to CAMDAC, simply fork the repository and submit a merge
+request.
+
+We use the following commands to check the package before commits:
 
 ``` r
 library(devtools)
-devtools::install_dev_deps("VanLoo-lab/CAMDAC@wgbs")
 
-# After updating code:
+# Install dev dependencies
+devtools::install_dev_deps("VanLoo-lab/CAMDAC")
+
 # Update docs
 devtools::document()
+
 # Run tests
 devtools::test()
+
 # Build readme
 rmarkdown::render('README.Rmd', output_format='github_document', output_file='README.md')
+
 # Check package builds
 devtools::check()
+
 # Build documentation
-pkgdown::build_articles(override=list(destination='docs/html'))
-pkgdown::build_site(examples=FALSE, devel=TRUE, lazy=TRUE, preview=FALSE, override=list(destination='docs/html'))
+pkgdown::build_articles()
+pkgdown::build_site(examples=FALSE, devel=TRUE, lazy=TRUE, preview=FALSE)
+pkgdown::preview_site() # To view. Or: python3 -m http.server --directory docs 8000
 ```
