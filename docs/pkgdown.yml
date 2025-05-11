@@ -4,13 +4,14 @@ pkgdown_sha: ~
 articles:
   allele-specific: allele-specific.html
   copy_number_alt: copy_number_alt.html
-  deconvolution-only: deconvolution-only.html
   deconvolution: deconvolution.html
+  introduction: introduction.html
   output: output.html
   panels: panels.html
   pipeline: pipeline.html
   questions: questions.html
   setup: setup.html
+  technical: technical.html
   visualisation: visualisation.html
-last_built: 2025-05-07T21:52Z
+last_built: 2025-05-11T09:57Z
 

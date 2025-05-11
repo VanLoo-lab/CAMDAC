@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">CAMDAC</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
       </span>
     </div>
 
@@ -50,6 +50,9 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
+      <a href="articles/introduction.html">Introduction</a>
+    </li>
+    <li>
       <a href="articles/setup.html">Installation</a>
     </li>
     <li>
@@ -65,6 +68,9 @@
       <a href="articles/questions.html">FAQs</a>
     </li>
     <li>
+      <a href="articles/technical.html">Technical</a>
+    </li>
+    <li>
       <a href="articles/panels.html">DNA methylation panels</a>
     </li>
     <li>
@@ -74,10 +80,7 @@
       <a href="articles/allele-specific.html">Allele-specific Methylation</a>
     </li>
     <li>
-      <a href="articles/deconvolution.html">CAMDAC Deconvolution Only</a>
-    </li>
-    <li>
-      <a href="articles/deconvolution-only.html">CAMDAC Deconvolution Only</a>
+      <a href="articles/deconvolution.html">CAMDAC Deconvolution</a>
     </li>
   </ul>
 </li>
@@ -100,12 +103,11 @@
 <div class="section level1">
 <div class="page-header"><h1 id="camdac">CAMDAC<a class="anchor" aria-label="anchor" href="#camdac"></a>
 </h1></div>
-<p>Copy-number Aware Methylation Deconvolution Analysis of Cancer (CAMDAC) is an R library for deconvolving pure tumor methylation from bulk tumor sequencing data (<a href="https://www.biorxiv.org/content/10.1101/2020.11.03.366252v2" class="external-link">Larose Cadieux et al., 2022, bioXriv</a>).</p>
-<p>This branch performs CAMDAC analysis for whole genome bisulfite sequencing (WGBS) data. For Reduced Representation Bisulfite Sequencing (RRBS) data analysis, visit the <a href="https://github.com/VanLoo-lab/CAMDAC/tree/main" class="external-link">VanLoo-lab/CAMDAC main branch</a>.</p>
+<p>Copy-number Aware Methylation Deconvolution Analysis of Cancer (CAMDAC) is an R library for deconvolving bulk tumor DNA methylation (bisulfite) sequencing data (<a href="https://www.biorxiv.org/content/10.1101/2020.11.03.366252v2" class="external-link">Larose Cadieux et al., 2022, bioXriv</a>).</p>
 <!-- badges: start --><!-- badges: end --><div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>View the full documentation at <a href="https://vanloo-lab.github.io/CAMDAC/" class="external-link uri">https://vanloo-lab.github.io/CAMDAC/</a>.</p>
+<p>Visit <a href="https://vanloo-lab.github.io/CAMDAC/" class="external-link uri">https://vanloo-lab.github.io/CAMDAC/</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="quickstart">Quickstart<a class="anchor" aria-label="anchor" href="#quickstart"></a>
@@ -113,51 +115,62 @@
 <p>CAMDAC can be installed from an R console:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"VanLoo-lab/CAMDAC"</span><span class="op">)</span></span></code></pre></div>
-<p>To run the tumor-normal deconvolution pipeline:</p>
+<p>Download reference datasets required to run CAMDAC for RRBS and/or WGBS analysis <a href="https://zenodo.org/records/10565423" class="external-link">from the Zenodo repository: (10565423)</a>. An R helper function is provided for convenience:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">CAMDAC</span><span class="fu">::</span><span class="fu"><a href="reference/download_pipeline_files.html">download_pipeline_files</a></span><span class="op">(</span>bsseq <span class="op">=</span> <span class="st">"rrbs"</span>, directory <span class="op">=</span> <span class="st">"./refs"</span><span class="op">)</span></span>
+<span><span class="fu">CAMDAC</span><span class="fu">::</span><span class="fu"><a href="reference/download_pipeline_files.html">download_pipeline_files</a></span><span class="op">(</span>bsseq <span class="op">=</span> <span class="st">"wgbs"</span>, directory <span class="op">=</span> <span class="st">"./refs"</span><span class="op">)</span></span></code></pre></div>
+<p>Run the tumor-normal deconvolution pipeline with test data:</p>
+<blockquote><p>[!NOTE]<br>
+We provide downsampled BAM files for testing the pipeline. For representative results, please use your own BAM files.</p></blockquote>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CAMDAC</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Download pipeline files for WGBS or RRBS analysis</span></span>
-<span><span class="co"># File URLs are listed in inst/extdata/pipeline_files_urls.txt</span></span>
-<span><span class="fu">CAMDAC</span><span class="fu">::</span><span class="fu"><a href="reference/download_pipeline_files.html">download_pipeline_files</a></span><span class="op">(</span>bsseq <span class="op">=</span> <span class="st">"rrbs"</span>, directory <span class="op">=</span> <span class="st">"./refs"</span><span class="op">)</span></span>
-<span><span class="fu">CAMDAC</span><span class="fu">::</span><span class="fu"><a href="reference/download_pipeline_files.html">download_pipeline_files</a></span><span class="op">(</span>bsseq <span class="op">=</span> <span class="st">"wgbs"</span>, directory <span class="op">=</span> <span class="st">"./refs"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Load test data paths</span></span>
 <span><span class="va">tumor_bam</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"tumor.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span><span class="va">normal_bam</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"normal.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Setup pipeline for basic tumor-normal analysis</span></span>
+<span><span class="co"># Select samples for basic tumor-normal analysis</span></span>
 <span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/CamSample.html">CamSample</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"T"</span>, sex <span class="op">=</span> <span class="st">"XY"</span>, bam <span class="op">=</span> <span class="va">tumor_bam</span><span class="op">)</span></span>
 <span><span class="va">normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/CamSample.html">CamSample</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"N"</span>, sex <span class="op">=</span> <span class="st">"XY"</span>, bam <span class="op">=</span> <span class="va">normal_bam</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Configure pipeline</span></span>
 <span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/CamConfig.html">CamConfig</a></span><span class="op">(</span></span>
 <span>  outdir <span class="op">=</span> <span class="st">"./results"</span>, bsseq <span class="op">=</span> <span class="st">"rrbs"</span>, lib <span class="op">=</span> <span class="st">"pe"</span>,</span>
 <span>  build <span class="op">=</span> <span class="st">"hg38"</span>, refs <span class="op">=</span> <span class="st">"./refs"</span>, n_cores <span class="op">=</span> <span class="fl">1</span>, cna_caller<span class="op">=</span><span class="st">'ascat'</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Run CAMDAC ppeline</span></span>
+<span><span class="co"># Run CAMDAC</span></span>
 <span><span class="fu">CAMDAC</span><span class="fu">::</span><span class="fu"><a href="reference/pipeline.html">pipeline</a></span><span class="op">(</span></span>
 <span>  <span class="va">tumor</span>, germline <span class="op">=</span> <span class="va">normal</span>, infiltrates <span class="op">=</span> <span class="va">normal</span>, origin <span class="op">=</span> <span class="va">normal</span>, <span class="va">config</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>For a more detailed walkthrough with test data, see <code><a href="articles/pipeline.html">vignette("pipeline")</a></code>.</p>
 </div>
 <div class="section level2">
-<h2 id="development">Development<a class="anchor" aria-label="anchor" href="#development"></a>
+<h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>To contribute to CAMDAC, simply fork the repository and submit a merge request.</p>
+<p>We use the following commands to check the package before commits:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://devtools.r-lib.org/" class="external-link">devtools</a></span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install_deps.html" class="external-link">install_dev_deps</a></span><span class="op">(</span><span class="st">"VanLoo-lab/CAMDAC@wgbs"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># After updating code:</span></span>
+<span><span class="co"># Install dev dependencies</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install_deps.html" class="external-link">install_dev_deps</a></span><span class="op">(</span><span class="st">"VanLoo-lab/CAMDAC"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># Update docs</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># Run tests</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># Build readme</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_rmd.html" class="external-link">build_readme</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">rmarkdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">render</a></span><span class="op">(</span><span class="st">'README.Rmd'</span>, output_format<span class="op">=</span><span class="st">'github_document'</span>, output_file<span class="op">=</span><span class="st">'README.md'</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># Check package builds</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># Build documentation</span></span>
-<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span>preview<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_articles.html" class="external-link">build_articles</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span>examples<span class="op">=</span><span class="cn">FALSE</span>, devel<span class="op">=</span><span class="cn">TRUE</span>, lazy<span class="op">=</span><span class="cn">TRUE</span>, preview<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/preview_site.html" class="external-link">preview_site</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># To view. Or: python3 -m http.server --directory docs 8000</span></span></code></pre></div>
 </div>
 </div>
   </div>

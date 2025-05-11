@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">CAMDAC</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
       </span>
     </div>
 
@@ -32,6 +32,9 @@
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu"><li>
+      <a href="articles/introduction.html">Introduction</a>
+    </li>
+    <li>
       <a href="articles/setup.html">Installation</a>
     </li>
     <li>
@@ -47,6 +50,9 @@
       <a href="articles/questions.html">FAQs</a>
     </li>
     <li>
+      <a href="articles/technical.html">Technical</a>
+    </li>
+    <li>
       <a href="articles/panels.html">DNA methylation panels</a>
     </li>
     <li>
@@ -56,10 +62,7 @@
       <a href="articles/allele-specific.html">Allele-specific Methylation</a>
     </li>
     <li>
-      <a href="articles/deconvolution.html">CAMDAC Deconvolution Only</a>
-    </li>
-    <li>
-      <a href="articles/deconvolution-only.html">CAMDAC Deconvolution Only</a>
+      <a href="articles/deconvolution.html">CAMDAC Deconvolution</a>
     </li>
   </ul></li>
 <li>
@@ -91,10 +94,13 @@ docker build -t camdac .
 
 # Run and enter image interactive mode
 docker run -it -v "$(pwd):/app" camdac:latest bash
+docker run -it -v "$(pwd):/app" --entrypoint=/bin/bash 4de139ba6ced 
 
 # Within the container, start R and load CAMDAC files
 R
 devtools::load_all()</code></pre>
+<pre><code>docker buildx build --platform linux/amd64 -t nmensah5/camdac:latest .
+docker run -it -v "$(pwd):/app" nmensah5/camdac-env:latest bash</code></pre>
 </div>
 
 
