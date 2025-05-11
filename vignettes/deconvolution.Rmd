@@ -1,5 +1,5 @@
 ---
-title: "CAMDAC Deconvolution Only"
+title: "CAMDAC Deconvolution"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{deconvolution}
