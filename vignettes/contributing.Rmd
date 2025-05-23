@@ -1,0 +1,47 @@
+---
+title: "contributing"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{contributing}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+To contribute to CAMDAC, fork [the repository](https://github.com/VanLoo-lab/CAMDAC) and install the development dependencies with `remotes::install_dev_deps('.')`.
+
+After making your changes, run the test and build commands listed below, then submit a [pull request](https://github.com/VanLoo-lab/CAMDAC/pulls) with the changes on your fork.
+
+## CAMDAC test and build commands
+
+```{r}
+library(devtools)
+
+# Install dev dependencies
+devtools::install_dev_deps("VanLoo-lab/CAMDAC")
+
+# Update docs
+devtools::document()
+
+# Run tests
+devtools::test()
+
+# Build readme
+rmarkdown::render('README.Rmd', output_format='github_document', output_file='README.md')
+
+# Check package builds
+devtools::check()
+
+# Build documentation
+pkgdown::build_site(examples=FALSE, devel=TRUE, lazy=TRUE, preview=FALSE)
+pkgdown::preview_site() # To view. Or: python3 -m http.server --directory docs 8000
+
+# Commit changes on the docs/ folder before submitting 
+```

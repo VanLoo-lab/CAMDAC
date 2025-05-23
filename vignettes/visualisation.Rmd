@@ -50,6 +50,6 @@ tplt <- ggplot(dm_regions, aes(x = start)) +
 tplt
 ```
 
-![CAMDAC DMR Visualization](docs/images/camdac_dmr_vis.png)
+![CAMDAC DMR Visualization](images/camdac_dmr_vis.png)
 
 Here, light blue dots are the pure tumour, while light-grey are the normal. The red dash is the DMR region and the vertical lines are hypomethylated DMPs (blue) and hypermethylated DMPs (light blue).

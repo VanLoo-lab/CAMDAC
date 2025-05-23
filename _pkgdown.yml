@@ -7,11 +7,6 @@ articles:
   - pipeline
   - output
   - visualisation
-- title: FAQs
-  navbar: ~
-  contents:
-  - questions
-  - technical
 - title: Experimental
   navbar: ~
   contents:
@@ -19,3 +14,9 @@ articles:
   - copy_number_alt
   - allele-specific
   - deconvolution
+- title: FAQs
+  navbar: ~
+  contents:
+  - questions
+  - technical
+  - contributing

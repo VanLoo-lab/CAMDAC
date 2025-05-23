@@ -73,30 +73,8 @@ For a more detailed walkthrough with test data, see `vignette("pipeline")`.
 
 ## Contributing
 
-To contribute to CAMDAC, simply fork the repository and submit a merge request.
+To contribute to CAMDAC, fork [the repository](https://github.com/VanLoo-lab/CAMDAC) and install the development dependencies with `remotes::install_dev_deps('.')`.
 
-We use the following commands to check the package before commits:
+After making your changes, run the build and test commands listed in `vignette("contributing")`.
 
-```{r}
-library(devtools)
-
-# Install dev dependencies
-devtools::install_dev_deps("VanLoo-lab/CAMDAC")
-
-# Update docs
-devtools::document()
-
-# Run tests
-devtools::test()
-
-# Build readme
-rmarkdown::render('README.Rmd', output_format='github_document', output_file='README.md')
-
-# Check package builds
-devtools::check()
-
-# Build documentation
-pkgdown::build_articles()
-pkgdown::build_site(examples=FALSE, devel=TRUE, lazy=TRUE, preview=FALSE)
-pkgdown::preview_site() # To view. Or: python3 -m http.server --directory docs 8000
-```
+Finally, submit a [pull request](https://github.com/VanLoo-lab/CAMDAC/pulls) with the changes on your fork.
