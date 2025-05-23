@@ -1,3 +1,4 @@
+# FIX
 test_that("allele counting regions can be read from BED file", {
   bam <- system.file("testdata", "tumor.bam", package = "CAMDAC")
   seg_regions <- system.file("testdata", "test_segments.bed", package = "CAMDAC")

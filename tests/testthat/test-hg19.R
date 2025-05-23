@@ -1,3 +1,4 @@
+# FIX
 test_that("CAMDAC runs with battenberg in hg19 mode", {
     # CNA caller test config
     config_hg19 <- CamConfig(

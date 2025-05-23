@@ -1,3 +1,4 @@
+# FIX:
 test_that("CAMDAC deconvolves using pre-computed CNA data", {
   # Load external CNA object
   cna_file <- system.file("testdata", "test.cna.txt", package = "CAMDAC")

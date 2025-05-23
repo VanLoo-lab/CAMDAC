@@ -1,3 +1,4 @@
+# FIX:
 test_that("ascat and battenberg runs on wgbs samples", {
     # CNA caller test config
     config_c <- CamConfig(
@@ -22,19 +23,11 @@ test_that("ascat and battenberg runs on wgbs samples", {
     }
 
     # Test CNA and expect file exists after ASCAT
-    # config_c$cna_caller <- "ascat"
-    # cmain_call_cna(tumor, config_c)
+    config_c$cna_caller <- "ascat"
+    cmain_call_cna(tumor, config_c)
 
-    # tool <- fread(cna_file)$pipeline[[1]]
-    # testthat::expect_equal(tool, "ascat")
-    # fs::file_delete(cna_file)
-
-    # Run battenberg
-    config_c$cna_caller <- "battenberg"
-
-    # Battenberg warnings are function of the test data
-    suppressWarnings(cmain_call_cna(tumor, config_c))
     tool <- fread(cna_file)$pipeline[[1]]
-    testthat::expect_equal(tool, "battenberg")
+    testthat::expect_equal(tool, "ascat")
     fs::file_delete(cna_file)
+
 })

@@ -1,3 +1,4 @@
+# FIX:
 test_that("single-end allele counter runs on hg19 samples samples", {
     # CNA caller test config
     config_hg19 <- CamConfig(

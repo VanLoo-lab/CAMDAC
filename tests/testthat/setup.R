@@ -1,5 +1,4 @@
 # Global text fixtures that may be used by tests.
-
 bam <- system.file("testdata", "tumor.bam", package = "CAMDAC")
 bam2 <- system.file("testdata", "normal.bam", package = "CAMDAC")
 regions <- system.file("testdata", "test_wgbs_segments.bed", package = "CAMDAC")
