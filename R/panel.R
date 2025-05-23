@@ -52,7 +52,7 @@ load_panel_ac_files <- function(ac_files, cores=5) {
     "total_depth", "M", "UM", "m", "total_counts_m", "BAF"
   )
   # Load ac files as list of data tables
-  data <- mclapply(ac_files, function(x) {
+  data <- parallel::mclapply(ac_files, function(x) {
     v <- data.table::fread(x, select = ac_load_fields)
     setkey(v, chrom, start, end)
     return(v)
@@ -133,7 +133,7 @@ max_sd_threshold <- function(x, max_sd) {
   rs <- Reduce(
     cbind,
     lapply(x, function(o) o$m)
-  ) %>% as.matrix() %>% rowSds(na.rm = T)
+  ) %>% as.matrix() %>% matrixStats::rowSds(na.rm = T)
   bool <- ifelse(!is.na(rs) & rs <= max_sd, TRUE, FALSE)
   return(bool)
 }
@@ -236,7 +236,7 @@ panel_meth_from_beta <- function(mat, chrom, start, end, cov, props, cores, min_
   mat <- mat[mask_min_samples, ]
 
   # Apply max sd filter to CpG sites
-  mask_max_sd <- rowSds(mat, na.rm = T) <= max_sd
+  mask_max_sd <- matrixStats::rowSds(mat, na.rm = T) <= max_sd
   mask_max_sd[is.na(mask_max_sd)] <- TRUE
   mat <- mat[mask_max_sd, ]
 
