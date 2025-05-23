@@ -17,15 +17,15 @@
 #' @export
 pipeline_tumor_normal <- function(patient_id, tumor_id, normal_id, tumor_bam, normal_bam, sex, path,
                                   pipeline_files, build, min_tumor = 3, min_normal = 10,
-                                  n_cores = 1, mq = 0) {
+                                  n_cores = 1, mq = 0, paired_end) {
     # Preprocess tumor and normal sample
     preprocess_sample(
         patient_id, normal_id, normal_id, normal_bam, min_tumor,
-        min_normal, mq, sex, path, pipeline_files, build, n_cores
+        min_normal, mq, sex, path, pipeline_files, build, n_cores, paired_end
     )
     preprocess_sample(
         patient_id, tumor_id, normal_id, tumor_bam, min_tumor,
-        min_normal, mq, sex, path, pipeline_files, build, n_cores
+        min_normal, mq, sex, path, pipeline_files, build, n_cores, paired_end
     )
 
     # Get purified methylation rate
@@ -54,7 +54,7 @@ preprocess_sample <- function(patient_id, sample_id, normal_id, bam_file, min_tu
     for (a in 1:25) {
         get_allele_counts(
             i = a, patient_id = patient_id, sample_id = sample_id, sex = sex, bam_file, mq = mq,
-            path, pipeline_files, build, n_cores, test = FALSE
+            path, pipeline_files, build, n_cores, test = FALSE, paired_end
         )
     }
 

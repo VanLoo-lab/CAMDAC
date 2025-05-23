@@ -27,7 +27,7 @@
 #' SNPs for the ith subset of RRBS loci
 
 get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
-                               path, path_to_CAMDAC, build=NULL, n_cores, test=FALSE){
+                               path, path_to_CAMDAC, build=NULL, n_cores, test=FALSE, paired_end = TRUE){
   
   if(getOption("scipen")==0){options(scipen = 999)} 
   # important to turn scientific notation off when saving genomic coordinates to .txt files
@@ -111,7 +111,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     mcols(segments_subset_2) <- NULL
     
     # Set what argument to speed up scanBam
-    whats <- c("qname", "rname", "strand", "pos", "qwidth", "mapq", "seq", "qual") # scanBamWhat()
+    whats <- c("qname", "rname", "strand", "flag", "cigar", "pos", "qwidth", "mapq", "seq", "qual") # scanBamWhat()
     idxFile <- paste(bam_file, ".bai", sep = "")
     
     if(!file.exists(idxFile)){
@@ -123,7 +123,19 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     # Set info that we want to obtain for each position
     # names(scanBamHeader(bam_file)[[1]][[1]])[1] == "chr1"
     bamFile <- BamFile(bam_file)
-    params <- Rsamtools::ScanBamParam(which=segments_subset_2, what=whats)
+    if (paired_end) {
+      bamflag <- Rsamtools::scanBamFlag(
+        isPaired = TRUE, isProperPair = TRUE,
+        isSecondaryAlignment = FALSE, isSupplementaryAlignment = FALSE,
+        isUnmappedQuery = FALSE, isDuplicate = FALSE
+      )
+    } else {
+      bamflag <- Rsamtools::scanBamFlag(
+        isSecondaryAlignment = FALSE, isSupplementaryAlignment = FALSE,
+        isUnmappedQuery = FALSE, isDuplicate = FALSE
+      )
+    }
+    params <- Rsamtools::ScanBamParam(which=segments_subset_2, what=whats, flag = bamflag, mapqFilter = mq)
     # Rsamtools::scanBamFlag(isPaired = TRUE, isFirstMateRead = TRUE)
     # which <- GRanges(seqnames = c("chrY"), ranges = IRanges(1,16569))
     
@@ -162,7 +174,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     colnames(df)[c(which(colnames(df) == "rname"),which(colnames(df) == "pos"))] <- c("chrom", "start")
     rownames(df) <- c(1:nrow(df))
   
-    cols <- c("qname", "chrom", "strand", "start", "end", "mapq", "seq", "qual")
+    cols <- c("qname", "chrom", "strand", "flag", "cigar", "start", "end", "mapq", "seq", "qual")
     Sys.sleep(1)
         
     df_bam <- df[,cols,with=FALSE] 
@@ -188,13 +200,51 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     rm(gr_bam, loci_subset)
         
     df_pileup <- data.table(qname=as.character(overlaps$qname), strand=as.character(strand(overlaps[,"gr_bam"])),
+                            bismark_flag=as.character(overlaps$flag), cigar=as.character(overlaps$cigar),
                             chrom=as.character(seqnames(overlaps[,"gr_bam"])),read.start=start(overlaps[,"gr_bam"]), 
                             read.end=end(overlaps[,"gr_bam"]),POS=overlaps$POS, width = width(overlaps[,"loci_subset"]),
                             start=start(overlaps[,"loci_subset"]),end=end(overlaps[,"loci_subset"]),ref=overlaps$ref,
                             alt=overlaps$alt,seq=overlaps$seq,qual=overlaps$qual,mq=overlaps$mapq,
                             stringsAsFactors = FALSE)
     rm(overlaps)
-        
+    
+    # Take only reads without indels or clipping to avoid wrong allele counting
+    # df_pileup <- df_pileup[grepl("^\\d+M$", cigar)]
+    # or maybe simply remove the insertion and replace deletion with gaps?
+    clean_read <- function(seq, cigar, gap = "-") {
+      cigar_ops <- GenomicAlignments::explodeCigarOps(cigar)[[1]]
+      cigar_lens <- GenomicAlignments::explodeCigarOpLengths(cigar)[[1]]
+      seq_vec <- unlist(strsplit(as.character(seq), ""))
+      clean_seq <- character()
+      seq_pos <- 1
+      for (i in seq_along(cigar_ops)) {
+        op <- cigar_ops[i]
+        length <- cigar_lens[i]
+        if (op == "M") {
+          clean_seq <- c(clean_seq, seq_vec[seq_pos:(seq_pos + length - 1)])
+          seq_pos <- seq_pos + length
+        } else if (op == "D") {
+          clean_seq <- c(clean_seq, rep(gap, length))
+        } else if (op == "I") {
+          seq_pos <- seq_pos + length
+        }
+      }
+      return(paste(clean_seq, collapse = ""))
+    }
+    
+    has_indel <- function(cigar) {
+      grepl("[ID]", cigar)
+    }
+    
+    df_pileup[has_indel(cigar), seq := mapply(clean_read, seq, cigar, "-")] # place '-' for deletion (gaps)
+    df_pileup[has_indel(cigar), qual := mapply(clean_read, qual, cigar, "!")] # place '!' for deletion (lowest quality)
+    
+    # Fix PE strand with Bismark flag
+    flag_se <- df_pileup$bismark_flag[1]
+    if (flag_se != 0 & flag_se != 16){ # PE flag
+      df_pileup$strand <- ifelse(df_pileup$bismark_flag == 83 | df_pileup$bismark_flag == 163, "-", "+")
+    }
+    
     # Make sure overlapping mates at a given position are only counted once for paired-end data
     # The qname and CpG/SNP position will be the same for overlapping RRBS paired-end reads
     cols<-c("qname","chrom","POS","width","start","ref","alt")
@@ -300,9 +350,12 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     df_pileup_alleles[, qual.dinucs := ifelse(flag2==TRUE, qual.dinucs, NA)]
     df_pileup_alleles[, c("flag1", "flag2") := NULL]
     
-    # remove reads where MQ < mq treshold (recommeded is 0)
-    if(mq > 0){df_pileup_alleles <- df_pileup_alleles[df_pileup_alleles$mq >= mq,]}
-  
+    # remove reads where MQ < mq threshold (recommended is 0)
+    # have to use different variable name for filtering; why?
+    # if(mq > 0){df_pileup_alleles <- df_pileup_alleles[df_pileup_alleles$mq >= mq, ]}
+    mq_pass <- df_pileup_alleles$mq >= mq
+    if(mq > 0){df_pileup_alleles <- df_pileup_alleles[mq_pass, ]}
+    
     # # print diganostics
     # cat("Mapping treshold MQ ≥ ",mq," applied","\nBase quality treshold BQ ≥ 20 applied\n", sep = "", 
     #     file = file_stdout_2, append = TRUE)
@@ -564,7 +617,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     # run get reads function
     df_merged <- NULL
     df_merged <- foreach(j = 1:n_cores, .combine='rbind.data.frame', 
-                         .packages=c("magrittr","Rsamtools", "GenomicRanges", "S4Vectors", 
+                         .packages=c("magrittr","Rsamtools", "GenomicRanges", "GenomicAlignments", "S4Vectors", 
                                      "IRanges", "dplyr", "data.table"),
                          .multicombine = TRUE) %dopar% {
                  df_Jth_core <- get_reads(i=i,j=j,n_cores=n_cores,bam_file=bam_file,
