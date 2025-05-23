@@ -5,6 +5,7 @@
 #' @param infiltrates Normal `CamSample` as a proxy for infiltrating normal methylation.
 #' @param origin Normal `CamSample` representing cell of origin for tumor-normal differential methylation.
 #' @param config Configuration built with `CamConfig()`.
+#' @export
 pipeline <- function(tumor, germline, infiltrates, origin, config) {
   if (config$bsseq == "wgbs"){
     pipeline_wgbs(tumor, germline, infiltrates, origin, config)

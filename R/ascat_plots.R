@@ -10,6 +10,7 @@
 #' @return Produces png files showing the logR and BAF values for tumour and germline samples
 #' @author Peter Van Loo
 #' @noRd
+#' @keywords internal
 ascat.mw.plotRawData <- function(ASCATobj, outdir, pch = 10, cex = 0.2, lim_logR = 2.5) {
   print.noquote("Plotting tumor data")
   for (i in 1:dim(ASCATobj$Tumor_LogR)[2]) {
@@ -128,6 +129,7 @@ ascat.mw.plotRawData <- function(ASCATobj, outdir, pch = 10, cex = 0.2, lim_logR
 #' @return Produces png files showing the logR and BAF values for tumour and germline samples
 #' @author Peter Van Loo
 #' @noRd
+#' @keywords internal 
 ascat.mw.plotSegmentedData <- function(ASCATobj, fname = "", outdir, lim_logR = 2) {
   for (arraynr in 1:dim(ASCATobj$Tumor_LogR)[2]) {
     outfile_t <- fs::path(outdir, paste(ASCATobj$samples[arraynr], ".ASPCF.png",

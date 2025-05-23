@@ -233,10 +233,12 @@ get_msp1_fragments <- function(dt, build, path_to_CAMDAC, outfile) {
 }
 
 
+#' @title Round2
 #' @description Round numerical values to 'n' digits
 #' @param x Numerical vector containing the numbers to round
 #' @param digits Numerical value representing the number of decimal digits to retain
 #' @return rounded numerical vector
+#' @keywords internal
 round2 <- function(x, digits) {
   ifelse(as.integer(x * (10^(digits + 1))) %% 10 >= 5, ceiling(x * (10^digits)) / (10^digits), floor(x * (10^digits)) / (10^digits))
 }

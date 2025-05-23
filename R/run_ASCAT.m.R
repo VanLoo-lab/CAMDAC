@@ -512,7 +512,7 @@ remove_low_cov_singletons = function(dt_sample_SNPs,min){
 #' @param fragments_file CAMDAC reference MspI fragments file
 #' @param replic_timing_file_prefix CAMDAC reference replication timing files path and file name prefix
 #' @param n_cores Numerical value correspdonding to the number of cores for parallel processing
-
+#' @keywords internal
 LogR_correction = function(dt_sample,dt_SNPs,build,chr_names,min_normal,
                            fragments_file,replic_timing_file_prefix,n_cores){
   

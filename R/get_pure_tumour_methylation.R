@@ -206,6 +206,7 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
 #' @param rm_sex_chrom Logical indicating if you would like to remove sex chrom from downstream analyses
 #'
 #' @return A dataframe for each sample_id with the copy number calls added
+#' @keywords inter
 annotate_copy_number <- function (dt_sample, seg, rm_sex_chrom=FALSE) {
   
   # Choose the columns that you need to simplify the objects in the subsequent computations
@@ -330,6 +331,7 @@ return(dt)
 # Computes highest density interval from a sample of representative values,
 #   estimated as shortest credible interval for a unimodal distribution
 # Arguments:
+#' @title HDI of MCMC
 #' @param M_b counts methylated in the tumour
 #' @param UM_b counts unmethylated in the tumour
 #' @param M_n counts methylated in the normal
@@ -341,6 +343,7 @@ return(dt)
 #' credMass is a scalar between 0 and 1, indicating the mass within the
 #' credible interval that is to be estimated.
 #' @return Value: HDIlim is a vector containing the limits of the HDI
+#' @keywords internal
 HDIofMCMC = function(M_b,UM_b,M_n,UM_n,p,CN,CN_n,credMass=0.99) {
   
   # sampleVec is a vector of representative values for the methylation rate 
@@ -375,11 +378,12 @@ HDIofMCMC = function(M_b,UM_b,M_n,UM_n,p,CN,CN_n,credMass=0.99) {
 # Plot 2d density comparing methylation rates
 # 
 # Arguments:
+#' @title plot_2d_density
 #' @param dt Data table with methylation information per CpG
 #' @param path Character path variable pointing to the desired working directory.
 #' This is where the output will be stored and should be constant for all CAMDAC functions.
 #' @return NULL
-
+#' @keywords internal
 plot_2d_density <- function(dt, path){
 
   # get relevant colummn

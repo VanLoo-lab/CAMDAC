@@ -20,3 +20,11 @@ articles:
   - questions
   - technical
   - contributing
+
+references:
+- title: functions
+- contents:
+  - CamSample
+  - CamConfig
+  - pipeline
+  - attach_output

@@ -44,7 +44,6 @@
 #' cov_n is the total CpG methylation informative reads counts (M_n+UM_n)
 #'
 #' @return GRanges object in .RData file
-
 run_methylation_data_processing <- function (patient_id,sample_id,
                                              normal_infiltrates_proxy_id,
                                              normal_origin_proxy_id,
@@ -443,8 +442,7 @@ plot_methylation_info <- function (df_sample, outfile) {
     #' @param dt Data.table that the grob will be made out of
     #' @param title_v Title for display
     #' @param fontsize_v Fontsize for title. Default is 14 (goes well with my_theme)
-    #' @value gtable object
-    #' @export
+    #' 
     
     ## Table
     table_grob <- gridExtra::tableGrob(dt, rows = rep('', nrow(dt)), theme = ttheme_minimal(base_size=8,vjust=0, hjust=0))

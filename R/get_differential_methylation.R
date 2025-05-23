@@ -614,11 +614,12 @@ get_DMRs <- function (path, patient_id, sample_id, dt, anno_list,
 
 # Plot summary methylation information with annotated information
 # Arguments:
+#' @title Plot methylation information
 #' @param dt Data table with methylation information per CpG
 #' @param path Character path variable pointing to the desired working directory.
 #' @param bulk Logical determining whether the bulk or purified tumour is to be plotted
 #' @return NULL
-
+#' @keywords internal
 plot_methylation_info_with_anno <- function(dt, path, bulk){
 
  # Set color code for hyper/hypo 
