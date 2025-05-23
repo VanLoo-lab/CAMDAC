@@ -96,33 +96,9 @@
         </td>
         <td><p>Build CAMDAC sample object</p></td>
       </tr><tr><td>
-          <p><code><a href="LogR_correction.html">LogR_correction()</a></code> </p>
-        </td>
-        <td><p>LogR_correction</p></td>
-      </tr><tr><td>
-          <p><code><a href="annotate_copy_number.html">annotate_copy_number()</a></code> </p>
-        </td>
-        <td><p>Assign copy number calls</p></td>
-      </tr><tr><td>
-          <p><code><a href="ascat.m.plotRawData.html">ascat.m.plotRawData()</a></code> </p>
-        </td>
-        <td><p>ascat.m.plotRawData</p></td>
-      </tr><tr><td>
-          <p><code><a href="ascat.m.plotSegmentedData.html">ascat.m.plotSegmentedData()</a></code> </p>
-        </td>
-        <td><p>ascat.m.plotSegmentedData</p></td>
-      </tr><tr><td>
-          <p><code><a href="asm_pipeline.html">asm_pipeline()</a></code> </p>
-        </td>
-        <td><p>Run allele-specific methylation analysis pipeline</p></td>
-      </tr><tr><td>
           <p><code><a href="attach_output.html">attach_output()</a></code> </p>
         </td>
         <td><p>Manually assign output file to CAMDAC sample</p></td>
-      </tr><tr><td>
-          <p><code><a href="bin_CpGs.html">bin_CpGs()</a></code> </p>
-        </td>
-        <td><p>Cluster CpGs into annotated bins</p></td>
       </tr><tr><td>
           <p><code><a href="cmain_bind_snps.html">cmain_bind_snps()</a></code> </p>
         </td>
@@ -164,45 +140,9 @@
         </td>
         <td><p>Run battenberg</p></td>
       </tr><tr><td>
-          <p><code><a href="compute_tumour_methylome.html">compute_tumour_methylome()</a></code> </p>
-        </td>
-        <td><p>Compute the tumour methylation rate</p></td>
-      </tr><tr><td>
-          <p><code><a href="cwrap_asm_get_allele_counts.html">cwrap_asm_get_allele_counts()</a></code> </p>
-        </td>
-        <td><p>Count alleles for reads phased to SNPs in a BAM file</p></td>
-      </tr><tr><td>
           <p><code><a href="download_pipeline_files.html">download_pipeline_files()</a></code> </p>
         </td>
         <td><p>Download CAMDAC pipeline files</p></td>
-      </tr><tr><td>
-          <p><code><a href="format_methylation_df.html">format_methylation_df()</a></code> </p>
-        </td>
-        <td><p>Format methylation rates <code>format_methylation_df</code></p></td>
-      </tr><tr><td>
-          <p><code><a href="format_output.html">format_output()</a></code> </p>
-        </td>
-        <td><p>Format output nucleotide counts <code>format_output</code></p></td>
-      </tr><tr><td>
-          <p><code><a href="get_DMPs.html">get_DMPs()</a></code> </p>
-        </td>
-        <td><p>Get DMPs</p></td>
-      </tr><tr><td>
-          <p><code><a href="get_DMRs.html">get_DMRs()</a></code> </p>
-        </td>
-        <td><p>Assign bins</p></td>
-      </tr><tr><td>
-          <p><code><a href="get_allele_counts.html">get_allele_counts()</a></code> </p>
-        </td>
-        <td><p>Compile allele counts at SNPs and at CpGs for bisulfite sequencing data <code>get_allele_counts</code></p></td>
-      </tr><tr><td>
-          <p><code><a href="get_differential_methylation.html">get_differential_methylation()</a></code> </p>
-        </td>
-        <td><p>Perform differential methylation analysis on deconvolute tumour methylation rates</p></td>
-      </tr><tr><td>
-          <p><code><a href="get_msp1_fragments.html">get_msp1_fragments()</a></code> </p>
-        </td>
-        <td><p>get_msp1_fragments</p></td>
       </tr><tr><td>
           <p><code><a href="get_pure_tumour_methylation.html">get_pure_tumour_methylation()</a></code> </p>
         </td>
@@ -218,7 +158,7 @@
       </tr><tr><td>
           <p><code><a href="load_cna_data.html">load_cna_data()</a></code> </p>
         </td>
-        <td><p>Parse ASCAT and bb output directories to load CNA data</p></td>
+        <td><p>Parse ASCAT and Battenberg output directories to load CNA data</p></td>
       </tr><tr><td>
           <p><code><a href="load_panel_ac_files.html">load_panel_ac_files()</a></code> </p>
         </td>
@@ -238,15 +178,15 @@
       </tr><tr><td>
           <p><code><a href="pipeline.html">pipeline()</a></code> </p>
         </td>
-        <td><p>CAMDAC tumor-normal pipeline</p></td>
+        <td><p>CAMDAC analysis pipeline</p></td>
       </tr><tr><td>
-          <p><code><a href="pipeline_tumor_normal.html">pipeline_tumor_normal()</a></code> </p>
+          <p><code><a href="pipeline_rrbs.html">pipeline_rrbs()</a></code> </p>
         </td>
         <td><p>Call CAMDAC for a tumor and patient-matched normal sample</p></td>
       </tr><tr><td>
-          <p><code><a href="plot_BAF_and_LogR.html">plot_BAF_and_LogR()</a></code> </p>
+          <p><code><a href="pipeline_wgbs.html">pipeline_wgbs()</a></code> </p>
         </td>
-        <td><p>Plot BAF and logR profiles with ggplot</p></td>
+        <td><p>Run CAMDAC WGBS analysis on a bulk tumor and patient-matched tissue-matched tumor-adjacent normal sample.</p></td>
       </tr><tr><td>
           <p><code><a href="plot_SNP_info.html">plot_SNP_info()</a></code> </p>
         </td>
@@ -260,13 +200,13 @@
         </td>
         <td><p>Plot plots SNP QC</p></td>
       </tr><tr><td>
-          <p><code><a href="preprocess.html">preprocess()</a></code> </p>
-        </td>
-        <td><p>Preprocess a list of CamSample objects for analysis</p></td>
-      </tr><tr><td>
           <p><code><a href="preprocess_asm.html">preprocess_asm()</a></code> </p>
         </td>
         <td><p>Preprocess a list of CamSample objects for ASM analysis</p></td>
+      </tr><tr><td>
+          <p><code><a href="preprocess_wgbs.html">preprocess_wgbs()</a></code> </p>
+        </td>
+        <td><p>Preprocess a list of CamSample objects for analysis</p></td>
       </tr><tr><td>
           <p><code><a href="remove_low_cov_singletons.html">remove_low_cov_singletons()</a></code> </p>
         </td>

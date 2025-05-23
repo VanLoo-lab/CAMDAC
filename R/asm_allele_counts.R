@@ -8,7 +8,7 @@
 #' @param min_cov Minimum coverage to consider a read
 #' @return A list with three slots: stats, qnames and asm_cg. stats describes counts of reads phased,
 #'   qnames determines which SNPs each read was phased to and asm_cg is the data table with read counts
-# Approx 1 minute for 5K SNPs on one core
+#' @keywords internal
 cwrap_asm_get_allele_counts <- function(
     bam_file, snps_gr, loci_dt,
     paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov) {

@@ -275,6 +275,7 @@ if(!sample_id%in%normal_ids){
 #' @param trim Logical value establishing whether regions with extremely high coverage be trimmed or not
 #'
 #' @return A GRanges object with all the CpG loci, their coverage, counts methylated and methylation rate
+#' @keywords internal
 format_methylation_df <- function (dt,sample_id,normal_ids,path_output,n_cores,suffix,trim=FALSE) {
   
   # Get total cov (UM includes hetorozygous SNP non-CpG allele counts)

@@ -42,7 +42,7 @@
 #' enhancer (vista and FANTOM5 annotation)
 #'  
 #' @return Biologically significant DMPs, DMRs
-
+#' @keywords internal
 get_differential_methylation <-
     function(patient_id,sample_id,sex,normal_origin_proxy_id,
              path,path_to_CAMDAC,build,
@@ -254,6 +254,7 @@ get_differential_methylation <-
 #' 
 #' @return A data.table object with all the CpG loci, their coverage, counts 
 #' methylated and methylation rate
+#' @keywords internal
 get_DMPs <- function (path, patient_id, sample_id, df, prob=0.99, n_cores) {
   
   # Evan Miller's closed form solution for the probability that
@@ -317,6 +318,7 @@ get_DMPs <- function (path, patient_id, sample_id, df, prob=0.99, n_cores) {
 #' @param n_cores number of cores for parallel processing
 #'  
 #' @return A dataframe for each sample_id with the copy number calls added
+#' @keywords internal
 bin_CpGs <- function (path, patient_id, sample_id, dt, anno_list, n_cores) {
 
   # Ensure dt is a data.table object
@@ -394,6 +396,7 @@ bin_CpGs <- function (path, patient_id, sample_id, dt, anno_list, n_cores) {
 #' @param n_cores number of cores for parallel processing
 #'  
 #' @return A dataframe for each sample_id with the copy number calls added
+#' @keywords internal
 get_DMRs <- function (path, patient_id, sample_id, dt, anno_list,
                       min_DMP_counts, min_consec_DMP, n_cores, bulk=FALSE) {
 

@@ -115,7 +115,7 @@ helper_camdac_pileup <- function(bam_file, seg, loci_dt) {
 }
 
 
-#' Parse ASCAT and bb output directories to load CNA data
+#' Parse ASCAT and Battenberg output directories to load CNA data
 #'
 #'  See "annotate_copy_number" func
 #' A function required to load copy number for a tumour sample from camdac, either ascat or bb,

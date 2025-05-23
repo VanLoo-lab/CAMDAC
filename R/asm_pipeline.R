@@ -5,6 +5,7 @@
 #' @param origin. CamSample object for cell of origin sample. Used for differential methylation.
 #' @param config. CamConfig object.
 #' @export
+#' @keywords internal
 asm_pipeline <- function(tumor, germline = NULL, infiltrates = NULL, origin = NULL, config) {
   # Log
   loginfo("CAMDAC:::asm_pipeline start for %s", tumor$patient_id)

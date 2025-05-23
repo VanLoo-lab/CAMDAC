@@ -20,7 +20,7 @@
 #' is desired in addition to GRanges object in .RData file
 #'
 #' @return Concatenated SNP and CpG information
-
+#' @keywords internal
 format_output <- function(patient_id, sample_id, sex,
                           is_normal = FALSE,
                           path, path_to_CAMDAC,
@@ -105,7 +105,7 @@ format_output <- function(patient_id, sample_id, sex,
 #' @param outfile character srting with output filename
 #'
 #' @author elizabeth larose cadieux
-
+#' @keywords internal
 get_msp1_fragments <- function(dt, build, path_to_CAMDAC, outfile) {
   # Set build to to assembly version disregarging USCS vs. Ensembl
   if (build == "GRCH37") {

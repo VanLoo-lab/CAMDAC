@@ -4,6 +4,7 @@
 
 #' Calculate HDI interval width
 #' @noRd
+#' @keywords internal
 intervalWidth <- function(lowTailPr, ICDFname, credMass, ...) {
   ICDFname(credMass + lowTailPr, ...) - ICDFname(lowTailPr, ...)
 }

@@ -25,7 +25,7 @@
 #' 
 #' @return One .fst file including methylation info at CpGs and BAF and depth of coverage at
 #' SNPs for the ith subset of RRBS loci
-
+#' @keywords internal
 get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
                                path, path_to_CAMDAC, build=NULL, n_cores, test=FALSE, paired_end = TRUE){
   

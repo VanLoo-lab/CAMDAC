@@ -725,6 +725,7 @@ LogR_correction = function(dt_sample,dt_SNPs,build,chr_names,min_normal,
 #' @return Produces png files showing the logR and BAF values for tumour and germline samples
 #' @author Peter Van Loo
 #' @export
+#' @keywords internal
 
 ascat.m.plotSegmentedData <- function (ASCATobj, lim_logR=2) 
 {
@@ -787,7 +788,7 @@ ascat.m.plotSegmentedData <- function (ASCATobj, lim_logR=2)
 #' 
 #' @return Produces png files showing the logR and BAF values for tumour and germline samples
 #' @author Peter Van Loo
-#' @export
+#' @keywords internal
 
 ascat.m.plotRawData = function(ASCATobj, raw_LogR, pch, cex, lim_logR) {
   
@@ -893,6 +894,7 @@ ascat.m.plotRawData = function(ASCATobj, raw_LogR, pch, cex, lim_logR) {
 #' Saves a pdf w/ methylation rate distribution, biases at polymorphic and 
 #' non-polymorphic CG/CCGG and coverage distribution 
 #' @author Elizabeth Larose Cadieux
+#' @keywords internal  
 plot_BAF_and_LogR <- function (dt, outfile, downsample=1E5) {
   
   # Only plot heterozygous SNPs

@@ -206,7 +206,7 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
 #' @param rm_sex_chrom Logical indicating if you would like to remove sex chrom from downstream analyses
 #'
 #' @return A dataframe for each sample_id with the copy number calls added
-#' @keywords inter
+#' @keywords internal
 annotate_copy_number <- function (dt_sample, seg, rm_sex_chrom=FALSE) {
   
   # Choose the columns that you need to simplify the objects in the subsequent computations
@@ -252,6 +252,7 @@ annotate_copy_number <- function (dt_sample, seg, rm_sex_chrom=FALSE) {
 #' @param build Character variable corresponding to the reference genome used for alignment.
 #'
 #' @return A dataframe for each sample_id with the tumour methylome added
+#' @keywords internal
 compute_tumour_methylome <- function (dt, p, min_cov_t = 3, sex, build) {
 
 # convert factors to characters

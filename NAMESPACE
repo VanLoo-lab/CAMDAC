@@ -2,7 +2,6 @@
 
 export(CamConfig)
 export(CamSample)
-export(ascat.m.plotRawData)
 export(ascat.m.plotSegmentedData)
 export(asm_pipeline)
 export(attach_output)
