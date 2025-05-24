@@ -44,6 +44,7 @@
 #' cov_n is the total CpG methylation informative reads counts (M_n+UM_n)
 #'
 #' @return GRanges object in .RData file
+#' @keywords internal
 run_methylation_data_processing <- function (patient_id,sample_id,
                                              normal_infiltrates_proxy_id,
                                              normal_origin_proxy_id,
@@ -365,7 +366,8 @@ format_methylation_df <- function (dt,sample_id,normal_ids,path_output,n_cores,s
 }
 
 # Arguments:
-#'  @param ICDFname is R's name for the inverse cumulative density function
+#' Calculate intervalWidth_r
+#' @param ICDFname is R's name for the inverse cumulative density function
 #' of the distribution.
 #' @param credMass is the desired mass of the HDI region.
 #' @param tol is passed to R's optimize function, 
@@ -378,9 +380,9 @@ format_methylation_df <- function (dt,sample_id,normal_ids,path_output,n_cores,s
 #' Notice that the parameters of the ICDFname must be explicitly named;
 #' e.g., HDIofICDF( qbeta , 30+1 , 12+1 ) does not work.
 #' Adapted and corrected from Greg Snow's TeachingDemos package.
-
-# Source fct outside of loop to speed up code
-intervalWidth =  function(lowTailPr,ICDFname,credMass, ... ) {
+#' Source fct outside of loop to speed up code
+#' @keywords internal
+intervalWidth_r =  function(lowTailPr,ICDFname,credMass, ... ) {
 ICDFname(credMass+lowTailPr, ... ) - ICDFname(lowTailPr, ... )
 }
 
@@ -388,7 +390,7 @@ HDIofICDF = function(ICDFname, credMass=0.99 , tol=1e-4, ... ) {
   
   incredMass = 1.0 - credMass
   
-  optInfo = optimize(f = intervalWidth, interval = c(0,incredMass) , ICDFname=ICDFname , credMass=credMass , tol=tol , ... )
+  optInfo = optimize(f = intervalWidth_r, interval = c(0,incredMass) , ICDFname=ICDFname , credMass=credMass , tol=tol , ... )
   
   HDIlowTailPr = optInfo$minimum
   vec <- setNames(object = ICDFname(c(HDIlowTailPr, credMass+HDIlowTailPr), ... ), nm = c("low", "high"))
@@ -403,6 +405,7 @@ HDIofICDF = function(ICDFname, credMass=0.99 , tol=1e-4, ... ) {
 #' @param outfile character srting with output pdf filename
 #' 
 #' @return pdf w/ methylation rate distribution, biases at polymorphic and non-polymorphic CG/CCGG and coverage distribution 
+#' @keywords internal 
 plot_methylation_info <- function (df_sample, outfile) {
   
   alph <- ifelse(df_sample$class %in% c("SNP CpG", "SNP CCGG"), "SNP", "non-SNP")

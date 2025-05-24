@@ -17,13 +17,12 @@ pipeline <- function(tumor, germline, infiltrates, origin, config) {
 }
 
 #' Run CAMDAC WGBS analysis on a bulk tumor and patient-matched tissue-matched tumor-adjacent normal sample.
-#'
 #' @param tumor Tumor `CamSample` object for deconvultion.
 #' @param germline Patient-matched normal `CamSample` object. May be NULL if `tumor` has CNA calls already.
 #' @param infiltrates Normal `CamSample` as a proxy for infiltrating normal methylation.
 #' @param origin Normal `CamSample` representing cell of origin for tumor-normal differential methylation.
 #' @param config Configuration built with `CamConfig()`.
-#' @export
+#' @keywords internal
 pipeline_wgbs <- function(tumor, germline = NULL, infiltrates = NULL, origin = NULL, config) {
   # Log
   loginfo("CAMDAC:::pipeline start for %s", tumor$patient_id)
@@ -73,28 +72,12 @@ preprocess_wgbs <- function(sample_list, config) {
 
 
 #' Call CAMDAC for a tumor and patient-matched normal sample
-#' 
 #' @param tumor Tumor `CamSample` object for deconvultion.
 #' @param germline Patient-matched normal `CamSample` object. May be NULL if `tumor` has CNA calls already.
 #' @param infiltrates Normal `CamSample` as a proxy for infiltrating normal methylation.
 #' @param origin Normal `CamSample` representing cell of origin for tumor-normal differential methylation.
 #' @param config Configuration built with `CamConfig()`.
-#' @export
-#'
-#' @param patient_id character. Patient identifier
-#' @param tumor_id character. Tumor sample identifier
-#' @param normal_id character. Normal sample identifier
-#' @param tumor_bam character. Full path to tumor bam file
-#' @param normal_bam character. Full path to normal bam file
-#' @param sex character. Patient sex: "XX" for female or "XY" for male
-#' @param path character. Full path to CAMDAC output directory
-#' @param pipeline_files character. Full path to parent directory containing CAMDAC pipeline_files
-#' @param build character. Genome build: "hg19" or "hg38"
-#' @param min_tumor integer. Minimum read filter for tumor samples
-#' @param min_normal integer. Minimum read filter for normal samples
-#' @param n_cores integer. Number of cores to use for parallel processing
-#' @param mq integer. Minimum mapping quality filter
-#' @export
+#' @keywords internal
 pipeline_rrbs <- function(tumor, germline, infiltrates, origin, config){
 
   # Preprocess RRBS normal samples

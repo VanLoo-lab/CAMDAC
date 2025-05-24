@@ -1,6 +1,8 @@
 # ASCAT-WGBS
 
 # Sort genomic loci
+#' @title sort_genomic_dt
+#' @keywords internal
 sort_genomic_dt <- function(dt, with_chr = F) {
   if (with_chr) {
     fact_levels <- paste0("chr", c(1:22, "X", "Y"))

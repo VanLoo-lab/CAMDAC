@@ -32,7 +32,7 @@
 #' enhancer (vista and FANTOM5 annotation)
 #'
 #' @return CAMDAC purified tumour methylation rates
-
+#' @keywords internal
 get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
                                         normal_infiltrates_proxy_id,
                                         path,path_to_CAMDAC,build,

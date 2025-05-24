@@ -31,7 +31,7 @@
 #' @param reference_panel_coverage Path to the reference panel for the coverage.
 #'
 #' @return Three text files with all the CpG loci and their SNP and/or CpG methylation info 
-
+#' @keywords internal
 run_ASCAT.m <- function (patient_id,sample_id,sex,
                          patient_matched_normal_id=NULL,
                          path,path_to_CAMDAC,build,
@@ -468,6 +468,7 @@ split_genome_RRBS = function(SNPpos) {
 #' @title remove_low_cov_singletons
 #' @description Remove low coverage singletons outliers
 #' @author Elizabeth larose cadieux
+#' @keywords internal
 remove_low_cov_singletons = function(dt_sample_SNPs,min){
 
   # subselect relevant columns
@@ -959,6 +960,7 @@ plot_BAF_and_LogR <- function (dt, outfile, downsample=1E5) {
 #' 
 #' @return pdf
 #' @author Elizabeth Larose Cadieux
+#' @keywords internal
 plot_SNP_info <- function (dt, outfile, min) {
     
   # Total INFORMATIVE counts at SNPs
@@ -1083,6 +1085,7 @@ plot_SNP_info <- function (dt, outfile, min) {
 #' 
 #' @return pdf
 #' @author Elizabeth Larose Cadieux
+#' @keywords internal
 plot_normal_SNP_info <- function (dt, outfile, min) {
   tmp <- dt[BAF>=0.15 & BAF <= 0.85 & !is.na(BAF),]
   tmp2 <- table(cut(tmp$BAF, breaks = (0.85-0.15)/0.01))
