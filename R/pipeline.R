@@ -1,9 +1,9 @@
 #' CAMDAC analysis pipeline
 #' 
-#' @param tumor Tumor `CamSample` object for deconvultion.
-#' @param germline Patient-matched normal `CamSample` object. May be NULL if `tumor` has CNA calls already.
-#' @param infiltrates Normal `CamSample` as a proxy for infiltrating normal methylation.
-#' @param origin Normal `CamSample` representing cell of origin for tumor-normal differential methylation.
+#' @param tumor Tumor `CamSample()` object for deconvultion.
+#' @param germline Patient-matched normal `CamSample()` object. May be NULL if `tumor` has CNA calls already.
+#' @param infiltrates Normal `CamSample()` as a proxy for infiltrating normal methylation.
+#' @param origin Normal `CamSample()` representing cell of origin for tumor-normal differential methylation.
 #' @param config Configuration built with `CamConfig()`.
 #' @export
 pipeline <- function(tumor, germline, infiltrates, origin, config) {

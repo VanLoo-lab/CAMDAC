@@ -21,6 +21,7 @@ Visit <https://vanloo-lab.github.io/CAMDAC/>.
 CAMDAC can be installed from an R console:
 
 ``` r
+install.packages("remotes")
 remotes::install_github("VanLoo-lab/CAMDAC")
 ```
 
@@ -71,9 +72,8 @@ To contribute to CAMDAC, fork [the
 repository](https://github.com/VanLoo-lab/CAMDAC) and install the
 development dependencies with `remotes::install_dev_deps('.')`.
 
-After making your changes, run the build and test commands listed in the
-documentation under
-[“contributing”](https://vanloo-lab.github.io/CAMDAC/articles/contributing.html).
+After making your changes, run the build and test commands listed in
+`vignette("contributing")`.
 
 Finally, submit a [pull
 request](https://github.com/VanLoo-lab/CAMDAC/pulls) with the changes on

@@ -15,83 +15,36 @@ knitr::opts_chunk$set(
 )
 ```
 
-The CAMDAC pipeline accepts raw data for each of the following `CamSample` objects:
+The entry-point to CAMDAC is the `pipeline()` function which expects a `CamConfig()` object and four `CamSample()` objects representing:
 
-1. `tumor` - The bulk tumor sample you  to deconvolve
-2. `germline` (optional) - Patient-matched normal data for allele-specific copy number calling. Alternatively, see `using external CNA solutions` below.
-3. `infiltrates` - Bulk methylome representing the normal infiltrating cells for deconvolution. E.g. normal adjacent tissue.
-4. `origin` (optional) - Bulk methylome for differential methylation calling, representing the normal cell type from which the tumour originated.
+* **tumor** : The bulk tumor sample to deconvolve
+* **germline** : The germline normal data for copy number calling
+* **infiltrates** : A proxy for the normal infiltrating cells
+* **origin** : A proxy for the normal cell from which the tumour originated
 
-The same normal sample may be  given as the germline, infiltrates or origin, depending on your experimental design.
-
-## Run the CAMDAC pipeline
+The same normal sample may be passed repeatedly for the germline, infiltrates or origin, depending on your experimental design. See `?pipeline` for more details.
 
 ```{r pipeline}
 library(CAMDAC)
 
-# Load test data
-b_tumor <- system.file("testdata", "tumor.bam", package = "CAMDAC")
-b_normal <- system.file("testdata", "normal.bam", package = "CAMDAC")
+# Path to BAM files
+tumor_bam <- system.file("testdata", "tumor.bam", package = "CAMDAC")
+normal_bam <- system.file("testdata", "normal.bam", package = "CAMDAC")
 
-tumor <- CamSample(id="T", sex="XY", bam=b_tumor)
-normal <- CamSample(id="N", sex="XY", bam=b_normal)
-config <- CamConfig(outdir="./results", bsseq="wgbs", lib="pe", build="hg38", n_cores=10)
+# Select samples for basic tumor-normal analysis
+tumor <- CamSample(id = "T", sex = "XY", bam = tumor_bam)
+normal <- CamSample(id = "N", sex = "XY", bam = normal_bam)
+
+# Configure pipeline
 config <- CamConfig(
-  outdir="./results_test", bsseq="wgbs", lib="pe",
-  build="hg38", n_cores=10, 
-  cna_caller="ascat", # Specific for test data
-  min_cov=1, # Specific for test data
-  cna_settings=list("rho"=.5, "psi"=2) # Specific for test data
-)
-```
-
-When defining `CamSample` objects, samples must have a unique `id` value between runs otherwise data will be overwritten. Alternatively, users may use the `patient` argument to separate samples the same `id`.
-
-To run the pipeline:
-
-```
-pipeline(
-    tumor=tumor,
-    germline=normal,
-    infiltrates=normal,
-    origin=normal,
-    config=config
-)
-```
-
-## Run the CAMDAC pipeline on test WGBS data
-
-The following setup has been created to enable WGBS pipeline testing:
-```{r}
-# Run test
-tbam <- system.file(
-  "testdata", "tumour_beds_min.sorted.bam", package = "CAMDAC"
-)
-nbam <- system.file(
-  "testdata", "normal_beds_min.sorted.bam", package = "CAMDAC"
-)
-regions <- system.file("testdata", "test_beds_segments.bed", package = "CAMDAC")
-
-tumor <- CamSample(id = "T", sex = "XY", bam = tbam)
-normal <- CamSample(id = "N", sex = "XY", bam = nbam)
-
-config <- CamConfig(
-    refs = fs::path("/app/pipeline_files/wgbs"),
-    outdir = "./result_test_battenberg/",
-    bsseq = "wgbs",
-    build = "hg38",
-    lib = "pe",
-    regions = regions,
-    cna_caller = 'battenberg',
-    cna_settings = list(
-      'beaglemaxmem' = 4
-    ),
-    n_cores = 1,
-    min_cov = 1 # Required to capture sufficient SNPs from test
+  outdir = "./results", bsseq = "rrbs", lib = "pe",
+  build = "hg38", refs = "./refs", n_cores = 1, cna_caller = 'ascat'
 )
 
-pipeline(
+# Run CAMDAC
+CAMDAC::pipeline(
   tumor, germline = normal, infiltrates = normal, origin = normal, config
 )
 ```
+
 Next, see `vignette("output")` for a detailed summary of CAMDAC results files.

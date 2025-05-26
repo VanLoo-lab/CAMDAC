@@ -17,28 +17,25 @@ knitr::opts_chunk$set(
 
 ## Install CAMDAC
 
-From within R, install CAMDAC from github:
+From the R console, install CAMDAC from github:
 
-```{r install, eval=FALSE}
-library(remotes)
-remotes::install_github("VanLoo-lab/CAMDAC@wgbs")
+```{r}
+install.packages("remotes")
+remotes::install_github("VanLoo-lab/CAMDAC")
 ```
 
-## Prepare pipeline files
+## Download pipeline reference files
 
-CAMDAC requires pre-made annotation files to run, which you can download by running:
+CAMDAC requires custom annotation files for RRBS and WGBS analysis, available [at the Zenodo repository: (10565423)](https://zenodo.org/records/10565423). An R convenience function is provided to download these files:
 
-```{r download}
-CAMDAC::download_pipeline_files("wgbs", directory="./pipeline_files")
+```{r}
+CAMDAC::download_pipeline_files(bsseq = "rrbs", directory = "./refs")
+CAMDAC::download_pipeline_files(bsseq = "wgbs", directory = "./refs")
 ```
 
 Now, you're ready to run CAMDAC! Next, see `vignette("pipeline")`.
 
-### Are there external dependencies?
-
-CAMDAC runs Battenberg to call copy number variants in WGBS mode. This requires requires the `java` command-line utility to be available in the system path. Otherwise, you can download Java from [https://openjdk.org/](https://openjdk.org/).
-
-### How does CAMDAC find pipeline files?
+### Reference file search priority
 
 CAMDAC searches for pipeline files in the following order:
 
@@ -49,8 +46,15 @@ CAMDAC searches for pipeline files in the following order:
 We recommend that you set the environment variable `CAMDAC_PIPELINE_FILES` to the directory where you downloaded the files. This will allow CAMDAC to find the files automatically whenever you load R.
 
 From a Unix terminal:
+
 > echo "CAMDAC_PIPELINE_FILES=$(realpath R)" >> ~/.Renviron
 
-### I have an error when downloading pipeline files
+## External dependencies
 
-If the download command fails (e.g. due to a firewall), you can manually download the files from the endpoints listed in `inst/extdata/pipeline_files_urls.txt`. Data are stored as tar.gz files, therefore you will need to unpack them with the command `tar -xvzf <file>`.
+**CAMDAC-RRBS**
+
+* None
+
+**CAMDAC WGBS**
+
+* `java`:  To run CAMDAC on WGBS data, we leverage Battenberg which requires the `java` command-line utility. Download Java from [https://openjdk.org/](https://openjdk.org/).

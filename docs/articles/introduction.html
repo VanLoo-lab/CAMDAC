@@ -65,12 +65,6 @@
       <a href="../articles/visualisation.html">Visualisation</a>
     </li>
     <li>
-      <a href="../articles/questions.html">FAQs</a>
-    </li>
-    <li>
-      <a href="../articles/technical.html">Technical</a>
-    </li>
-    <li>
       <a href="../articles/panels.html">DNA methylation panels</a>
     </li>
     <li>
@@ -81,6 +75,15 @@
     </li>
     <li>
       <a href="../articles/deconvolution.html">CAMDAC Deconvolution</a>
+    </li>
+    <li>
+      <a href="../articles/questions.html">FAQs</a>
+    </li>
+    <li>
+      <a href="../articles/technical.html">Technical</a>
+    </li>
+    <li>
+      <a href="../articles/contributing.html">contributing</a>
     </li>
   </ul>
 </li>
@@ -114,26 +117,22 @@
 <div class="section level3">
 <h3 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h3>
-<p>Solid tumours typically contain both cancer and admixed normal contaminating cells, which confounds the analysis of bulk cancer methylomes from bisulfite sequencing. To address these issues we present CAMDAC, our tool for <strong>C</strong>opy-number <strong>A</strong>ware <strong>M</strong>ethylation <strong>D</strong>econvolution <strong>A</strong>nalysis of <strong>C</strong>ancer.</p>
-<p>In brief, we show that the bulk tumour methylation rate, <span class="math inline">\(m_b\)</span>, can be expressed as a tumour purity and copy number weighted sum of the methylation rates of the tumour cells and normal contaminants (<strong>Figure 1</strong>). We derive purity and copy numbers directly from bulk tumour RRBS data leveraging somatic copy number aberration calls from ASCAT or Battenberg. We use bulk tissue- and sex-matched normal samples as proxy for the normal tumour-infiltrating cells, <span class="math inline">\(m_{n,i}\)</span>, and obtain <span class="math inline">\(m_b\)</span> from the bulk tumour data itself. This provides all the necessary information to extract the pure tumour methylation rate, <span class="math inline">\(m_t\)</span>.</p>
+<p>Solid tumours typically contain both cancer and admixed normal contaminating cells, which confounds the analysis of bulk cancer methylomes from bisulfite sequencing. To address these issues we present CAMDAC, a tool for <strong>C</strong>opy-number <strong>A</strong>ware <strong>M</strong>ethylation <strong>D</strong>econvolution <strong>A</strong>nalysis of <strong>C</strong>ancer.</p>
+<p>In brief, we show that the bulk tumour methylation rate (<span class="math inline">\(m_b\)</span>) can be expressed as a weighted sum of the methylation rates of the tumour cells and normal contaminants, accounting for tumour purity and copy number (<strong>Figure 1</strong>). We derive purity and copy number estimates directly from bulk tumour RRBS data, leveraging somatic copy number aberration calls from ASCAT or Battenberg. We use bulk tissue- and sex-matched normal samples as proxy for the normal tumour-infiltrating cells (<span class="math inline">\(m_{n,i}\)</span>), and obtain <span class="math inline">\(m_b\)</span> from the bulk tumour data itself. This provides all the necessary information to extract the pure tumour methylation rate (<span class="math inline">\(m_t\)</span>).</p>
 <center>
 <div class="figure">
 <img src="images/CAMDAC_manual_fig1.png" style="width:85.0%" alt=""><p class="caption"><strong>Figure 1.</strong> CAMDAC principles and key variables. Adapted from Larose Cadieux <em>et al.</em>, 2020.</p>
 </div>
 </center>
-<p><br> In <a href="https://doi.org/10.1101/2020.11.03.366252" class="external-link">Larose Cadieux <em>et al.</em>, 2020</a><sup>1</sup>, we obtained bulk tumour RRBS data from surgically resected lung cancers as well as patient-matched tumour-adjacent normal lung samples. These normals were used for copy number profiling as well as proxy for both the normal tumour-infiltrating cells, <span class="math inline">\(m_{n,i}\)</span>, and the tumour cell of origin, <span class="math inline">\(m_{n,o}\)</span>. A substitute for <span class="math inline">\(m_{n,i}\)</span> is needed for bulk tumour methylation rate deconvolution and <span class="math inline">\(m_{n,o}\)</span> is required for differential methylation analyses (<strong>Figure 2</strong>). In non-small cell lung cancer, we showed that the patient-matched tumour-adjacent normal is a suitable proxy for all normals, i.e. <span class="math inline">\(m_{n,i} \approx m_{n,o}\)</span> <a href="https://doi.org/10.1101/2020.11.03.366252" class="external-link">(Larose Cadieux et <em>al.</em>, 2020)</a><sup>1</sup>.</p>
+<p><br>In <a href="https://doi.org/10.1101/2020.11.03.366252" class="external-link">Larose Cadieux <em>et al.</em>, 2020</a>, we obtained bulk tumour RRBS data from surgically resected lung cancers and patient-matched tumour-adjacent normal lung samples. Normal samples may be used for copy number profiling, as proxy a for the normal tumour-infiltrating cells (<span class="math inline">\(m_{n,i}\)</span>), and as a proxy for the tumour cell of origin (<span class="math inline">\(m_{n,o}\)</span>). Here, <span class="math inline">\(m_{n,i}\)</span> is needed for bulk tumour methylation rate deconvolution and <span class="math inline">\(m_{n,o}\)</span> is required for differential methylation analyses (<strong>Figure 2</strong>). In non-small cell lung cancer, we demonstrate that patient-matched tumour-adjacent normal is a suitable proxy for all normals, i.e. <span class="math inline">\(m_{n,i} \approx m_{n,o}\)</span> <a href="https://doi.org/10.1101/2020.11.03.366252" class="external-link">(Larose Cadieux et <em>al.</em>, 2020)</a>.</p>
 <center>
 <div class="figure">
 <img src="images/CAMDAC_manual_fig2.png" style="width:85.0%" alt=""><p class="caption"><strong>Figure 2.</strong> Key input and output data for CAMDAC</p>
 </div>
 </center>
-<p><br> If the patient-matched tumour-adjacent normal tissue is not available, a tissue- and sex-matched normal may provide a suitable substitute for the tumour-infiltrating normal cells (<strong>Figure 2</strong>). If the tissue-matched normal is a poor representative of the cell of origin, a different proxy may be used for differential methylation analysis.</p>
-<p>The purified tumour methylation rates allow for accurate quantification of differential methylation, both between tumour and normal cells and, in the case of multi-region sequencing, between different tumour samples. The deconvoluted methylation profiles accurately inform inter- and intra-tumour sample relationships and could enable timing of copy number gains and (epi)mutations in tumour evolution. This is explained in more details in <a href="https://doi.org/10.1101/2020.11.03.366252" class="external-link">Larose Cadieux et <em>al.</em>, 2020</a><sup>1</sup>.</p>
+<p><br> If the patient-matched tumour-adjacent normal tissue is not available, a tissue- and sex-matched normal may provide a substitute for the tumour-infiltrating normal cells (<strong>Figure 2</strong>). If the tissue-matched normal is a poor representative of the cell of origin, a different proxy may be used for differential methylation analysis.</p>
+<p>The purified tumour methylation rates allow for accurate differential methylation analysis, both between tumour and normal cells and, in the case of multi-region sequencing, between different tumour samples. The deconvoluted methylation profiles accurately inform inter- and intra-tumour sample relationships and could enable the timing of copy number gains and (epi)mutations in tumour evolution. This is explained in more detail in <a href="https://doi.org/10.1101/2020.11.03.366252" class="external-link">Larose Cadieux et <em>al.</em>, 2020</a>.</p>
 <p>At time of writing, CAMDAC is compatible with human <em>Msp1</em> digested single-end directional reduced representation bisulfite sequencing (RRBS) data and whole genome bisulfite sequencing (WGBS) data. The input must be in binary alignment map (BAM) format. Bases should be quality and adapter trimmed and PCR duplicates should be removed. BAM files may be aligned to hg19, hg38, GRCH37 and GRHCH38 reference human genome builds. <br><br></p>
-</div>
-<div class="section level3">
-<h3 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
-</h3>
 </div>
   </div>
 

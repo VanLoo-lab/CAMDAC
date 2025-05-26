@@ -6,25 +6,13 @@ articles:
   - setup
   - pipeline
   - output
-  - visualisation
 - title: Experimental
   navbar: ~
   contents:
-  - panels
-  - copy_number_alt
-  - allele-specific
-  - deconvolution
-- title: FAQs
+  - experimental
+- title: Extra
   navbar: ~
   contents:
   - questions
   - technical
   - contributing
-
-references:
-- title: functions
-- contents:
-  - CamSample
-  - CamConfig
-  - pipeline
-  - attach_output

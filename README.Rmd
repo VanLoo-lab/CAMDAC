@@ -31,7 +31,8 @@ Visit [https://vanloo-lab.github.io/CAMDAC/](https://vanloo-lab.github.io/CAMDAC
 
 CAMDAC can be installed from an R console:
 
-``` r
+```{r}
+install.packages("remotes")
 remotes::install_github("VanLoo-lab/CAMDAC")
 ```
 
