@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-This document describes experimental features of the CAMDAC package. These features are not yet fully tested and may change in future releases:
+This document describes experimental features of the CAMDAC package. These features are not yet fully tested and may change in future releases. The following features are currently under development for the **WGBS pipeline** only:
 
 * Deconvolution only
 * Using external copy number solutions
@@ -28,9 +28,9 @@ This document describes experimental features of the CAMDAC package. These featu
 
 The CAMDAC equation can be used to infer pure tumour DNA methylation rates, provided the following information is available per CpG:
 
-* Bulk tumour methylation rates
-* Tumour copy number state
-* Tumour purity
+* Bulk tumour methylation rate (CpG-wise)
+* Tumour allele-specific copy number state (local region overlapping CpG)
+* Tumour purity (single parameter per-sample)
 
 Here is an example for 5 CpGs from a single sample. Note: the normal copy number state is assumed diploid (2) in humans:
 ```{r}

@@ -52,6 +52,7 @@ pipeline_wgbs <- function(tumor, germline = NULL, infiltrates = NULL, origin = N
 #' @param sample_list. List of CamSample objects.
 #' @param config. CamConfig object.
 #' @export
+#' @kewords internal
 preprocess_wgbs <- function(sample_list, config) {
   for (s in sample_list) {
     # Go to next part of loop if its null
