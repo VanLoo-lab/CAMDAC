@@ -6,7 +6,7 @@
 Copy-number Aware Methylation Deconvolution Analysis of Cancer (CAMDAC)
 is an R library for deconvolving bulk tumor DNA methylation (bisulfite)
 sequencing data ([Larose Cadieux et al., 2022,
-bioXriv](https://www.biorxiv.org/content/10.1101/2020.11.03.366252v2)).
+bioRxiv](https://www.biorxiv.org/content/10.1101/2020.11.03.366252v2)).
 
 <!-- badges: start -->
 
