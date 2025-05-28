@@ -5,7 +5,7 @@ Authors@R:
     c(
     person(given = "Elizabeth",
            family = "Larose Cadieux",
-           role = c("aut", "cre")),
+           role = c("aut")),
     person(given = "Nana",
            family = "Mensah",
            role = c("aut", "cre"),
