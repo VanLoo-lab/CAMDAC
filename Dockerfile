@@ -41,8 +41,7 @@ RUN R -q -e 'remotes::install_deps(".", dependencies = TRUE, upgrade = "never", 
 
 # Install CAMDAC References from repository [Deprecated]
 # Optionally install CAMDAC if it's not a local package (e.g., separate install)
-# RUN Rscript -e 'remotes::install_github("VanLoo-lab/CAMDAC@wgbs", lib="/usr/local/lib/R/site-library")'
-#RUN R -q -e 'library(CAMDAC);CAMDAC::download_pipeline_files(bsseq="wgbs", directory="pipeline_files/")'
+RUN Rscript -e 'remotes::install_github("VanLoo-lab/CAMDAC@dev", lib="/usr/local/lib/R/site-library")'
 
 # Set command to be use
 CMD ["/usr/local/bin/Rscript"]

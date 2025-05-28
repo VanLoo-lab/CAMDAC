@@ -101,20 +101,33 @@
 <p>Visit <a href="https://vanloo-lab.github.io/CAMDAC/" class="external-link uri">https://vanloo-lab.github.io/CAMDAC/</a>.</p>
 </div>
 <div class="section level2">
-<h2 id="quickstart">Quickstart<a class="anchor" aria-label="anchor" href="#quickstart"></a>
+<h2 id="installation--dockerhub">Installation : Dockerhub<a class="anchor" aria-label="anchor" href="#installation--dockerhub"></a>
 </h2>
-<p>CAMDAC can be installed from an R console:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<p>A CAMDAC container is available on <a href="https://hub.docker.com/r/nmensah5/camdac" class="external-link">dockerhub</a> for use with Docker, Singularity or Apptainer:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="ex">docker</span> pull nmensah5/camdac:latest</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="bu">echo</span> <span class="st">"library(CAMDAC)"</span> <span class="op">&gt;</span> commands.R</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/app nmensah5/camdac:latest Rscript /app/commands.R</span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="installation--github">Installation : Github<a class="anchor" aria-label="anchor" href="#installation--github"></a>
+</h2>
+<p>You can install CAMDAC and its dependencies from an R console:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"VanLoo-lab/CAMDAC"</span><span class="op">)</span></span></code></pre></div>
-<p>Download reference datasets required to run CAMDAC for RRBS and/or WGBS analysis <a href="https://zenodo.org/records/10565423" class="external-link">from the Zenodo repository: (10565423)</a>. An R helper function is provided for convenience:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+</div>
+<div class="section level2">
+<h2 id="quickstart">Quickstart<a class="anchor" aria-label="anchor" href="#quickstart"></a>
+</h2>
+<p>We provide pre-built reference datasets for hg38 and hg19. These files are required to run CAMDAC for either RRBS or WGBS analysis <a href="https://zenodo.org/records/10565423" class="external-link">from the Zenodo repository: (10565423)</a>. An R getter function is provided for convenience:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">CAMDAC</span><span class="fu">::</span><span class="fu"><a href="reference/download_pipeline_files.html">download_pipeline_files</a></span><span class="op">(</span>bsseq <span class="op">=</span> <span class="st">"rrbs"</span>, directory <span class="op">=</span> <span class="st">"./refs"</span><span class="op">)</span></span>
 <span><span class="fu">CAMDAC</span><span class="fu">::</span><span class="fu"><a href="reference/download_pipeline_files.html">download_pipeline_files</a></span><span class="op">(</span>bsseq <span class="op">=</span> <span class="st">"wgbs"</span>, directory <span class="op">=</span> <span class="st">"./refs"</span><span class="op">)</span></span></code></pre></div>
-<p>Run the tumor-normal deconvolution pipeline with test data:</p>
+<p>For WGBS analysis, CAMDAC requires the <code>java</code> command line utility to be available in the system PATH.</p>
+<p>With reference files downloaded, run the tumor-normal deconvolution pipeline with test data:</p>
 <blockquote><p>[!NOTE]<br>
 We provide downsampled BAM files for testing the pipeline. For representative results, please use your own BAM files.</p></blockquote>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CAMDAC</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tumor_bam</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"tumor.bam"</span>, package <span class="op">=</span> <span class="st">"CAMDAC"</span><span class="op">)</span></span>
@@ -167,7 +180,7 @@ We provide downsampled BAM files for testing the pipeline. For representative re
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Elizabeth Larose Cadieux <br><small class="roles"> Author, maintainer </small>  </li>
+<li>Elizabeth Larose Cadieux <br><small class="roles"> Author </small>  </li>
 <li>Nana Mensah <br><small class="roles"> Author, maintainer </small>  </li>
 <li>Siqi Lai <br><small class="roles"> Author </small>  </li>
 <li>Carla Castignani <br><small class="roles"> Author </small>  </li>

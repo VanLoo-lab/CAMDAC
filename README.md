@@ -16,26 +16,44 @@ bioRxiv](https://www.biorxiv.org/content/10.1101/2020.11.03.366252v2)).
 
 Visit <https://vanloo-lab.github.io/CAMDAC/>.
 
-## Quickstart
+## Installation : Dockerhub
 
-CAMDAC can be installed from an R console:
+A CAMDAC container is available on
+[dockerhub](https://hub.docker.com/r/nmensah5/camdac) for use with
+Docker, Singularity or Apptainer:
+
+``` bash
+docker pull nmensah5/camdac:latest
+echo "library(CAMDAC)" > commands.R
+docker run -v $(pwd):/app nmensah5/camdac:latest Rscript /app/commands.R
+```
+
+## Installation : Github
+
+You can install CAMDAC and its dependencies from an R console:
 
 ``` r
 install.packages("remotes")
 remotes::install_github("VanLoo-lab/CAMDAC")
 ```
 
-Download reference datasets required to run CAMDAC for RRBS and/or WGBS
-analysis [from the Zenodo repository:
-(10565423)](https://zenodo.org/records/10565423). An R helper function
-is provided for convenience:
+## Quickstart
+
+We provide pre-built reference datasets for hg38 and hg19. These files
+are required to run CAMDAC for either RRBS or WGBS analysis [from the
+Zenodo repository: (10565423)](https://zenodo.org/records/10565423). An
+R getter function is provided for convenience:
 
 ``` r
 CAMDAC::download_pipeline_files(bsseq = "rrbs", directory = "./refs")
 CAMDAC::download_pipeline_files(bsseq = "wgbs", directory = "./refs")
 ```
 
-Run the tumor-normal deconvolution pipeline with test data:
+For WGBS analysis, CAMDAC requires the `java` command line utility to be
+available in the system PATH.
+
+With reference files downloaded, run the tumor-normal deconvolution
+pipeline with test data:
 
 > \[\!NOTE\]  
 > We provide downsampled BAM files for testing the pipeline. For
