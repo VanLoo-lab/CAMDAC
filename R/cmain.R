@@ -20,7 +20,7 @@ cmain_count_alleles <- function(sample, config) {
   #  Check if outputs exist and skip if required
   output_filename <- get_fpath(sample, config, "counts")
   if (file.exists(output_filename) && !config$overwrite) {
-    logging::logdebug("Skipping allele counting for %s", paste0(sample$patient_id, ":", sample$id), logger="CAMDAC")
+    logging::loginfo("Ojbect already exists, skipping allele counting for %s", paste0(sample$patient_id, ":", sample$id), logger="CAMDAC")
     return(output_filename)
   }
 
@@ -51,18 +51,42 @@ cmain_count_alleles <- function(sample, config) {
   min_mapq <- config$min_mapq
   min_cov <- config$min_cov
 
+  # Prepare the loci list (Master process reads disk 24 times)
+  # Moved CCGG filtering to master process.
+  loci_list <- prepare_loci_list(segments, loci_files, drop_ccgg)
+  
   logging::loginfo("Counting alleles for %s", paste0(sample$patient_id, ":", sample$id), logger="CAMDAC")
-  # For each segment, load the appropriate SNP/CpG loci file segment and call allele counter in parallel
+  # For each segment, load the pre-keyed loci file segment and call allele counter in parallel
+  # Segments list is forked from the shared memory
   #   Set warn=2 to ensure foreach fails if any of the parallel workers are terminated or raise a warning.
   #   without this option, foreach simply returns a warning and the pipeline continues. Essential for memory warning terminations.
   options(warn = 2)
-  tmpfiles <- foreach(seg = segments, .combine = "c") %dopar% {
+  tmpfiles <- foreach(i = seq_along(segments), .combine = "c") %dopar% {
+    # Worker-specific variables
+    seg <- segments[[i]]
+    l_dt <- loci_list[[i]]
+
+    # Check if there are actually any loci to count in this segment
+    if (is.logical(l_dt) && is.na(l_dt)) {
+       return(NULL) # Skip this segment entirely
+    }
+     
     # Force fst and data.table to use a single thread inside the workers
     fst::threads_fst(1)
     data.table::setDTthreads(1)
     
-    loci_dt <- load_loci_for_segment(seg, loci_files)
-    ac_file <- cwrap_get_allele_counts(bam_file, seg, loci_dt, paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov)
+    # Call wrapper with pre-loaded l_dt
+    # Ensure cwrap_get_allele_counts is modified to accept loci_dt directly 
+    # and skip its internal load_loci_for_segment call.
+    ac_file <- cwrap_get_allele_counts(
+      bam_file = bam_file,
+      seg = seg,
+      loci_dt = l_dt,
+      paired_end = paired_end,
+      min_mapq = min_mapq,
+      min_cov = min_cov
+    )
+
     tmp <- tempfile(tmpdir = tempdir, fileext = ".fst")
     fst::write_fst(ac_file, tmp)
     return(tmp)
@@ -98,7 +122,7 @@ cmain_make_snps <- function(sample, config) {
   # Skip if counts file does not exist
   output_file <- CAMDAC::get_fpath(sample, config, "snps")
   if (fs::file_exists(output_file) & !config$overwrite) {
-    logging::logdebug("Skipping SNP profile creation for %s", paste0(sample$id), logger="CAMDAC")
+    logging::loginfo("Ojbect already exists, skipping SNP profile creation for %s", paste0(sample$id), logger="CAMDAC")
     return(output_file)
   }
 
@@ -143,7 +167,7 @@ cmain_make_snps <- function(sample, config) {
 cmain_bind_snps <- function(tumour, normal, config) {
   tsnps_output_file <- CAMDAC::get_fpath(tumour, config, "tsnps")
   if (fs::file_exists(tsnps_output_file) & !config$overwrite) {
-    logging::logdebug("Skipping SNP profile creation for %s", paste0(tumour$id, "&", normal$id), logger="CAMDAC")
+    logging::logdebug("Ojbect already exists, skipping SNP profile creation for %s", paste0(tumour$id, "&", normal$id), logger="CAMDAC")
     return(tsnps_output_file)
   }
 
@@ -393,7 +417,7 @@ cmain_make_methylation_profile <- function(sample, config) {
   # Skip if methylation file exists for sample
   output_file <- get_fpath(sample, config, "meth")
   if (fs::file_exists(output_file)) {
-    logging::logdebug("Methylation profile already exists for %s %s", sample$patient_id, sample$id, logger="CAMDAC")
+    logging::loginfo("Methylation profile already exists for %s %s", sample$patient_id, sample$id, logger="CAMDAC")
     return()
   }
 
