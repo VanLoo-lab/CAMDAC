@@ -46,3 +46,7 @@ CAMDAC_manual/
 *.log.lintr
 data/
 bin/
+
+# macOS
+.DS_Store
+**/.DS_Store

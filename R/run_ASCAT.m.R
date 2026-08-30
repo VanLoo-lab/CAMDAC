@@ -286,7 +286,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
                     Germline_BAF=data.frame(rBAF_n=dt_sample_SNPs$rBAF_n),
                     Tumor_LogR_segmented=NULL, Tumor_BAF_segmented=NULL,
                     Tumor_counts=NULL, Germline_counts=NULL,
-                    SNPpos=SNPpos[,c("chrom","POS")], chr=chr,
+                    SNPpos = as.data.frame(SNPpos[, .(chrom, POS)]), chr=chr,
                     samples=paste(patient_id, sample_id, sep="."), 
                     chrs=chr_names, ch=ch, 
                     gender=sex, sexchromosomes=c("X", "Y"),
@@ -307,7 +307,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
     ascat.frag <- ASCAT::ascat.aspcf(ascat.bc, ascat.gg=gg, penalty=200)
     # penalty = 200 recommended for sequencing data
 
-    # fix issue with ascat.ascpcf renaming samples 
+    # fix issue with ascat.aspcf renaming samples 
     ascat.frag$samples <- paste(patient_id, sample_id, sep=".")
     rm(ascat.bc)
     
@@ -410,7 +410,8 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
 
 split_genome_RRBS = function(SNPpos) {
   # look for gaps of more than 1Mb and chromosome borders
-  SNPposnum <- SNPpos
+  # hard copy for data table to avoid modifying SNPpos
+  SNPposnum <- data.table::copy(SNPpos)
   SNPposnum[, chrom := ifelse(chrom == "X", 23, chrom)]
   SNPposnum <- SNPposnum[, lapply(.SD, as.numeric)]
   

@@ -32,10 +32,13 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #' @param overwrite Config to overwrite files if they already exist.
 #' @param cna_caller The CNA caller to use. "ascat" or "battenberg". Default is "battenberg"
 #' @param cna_settings A list of settings to pass to the CNA caller. rho, psi, java, beaglemaxmem
+#' @param het_baf Numeric of length 2, the normal BAF window used to select
+#'   heterozygous SNPs before CNA calling. Defaults to 0.15/0.85 for RRBS and
+#'   0.08/0.92 for WGBS. Deep WGBS may warrant a tighter window, e.g. c(0.2, 0.8).
 #' @export
 CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
                       refs = NULL, n_seg_split = 50, min_mapq = 1, min_cov = 1, min_normal_cov=10, overwrite = FALSE,
-                      cna_caller = "battenberg", cna_settings = NULL) {
+                      cna_caller = "battenberg", cna_settings = NULL, het_baf = NULL) {
   # Create output directory if it doesn't exist and set to absolute path
   fs::dir_create(outdir)
   outdir <- fs::path_real(outdir)
@@ -44,6 +47,12 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
   stopifnot(cna_caller %in% c("ascat", "battenberg"))
   stopifnot(lib %in% c("pe", "se"))
   stopifnot(bsseq %in% c("wgbs", "rrbs"))
+
+  # Resolve the heterozygous SNP BAF window for this protocol
+  if (is.null(het_baf)) {
+    het_baf <- HET_BAF_DEFAULTS[[bsseq]]
+  }
+  stopifnot(is.numeric(het_baf), length(het_baf) == 2, het_baf[1] < het_baf[2])
 
   # Set camdac references if not they do not exist
   refs <- ifelse(is.null(refs), pipeline_files(), fs::path_real(refs))
@@ -91,6 +100,7 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
     min_mapq = min_mapq,
     min_cov = min_cov,
     min_normal_cov = min_normal_cov,
+    het_baf = het_baf,
     overwrite = overwrite,
     beaglejar = bjar,
     regions = regions,
@@ -107,6 +117,21 @@ is_pe <- function(config) {
 is_ccgg <- function(config) {
   # Returns TRUE if ccgg should be included in camdac run
   ifelse(config$bsseq == "wgbs", TRUE, FALSE)
+}
+
+# Default normal BAF windows for heterozygous SNP selection, by protocol.
+# WGBS is costly and so is typically sequenced at lower depth than RRBS; a wider
+# window recovers more het SNPs. Deep WGBS can afford a tighter one, set via
+# the `het_baf` argument to `CamConfig()`.
+HET_BAF_DEFAULTS <- list(wgbs = c(0.08, 0.92), rrbs = c(0.15, 0.85))
+
+# Resolve the het SNP BAF window, falling back to protocol defaults for config
+# objects created before `het_baf` existed.
+get_het_baf <- function(config) {
+  if (!is.null(config$het_baf)) {
+    return(config$het_baf)
+  }
+  HET_BAF_DEFAULTS[[config$bsseq]]
 }
 
 FPATH_CODES <- c(

@@ -30,10 +30,14 @@ pipeline_wgbs <- function(tumor, germline = NULL, infiltrates = NULL, origin = N
   logging::loginfo("Pipeline start for %s", tumor$patient_id, logger="CAMDAC")
 
   # Preprocess CpG, SNP and methylation data for all samples
-  preprocess_wgbs(
-    list(tumor, germline, infiltrates, origin),
-    config
+  sample_list <- list(
+    tumor = tumor,
+    germline = germline,
+    infiltrates = if (identical(infiltrates, germline)) NULL else infiltrates,
+    origin = if (identical(origin, germline)) NULL else origin
   )
+  
+  preprocess_wgbs(sample_list, config)
 
   # Combine tumor-germline SNPs and call CNAs
   cmain_bind_snps(tumor, germline, config)
@@ -55,6 +59,7 @@ pipeline_wgbs <- function(tumor, germline = NULL, infiltrates = NULL, origin = N
 #' @param config. CamConfig object.
 #' @export
 #' @keywords internal
+
 preprocess_wgbs <- function(sample_list, config) {
   for (s in sample_list) {
     # Go to next part of loop if its null
@@ -62,15 +67,30 @@ preprocess_wgbs <- function(sample_list, config) {
       next
     }
 
-    # Count SNP and CpG alleles if a BAM file is provided
-    cmain_count_alleles(s, config)
+    logging::loginfo("Spawning isolated process for sample: %s", s$id, logger="CAMDAC")
+    # callr::r() creates a fresh background R session for this specific block of code
+    callr::r(
+      func = function(sample, config) {
+        library(CAMDAC)
 
-    # Prepare SNP data for CNA calling if allele counts are present
-    cmain_make_snps(s, config)
-
-    # Format methylation rates for deconvolution
-    cmain_make_methylation_profile(s, config)
-  }
+        # 1. Setup the cluster inside the isolated process
+        cl <- parallel::makeCluster(config$n_cores, type = "FORK")
+        doParallel::registerDoParallel(cl)
+        
+        # 2. Run pipeline functions
+        CAMDAC:::cmain_count_alleles(sample, config)
+        CAMDAC:::cmain_make_snps(sample, config)
+        CAMDAC:::cmain_make_methylation_profile(sample, config)
+        
+        # 3. Safely stop the cluster
+        parallel::stopCluster(cl)
+      }, 
+      args = list(sample = s, config = config),
+      show = TRUE
+    )
+  
+  logging::loginfo("Finished sample %s. OS has reclaimed all memory.", s$id, logger="CAMDAC")
+}
 }
 
 
@@ -142,7 +162,7 @@ pipeline_rrbs <- function(tumor, germline, infiltrates, origin, config){
     )
 
   } else {
-    logging::loginfo("Preprocess RRBS tumour: %s.", ac_file, logger="CAMDAC")
+    logging::loginfo("RRBS tumour allele count file already exists: %s.", ac_file, logger="CAMDAC")
   }
 
   # Create SNP files and run ASCAT (tumor)
@@ -222,9 +242,8 @@ preprocess_rrbs_normal <- function(patient_id, sample_id, bam_file, min_tumor,
       }
 
       # Merge allele counts
-      is_normal <- ifelse(sample_id == normal_id, TRUE, FALSE)
       format_output(
-          patient_id, sample_id, sex, is_normal, path, pipeline_files, build
+          patient_id, sample_id, sex, is_normal = TRUE, path, pipeline_files, build
       )
       
       loginfo("Allele counting finished.")

@@ -3,14 +3,18 @@
 # Sort genomic loci
 #' @title sort_genomic_dt
 #' @keywords internal
-sort_genomic_dt <- function(dt, with_chr = F) {
+# In-place sorting to avoid R creating duplicate copy of objects
+sort_genomic_dt <- function(dt, with_chr = FALSE) {
   if (with_chr) {
     fact_levels <- paste0("chr", c(1:22, "X", "Y"))
   } else {
     fact_levels <- c(1:22, "X", "Y")
   }
+  
   dt[, chrom := factor(chrom, levels = fact_levels)]
-  return(dt[order(chrom, POS)])
+  data.table::setorder(dt, chrom, POS)
+  
+  return(dt)
 }
 
 
@@ -67,7 +71,7 @@ annotate_normal <- function(tsnps, nsnps, min_cov) {
   setnames(nsnps, old = to_suffix, new = paste0(to_suffix, "_n"))
   setkey(nsnps, chrom, POS)
 
-  tsnps <- merge(tsnps, nsnps, on = c("chrom", "POS"))
+  tsnps <- merge(tsnps, nsnps, by = c("chrom", "POS"))
 
   tsnps <- tsnps[total_counts_n >= min_cov]
 
@@ -646,12 +650,14 @@ bind_snps_protocol <- function(tsnps, normal, config) {
   return(tsnps)
 }
 
-select_heterozygous_snps <- function(tsnps) {
+select_heterozygous_snps <- function(tsnps, baf_min = 0.15, baf_max = 0.85) {
   # Used to select het SNPs from T-N prior to Battenberg.
   # However, this breaks ASCAT, so should be used with caution.
   # Note that ASCAT.m will select at 0.1 <> 0.9 as germline hom stretches required
   # This must therefore be higher. Does not influence battenberg.m
-  tsnps <- tsnps[BAF_n >= 0.08 & BAF_n <= 0.92]
+  # Defaults match the RRBS thresholds used in previous CAMDAC versions.
+  # Callers pass the configured window, see `het_baf` in `CamConfig()`.
+  tsnps <- tsnps[BAF_n >= baf_min & BAF_n <= baf_max]
   return(tsnps)
 }
 

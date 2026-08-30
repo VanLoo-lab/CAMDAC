@@ -51,15 +51,16 @@ cmain_count_alleles <- function(sample, config) {
   min_mapq <- config$min_mapq
   min_cov <- config$min_cov
 
-  # Initialise parallel workers.
-  doParallel::registerDoParallel(cores = config$n_cores)
-
   logging::loginfo("Counting alleles for %s", paste0(sample$patient_id, ":", sample$id), logger="CAMDAC")
   # For each segment, load the appropriate SNP/CpG loci file segment and call allele counter in parallel
   #   Set warn=2 to ensure foreach fails if any of the parallel workers are terminated or raise a warning.
   #   without this option, foreach simply returns a warning and the pipeline continues. Essential for memory warning terminations.
   options(warn = 2)
   tmpfiles <- foreach(seg = segments, .combine = "c") %dopar% {
+    # Force fst and data.table to use a single thread inside the workers
+    fst::threads_fst(1)
+    data.table::setDTthreads(1)
+    
     loci_dt <- load_loci_for_segment(seg, loci_files)
     ac_file <- cwrap_get_allele_counts(bam_file, seg, loci_dt, paired_end, drop_ccgg, min_mapq = min_mapq, min_cov = min_cov)
     tmp <- tempfile(tmpdir = tempdir, fileext = ".fst")
@@ -69,18 +70,18 @@ cmain_count_alleles <- function(sample, config) {
   options(warn = 0)
 
   # Combine temporary files with allele counts results into a single data table
-  result <- foreach(i = tmpfiles, .combine = "rbind") %dopar% {
-    fst::read_fst(i, as.data.table = T)
-  }
+  # Sequential merging for memory safety
+  result_list <- lapply(tmpfiles, function(f) {
+    fst::read_fst(f, as.data.table = TRUE)
+  })
+  result <- data.table::rbindlist(result_list, use.names = TRUE, fill = TRUE)
+  rm(result_list)
+  gc()
 
   # Write to output file
   format_and_write_output(result, output_filename) # 2 lines
   # Delete temporary files
   fs::dir_delete(tempdir)
-
-  # Stop parallel workers. When running the pipeline multiple times in an R session,
-  # R re-uses workers but does not clear memory. Hence large objects in foreach loops will remain.
-  doParallel::stopImplicitCluster()
   return(output_filename)
 }
 
@@ -165,7 +166,8 @@ cmain_bind_snps <- function(tumour, normal, config) {
   # Not necessary if normal is NULL as this is done in `bind_snps_protocol`
   # Future refactor: bind_snps_protocol should not filter in tumor-only mode
   if (!is.null(normal)) {
-    tsnps <- select_heterozygous_snps(tsnps)
+    het_baf <- get_het_baf(config)
+    tsnps <- select_heterozygous_snps(tsnps, baf_min = het_baf[1], baf_max = het_baf[2])
   }
 
   # Set autosome status for calculating LogR
