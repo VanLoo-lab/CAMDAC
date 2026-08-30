@@ -20,7 +20,7 @@ cmain_count_alleles <- function(sample, config) {
   #  Check if outputs exist and skip if required
   output_filename <- get_fpath(sample, config, "counts")
   if (file.exists(output_filename) && !config$overwrite) {
-    logging::loginfo("Ojbect already exists, skipping allele counting for %s", paste0(sample$patient_id, ":", sample$id), logger="CAMDAC")
+    logging::loginfo("Object already exists, skipping allele counting for %s", paste0(sample$patient_id, ":", sample$id), logger="CAMDAC")
     return(output_filename)
   }
 
@@ -122,7 +122,7 @@ cmain_make_snps <- function(sample, config) {
   # Skip if counts file does not exist
   output_file <- CAMDAC::get_fpath(sample, config, "snps")
   if (fs::file_exists(output_file) & !config$overwrite) {
-    logging::loginfo("Ojbect already exists, skipping SNP profile creation for %s", paste0(sample$id), logger="CAMDAC")
+    logging::loginfo("Object already exists, skipping SNP profile creation for %s", paste0(sample$id), logger="CAMDAC")
     return(output_file)
   }
 
@@ -167,7 +167,7 @@ cmain_make_snps <- function(sample, config) {
 cmain_bind_snps <- function(tumour, normal, config) {
   tsnps_output_file <- CAMDAC::get_fpath(tumour, config, "tsnps")
   if (fs::file_exists(tsnps_output_file) & !config$overwrite) {
-    logging::logdebug("Ojbect already exists, skipping SNP profile creation for %s", paste0(tumour$id, "&", normal$id), logger="CAMDAC")
+    logging::logdebug("Object already exists, skipping SNP profile creation for %s", paste0(tumour$id, "&", normal$id), logger="CAMDAC")
     return(tsnps_output_file)
   }
 
