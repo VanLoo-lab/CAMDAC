@@ -44,7 +44,7 @@ load_camdac_opts_from_input <- function(sample_id, input_file, outdir, refdir) {
     outdir = opt$outdir,
     build = "hg38",
     bsseq = "wgbs",
-    bsseq_lib = "pe",
+    lib = "pe",
     n_cores = 10,
     n_seg_split = 1000
   )

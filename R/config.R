@@ -394,6 +394,88 @@ load_loci_for_segment <- function(seg, loci_files) {
   return(loci_dt)
 }
 
+
+#' Pre-load and Split Loci by Segments
+#' 
+#' Grouping by chromosome ensures each .RData file is read only once, 
+#' Reduce I/O contention before parallel processing.
+#'
+#' @param segments A list of GRanges objects.
+#' @return A list of keyed data.tables matching the length and order of 'segments'.
+prepare_loci_list <- function(segments, loci_files, drop_ccgg = FALSE) {
+  logging::loginfo("Pre-loading and splitting loci for parallel workers...", logger="CAMDAC")
+  
+  # Create an empty list to hold results
+  loci_list <- vector("list", length(segments))
+  # FIX: Handle segments if it is a list of GRanges
+  # We extract the first seqname from each element in the list
+  seg_chroms <- sapply(segments, function(x) as.character(seqnames(x))[1])
+  indices_by_chrom <- split(seq_along(segments), seg_chroms)
+  
+  for (ch in names(indices_by_chrom)) {
+    # 1. Map chromosome name to CAMDAC file numbering
+    ch_num <- dplyr::case_when(
+      ch == "chrX" | ch == "X" ~ "23", 
+      ch == "chrY" | ch == "Y" ~ "24", 
+      TRUE ~ gsub("chr", "", ch)
+    )
+    
+    # 2. Identify and load the specific Chromosome file
+    # Uses $ to ensure exact match (e.g., .1.RData not .11.RData)
+    ch_file <- loci_files[grepl(paste0("\\.", ch_num, "\\.RData$"), loci_files)]
+    
+    if (length(ch_file) == 0) {
+      logging::logwarn("No loci file found for chromosome: %s", ch, logger="CAMDAC")
+      next
+    }
+    
+    # Load 'loci_subset' into a temporary environment to avoid name collisions
+    tmp_env <- new.env()
+    load(ch_file, envir = tmp_env)
+    
+    if (!exists("loci_subset", envir = tmp_env)) {
+      logging::logerror("Object 'loci_subset' not found in %s", ch_file, logger="CAMDAC")
+      next
+    }
+    
+    # 3. Convert to keyed data.table once per chromosome
+    ch_loci_dt <- data.table::as.data.table(tmp_env$loci_subset)
+    data.table::setnames(ch_loci_dt, 1, "chrom")
+    # Ensure chrom is character and keys are set ONCE per chromosome
+    ch_loci_dt[, chrom := as.character(chrom)]
+    essential_cols <- c("chrom", "start", "end", "width", "strand", "POS", "ref", "alt")
+    ch_loci_dt <- ch_loci_dt[, ..essential_cols]
+    
+    # 4. Pre-apply Filters for WGBS
+    if (drop_ccgg) {
+      ch_loci_dt <- ch_loci_dt[width != 4]
+    }
+
+    # 5. SET KEY ONCE (Crucial for inherited keys in workers)
+    data.table::setkey(ch_loci_dt, chrom, start, end)
+
+    # 6. Extract loci for each segment belonging to this chromosome
+    # Using the pre-calculated indices for this chromosome only
+    for (idx in indices_by_chrom[[ch]]) {
+      s <- segments[[idx]]
+      subset_dt <- ch_loci_dt[start >= GenomicRanges::start(s) & end <= GenomicRanges::end(s)]
+      
+      if (nrow(subset_dt) > 0) {
+        # This subset is now keyed and ready for zero-copy sharing
+        data.table::setkey(subset_dt, chrom, start, end)
+        loci_list[[idx]] <- subset_dt
+      } else {
+        loci_list[[idx]] <- NA # Explicitly mark empty
+      }
+    }
+    
+    # Cleanup chromosome-level data to keep Master Process lean
+    rm(tmp_env, ch_loci_dt); gc()
+  }
+  
+  return(loci_list)
+}
+
 pipeline_files <- function() {
   pf <- Sys.getenv("CAMDAC_PIPELINE_FILES")
   ifelse(pf == "", fs::path_real("."), pf)
