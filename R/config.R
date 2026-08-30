@@ -432,12 +432,17 @@ prepare_loci_list <- function(segments, loci_files, drop_ccgg = FALSE) {
   
   # Create an empty list to hold results
   loci_list <- vector("list", length(segments))
-  # FIX: Handle segments if it is a list of GRanges
-  # We extract the first seqname from each element in the list
-  seg_chroms <- sapply(segments, function(x) as.character(seqnames(x))[1])
-  indices_by_chrom <- split(seq_along(segments), seg_chroms)
-  
-  for (ch in names(indices_by_chrom)) {
+  # A segment may hold several ranges, and those ranges may sit on more than one
+  # chromosome, so index each segment under every chromosome it touches.
+  seg_chroms <- lapply(segments, function(x) unique(as.character(seqnames(x))))
+  all_chroms <- unique(unlist(seg_chroms))
+
+  for (ch in all_chroms) {
+    seg_idx <- which(vapply(seg_chroms, function(cs) ch %in% cs, logical(1)))
+    if (length(seg_idx) == 0) {
+      next
+    }
+
     # 1. Map chromosome name to CAMDAC file numbering
     ch_num <- dplyr::case_when(
       ch == "chrX" | ch == "X" ~ "23", 
@@ -479,25 +484,45 @@ prepare_loci_list <- function(segments, loci_files, drop_ccgg = FALSE) {
     # 5. SET KEY ONCE (Crucial for inherited keys in workers)
     data.table::setkey(ch_loci_dt, chrom, start, end)
 
-    # 6. Extract loci for each segment belonging to this chromosome
-    # Using the pre-calculated indices for this chromosome only
-    for (idx in indices_by_chrom[[ch]]) {
+    # 6. Extract loci for each segment on this chromosome.
+    # Select by genomic overlap, as load_loci_for_segment() did. A containment
+    # test would silently drop loci straddling a segment boundary, and would
+    # recycle rather than error on segments holding more than one range.
+    ch_loci_gr <- GRanges(
+      seqnames = ch_loci_dt$chrom,
+      ranges = IRanges(ch_loci_dt$start, ch_loci_dt$end)
+    )
+
+    for (idx in seg_idx) {
       s <- segments[[idx]]
-      subset_dt <- ch_loci_dt[start >= GenomicRanges::start(s) & end <= GenomicRanges::end(s)]
-      
-      if (nrow(subset_dt) > 0) {
-        # This subset is now keyed and ready for zero-copy sharing
-        data.table::setkey(subset_dt, chrom, start, end)
-        loci_list[[idx]] <- subset_dt
+      # Restrict to the ranges of this segment that lie on the current chromosome
+      s_ch <- s[as.character(seqnames(s)) == ch]
+      hits <- sort(unique(subjectHits(findOverlaps(s_ch, ch_loci_gr))))
+      if (length(hits) == 0) {
+        next
+      }
+      part <- ch_loci_dt[hits]
+      # A segment spanning chromosomes accumulates loci across iterations
+      loci_list[[idx]] <- if (is.null(loci_list[[idx]])) {
+        part
       } else {
-        loci_list[[idx]] <- NA # Explicitly mark empty
+        rbind(loci_list[[idx]], part)
       }
     }
-    
+
     # Cleanup chromosome-level data to keep Master Process lean
-    rm(tmp_env, ch_loci_dt); gc()
+    rm(tmp_env, ch_loci_dt, ch_loci_gr); gc()
   }
-  
+
+  # Mark empty segments and key the rest, ready for zero-copy sharing in workers
+  for (i in seq_along(loci_list)) {
+    if (is.null(loci_list[[i]]) || nrow(loci_list[[i]]) == 0) {
+      loci_list[[i]] <- NA # Explicitly mark empty
+    } else {
+      data.table::setkeyv(loci_list[[i]], c("chrom", "start", "end"))
+    }
+  }
+
   return(loci_list)
 }
 
