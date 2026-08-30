@@ -32,7 +32,7 @@
 #' enhancer (vista and FANTOM5 annotation)
 #'
 #' @return CAMDAC purified tumour methylation rates
-
+#' @keywords internal
 get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
                                         normal_infiltrates_proxy_id,
                                         path,path_to_CAMDAC,build,
@@ -44,9 +44,9 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
                  "samples as this sample is a proxy for the normal methylation rate",
                  sep="\n"))
   }
-  if(detectCores()<n_cores){
+  if(parallel::detectCores()<n_cores){
       warning(paste0(n_cores, " cores selected but only ",
-      detectCores(), " detected on machine."))
+      parallel::detectCores(), " detected on machine."))
       
   }
 
@@ -129,20 +129,20 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
   rm(seg, dt_mb_mn)
 
   # Checkpoint
-  print(paste("Copy number estimates added for each CpG locus", sep=" "))
+  logging::logdebug(paste("Copy number estimates added for each CpG locus", sep=" "), logger='CAMDAC')
   
   # Annotate allele-specific copy number
   #dt_mb_mn_cn[, multi := paste(nA, nB, sep="+")]
   
   # Tumour purity estimate for each sample
-  print(paste0("Sample purity is estimated at rho = ", p,
-               ". Copy number segments assigned to CpG loci."))
+  logging::loginfo(paste0("Sample purity is estimated at rho = ", p,
+               ". Copy number segments assigned to CpG loci."), logger="CAMDAC")
   
   # Compute purified tumour methylation rates
   dt_mt <- compute_tumour_methylome(dt = dt_mb_mn_cn, 
                                     p = p, min_cov_t = 3,
                                     sex=sex, build=build)
-  print("Purified tumour methylation rate estimates added for each CpG locus")
+  logging::logdebug("Purified tumour methylation rate estimates added for each CpG locus", logger="CAMDAC")
   rm(dt_mb_mn_cn)
 
   # Set vars for m_t HDI calculation 
@@ -159,7 +159,7 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
   CN_n=dt_mt$CG_CN_n
 
   # Compute the tumour methylation rate HDI 
-  HDI[,1:2] <- t(mcmapply(function(M_b,UM_b,M_n,UM_n,p,CN, CN_n)
+  HDI[,1:2] <- t(parallel::mcmapply(function(M_b,UM_b,M_n,UM_n,p,CN, CN_n)
                           HDIofMCMC(M_b,UM_b,M_n,UM_n,p,CN,CN_n, 0.99),
                           M_b,UM_b,M_n,UM_n,p,CN,CN_n,mc.cores=n_cores))             
   dt_mt[,  c("m_t_low", "m_t_high") := as.list(HDI)]
@@ -170,7 +170,7 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
   rm(M_b, UM_b, M_n, UM_n, HDI, CN, CN_n, n)
   
   # Checkpoint
-  print("Purified tumour methylation rate HDI added for each CpG locus")
+  logging::logdebug("Purified tumour methylation rate HDI added for each CpG locus", logger="CAMDAC")
 
   # Save CAMDAC outputs so far
   dt_purified_tumour <- dt_mt ; rm(dt_mt)
@@ -187,7 +187,7 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
   write.table(tmp, file=output_file, sep='\t', col.names = TRUE, quote=FALSE)
 
   # checkpoint
-  print(paste0("CAMDAC pure tumour methylation rates saved in BED4 format at ", output_file)) 
+  logging::loginfo(paste0("CAMDAC pure tumour methylation rates saved in BED4 format at ", output_file), logger="CAMDAC") 
   rm(tmp, cols1, cols2, output_file)  
 
   # compare bulk, tumour and normal methylomes
@@ -206,6 +206,7 @@ get_pure_tumour_methylation <- function(patient_id,sample_id,sex,
 #' @param rm_sex_chrom Logical indicating if you would like to remove sex chrom from downstream analyses
 #'
 #' @return A dataframe for each sample_id with the copy number calls added
+#' @keywords internal
 annotate_copy_number <- function (dt_sample, seg, rm_sex_chrom=FALSE) {
   
   # Choose the columns that you need to simplify the objects in the subsequent computations
@@ -251,6 +252,7 @@ annotate_copy_number <- function (dt_sample, seg, rm_sex_chrom=FALSE) {
 #' @param build Character variable corresponding to the reference genome used for alignment.
 #'
 #' @return A dataframe for each sample_id with the tumour methylome added
+#' @keywords internal
 compute_tumour_methylome <- function (dt, p, min_cov_t = 3, sex, build) {
 
 # convert factors to characters
@@ -330,6 +332,7 @@ return(dt)
 # Computes highest density interval from a sample of representative values,
 #   estimated as shortest credible interval for a unimodal distribution
 # Arguments:
+#' @title HDI of MCMC
 #' @param M_b counts methylated in the tumour
 #' @param UM_b counts unmethylated in the tumour
 #' @param M_n counts methylated in the normal
@@ -341,6 +344,7 @@ return(dt)
 #' credMass is a scalar between 0 and 1, indicating the mass within the
 #' credible interval that is to be estimated.
 #' @return Value: HDIlim is a vector containing the limits of the HDI
+#' @keywords internal
 HDIofMCMC = function(M_b,UM_b,M_n,UM_n,p,CN,CN_n,credMass=0.99) {
   
   # sampleVec is a vector of representative values for the methylation rate 
@@ -375,11 +379,12 @@ HDIofMCMC = function(M_b,UM_b,M_n,UM_n,p,CN,CN_n,credMass=0.99) {
 # Plot 2d density comparing methylation rates
 # 
 # Arguments:
+#' @title plot_2d_density
 #' @param dt Data table with methylation information per CpG
 #' @param path Character path variable pointing to the desired working directory.
 #' This is where the output will be stored and should be constant for all CAMDAC functions.
 #' @return NULL
-
+#' @keywords internal
 plot_2d_density <- function(dt, path){
 
   # get relevant colummn

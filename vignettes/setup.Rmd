@@ -1,0 +1,60 @@
+---
+title: "Installation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{setup}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Install CAMDAC
+
+From the R console, install CAMDAC from github:
+
+```{r}
+install.packages("remotes")
+remotes::install_github("VanLoo-lab/CAMDAC")
+```
+
+## Download pipeline reference files
+
+CAMDAC requires custom annotation files for RRBS and WGBS analysis, available [at the Zenodo repository: (10565423)](https://zenodo.org/records/10565423). An R convenience function is provided to download these files:
+
+```{r}
+CAMDAC::download_pipeline_files(bsseq = "rrbs", directory = "./refs")
+CAMDAC::download_pipeline_files(bsseq = "wgbs", directory = "./refs")
+```
+
+Now, you're ready to run CAMDAC! Next, see `vignette("pipeline")`.
+
+### Reference file search priority
+
+CAMDAC searches for pipeline files in the following order:
+
+1. A directory passed when creating the config object (see `CamConfig()`)
+1. The location defined by the environment variable CAMDAC_PIPELINE_FILES.
+1. The current working directory
+
+We recommend that you set the environment variable `CAMDAC_PIPELINE_FILES` to the directory where you downloaded the files. This will allow CAMDAC to find the files automatically whenever you load R.
+
+From a Unix terminal:
+
+> echo "CAMDAC_PIPELINE_FILES=$(realpath R)" >> ~/.Renviron
+
+## External dependencies
+
+**CAMDAC-RRBS**
+
+* None
+
+**CAMDAC WGBS**
+
+* `java`:  To run CAMDAC on WGBS data, we leverage Battenberg which requires the `java` command-line utility. Download Java from [https://openjdk.org/](https://openjdk.org/).

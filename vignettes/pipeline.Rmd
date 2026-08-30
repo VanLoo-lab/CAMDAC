@@ -1,0 +1,50 @@
+---
+title: "CAMDAC pipeline"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{pipeline}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+The entry-point to CAMDAC is the `pipeline()` function which expects a `CamConfig()` object and four `CamSample()` objects representing:
+
+* **tumor** : The bulk tumor sample to deconvolve
+* **germline** : The germline normal data for copy number calling
+* **infiltrates** : A proxy for the normal infiltrating cells
+* **origin** : A proxy for the normal cell from which the tumour originated
+
+The same normal sample may be passed repeatedly for the germline, infiltrates or origin, depending on your experimental design. See `?pipeline` for more details.
+
+```{r pipeline}
+library(CAMDAC)
+
+# Path to BAM files
+tumor_bam <- system.file("testdata", "tumor.bam", package = "CAMDAC")
+normal_bam <- system.file("testdata", "normal.bam", package = "CAMDAC")
+
+# Select samples for basic tumor-normal analysis
+tumor <- CamSample(id = "T", sex = "XY", bam = tumor_bam)
+normal <- CamSample(id = "N", sex = "XY", bam = normal_bam)
+
+# Configure pipeline
+config <- CamConfig(
+  outdir = "./results", bsseq = "rrbs", lib = "pe",
+  build = "hg38", refs = "./refs", n_cores = 1, cna_caller = 'ascat'
+)
+
+# Run CAMDAC
+CAMDAC::pipeline(
+  tumor, germline = normal, infiltrates = normal, origin = normal, config
+)
+```
+
+Next, see `vignette("output")` for a detailed summary of CAMDAC results files.

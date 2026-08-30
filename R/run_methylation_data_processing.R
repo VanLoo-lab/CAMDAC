@@ -44,7 +44,7 @@
 #' cov_n is the total CpG methylation informative reads counts (M_n+UM_n)
 #'
 #' @return GRanges object in .RData file
-
+#' @keywords internal
 run_methylation_data_processing <- function (patient_id,sample_id,
                                              normal_infiltrates_proxy_id,
                                              normal_origin_proxy_id,
@@ -194,11 +194,11 @@ if(!sample_id%in%normal_ids){
       n<- nrow(dt_normal_m)
       M=dt_normal_m$M_n;UM=dt_normal_m$UM_n
       vec <- cbind.data.frame(low=numeric(length=n), high=numeric(length=n))
-      vec[,1:2]<- do.call(rbind, mclapply(1:n, function(i,M,UM) 
+      vec[,1:2]<- do.call(rbind, parallel::mclapply(1:n, function(i,M,UM) 
           HDIofICDF(ICDFname=qbeta, credMass=.99, shape1=M[i]+1, shape2=UM[i]+1),
                                         mc.cores=n_cores, M=M, UM=UM))
       # Checkpoint
-      cat("Reference profile methylation rates 99% highest density intervals annotated\n")
+      logging::logdebug("Reference profile methylation rates 99% highest density intervals annotated.", logger="CAMDAC")
 
       # Add HDI to data.table
       dt_normal_m[, as.character(c("m_n_low", "m_n_high")) := as.list(vec)]
@@ -276,6 +276,7 @@ if(!sample_id%in%normal_ids){
 #' @param trim Logical value establishing whether regions with extremely high coverage be trimmed or not
 #'
 #' @return A GRanges object with all the CpG loci, their coverage, counts methylated and methylation rate
+#' @keywords internal
 format_methylation_df <- function (dt,sample_id,normal_ids,path_output,n_cores,suffix,trim=FALSE) {
   
   # Get total cov (UM includes hetorozygous SNP non-CpG allele counts)
@@ -323,7 +324,7 @@ format_methylation_df <- function (dt,sample_id,normal_ids,path_output,n_cores,s
   n<- nrow(dt)
   M=dt$M;UM=dt$UM
   vec <- cbind.data.frame(low=numeric(length=n), high=numeric(length=n))
-  vec[,1:2]<- do.call(rbind, mclapply(1:n, function(i,M,UM) 
+  vec[,1:2]<- do.call(rbind, parallel::mclapply(1:n, function(i,M,UM) 
                       HDIofICDF(ICDFname=qbeta, credMass=.99, shape1=M[i]+1, shape2=UM[i]+1),
                                 mc.cores=n_cores, M=M, UM=UM))
 
@@ -338,7 +339,7 @@ format_methylation_df <- function (dt,sample_id,normal_ids,path_output,n_cores,s
 
   if(sample_id%in%normal_ids){
     # Checkpoint
-    cat("Normal methylation rates 99% highest density intervals annotated\n")
+    logging::logdebug("Normal methylation rates 99% highest density intervals annotated.", logger="CAMDAC")
 
     # if required remove trim high coverage sites (probs = poor alignment)
     if(trim == TRUE){
@@ -354,7 +355,7 @@ format_methylation_df <- function (dt,sample_id,normal_ids,path_output,n_cores,s
   
   if(!sample_id%in%normal_ids){
     # Checkpoint
-    cat("Bulk methylation rates 99% highest density intervals annotated\n")
+    logging::logdebug("Bulk methylation rates 99% highest density intervals annotated.", logger="CAMDAC")
 
     ## save dt
     #dt_tumour_m <- dt
@@ -365,7 +366,8 @@ format_methylation_df <- function (dt,sample_id,normal_ids,path_output,n_cores,s
 }
 
 # Arguments:
-#'  @param ICDFname is R's name for the inverse cumulative density function
+#' Calculate intervalWidth_r
+#' @param ICDFname is R's name for the inverse cumulative density function
 #' of the distribution.
 #' @param credMass is the desired mass of the HDI region.
 #' @param tol is passed to R's optimize function, 
@@ -378,9 +380,9 @@ format_methylation_df <- function (dt,sample_id,normal_ids,path_output,n_cores,s
 #' Notice that the parameters of the ICDFname must be explicitly named;
 #' e.g., HDIofICDF( qbeta , 30+1 , 12+1 ) does not work.
 #' Adapted and corrected from Greg Snow's TeachingDemos package.
-
-# Source fct outside of loop to speed up code
-intervalWidth =  function(lowTailPr,ICDFname,credMass, ... ) {
+#' Source fct outside of loop to speed up code
+#' @keywords internal
+intervalWidth_r =  function(lowTailPr,ICDFname,credMass, ... ) {
 ICDFname(credMass+lowTailPr, ... ) - ICDFname(lowTailPr, ... )
 }
 
@@ -388,7 +390,7 @@ HDIofICDF = function(ICDFname, credMass=0.99 , tol=1e-4, ... ) {
   
   incredMass = 1.0 - credMass
   
-  optInfo = optimize(f = intervalWidth, interval = c(0,incredMass) , ICDFname=ICDFname , credMass=credMass , tol=tol , ... )
+  optInfo = optimize(f = intervalWidth_r, interval = c(0,incredMass) , ICDFname=ICDFname , credMass=credMass , tol=tol , ... )
   
   HDIlowTailPr = optInfo$minimum
   vec <- setNames(object = ICDFname(c(HDIlowTailPr, credMass+HDIlowTailPr), ... ), nm = c("low", "high"))
@@ -403,10 +405,11 @@ HDIofICDF = function(ICDFname, credMass=0.99 , tol=1e-4, ... ) {
 #' @param outfile character srting with output pdf filename
 #' 
 #' @return pdf w/ methylation rate distribution, biases at polymorphic and non-polymorphic CG/CCGG and coverage distribution 
+#' @keywords internal 
 plot_methylation_info <- function (df_sample, outfile) {
   
   alph <- ifelse(df_sample$class %in% c("SNP CpG", "SNP CCGG"), "SNP", "non-SNP")
-  p1 <- ggplot(data=df_sample, aes(x=m, y=..density.., color=class, fill = class, alpha=alph)) + 
+  p1 <- ggplot(data=df_sample, aes(x=m, y=after_stat(density), color=class, fill = class, alpha=alph)) + 
         ylab("Normalised density") + theme_classic() +
         geom_density(bw= 0.025) + 
         scale_x_continuous(name="CpG methylation rate", breaks=seq(0,1,.1)) +
@@ -417,7 +420,7 @@ plot_methylation_info <- function (df_sample, outfile) {
         scale_alpha_manual(name = "", values = c("SNP"=0.1,"non-SNP"=0.5)) +
         theme(legend.position="none") + ggtitle("A.") #+
  
-  p2 <- ggplot(data=df_sample, aes(x=m, y=..count..,color=class, fill = class)) + 
+  p2 <- ggplot(data=df_sample, aes(x=m, y=ggplot2::after_stat(count),color=class, fill = class)) + 
         theme_classic() + 
         geom_histogram(binwidth=0.025,alpha = 0.25) + 
         scale_x_continuous(name="CpG methylation rate", breaks=seq(0,1,.1)) +
@@ -443,16 +446,15 @@ plot_methylation_info <- function (df_sample, outfile) {
     #' @param dt Data.table that the grob will be made out of
     #' @param title_v Title for display
     #' @param fontsize_v Fontsize for title. Default is 14 (goes well with my_theme)
-    #' @value gtable object
-    #' @export
+    #' 
     
     ## Table
-    table_grob <- tableGrob(dt, rows = rep('', nrow(dt)), theme = ttheme_minimal(base_size=8,vjust=0, hjust=0))
+    table_grob <- gridExtra::tableGrob(dt, rows = rep('', nrow(dt)), theme = ttheme_minimal(base_size=8,vjust=0, hjust=0))
     ## Title
-    title_grob <- textGrob(title_v, gp = gpar(fontsize = fontsize_v),x=0,hjust=0)
+    title_grob <- grid::textGrob(title_v, gp = grid::gpar(fontsize = fontsize_v),x=0,hjust=0)
     ## Add title
-    table_grob <- gtable_add_rows(table_grob, heights = grobHeight(title_grob) + unit(5,'mm'), pos = 0)
-    table_grob <- gtable_add_grob(table_grob, title_grob, 1, 1, 1, ncol(table_grob), clip = "off")
+    table_grob <- gtable::gtable_add_rows(table_grob, heights = grid::grobHeight(title_grob) + unit(5,'mm'), pos = 0)
+    table_grob <- gtable::gtable_add_grob(table_grob, title_grob, 1, 1, 1, ncol(table_grob), clip = "off")
   }
   
   df_sample_tmp <- data.table(df_sample)
@@ -491,7 +493,7 @@ plot_methylation_info <- function (df_sample, outfile) {
 #                                           "non-SNP CpG"="lightsalmon", "non-SNP CCGG"="lightblue")) +
 #   theme(axis.ticks.x = element_blank(),axis.text.x=element_text(size=8)) +
 #   ggtitle("E.") #+ theme(legend.position="none")
-  p5 <- ggplot(data=df_sample, aes(x=total_depth, y=..count..)) +
+  p5 <- ggplot(data=df_sample, aes(x=total_depth, y=ggplot2::after_stat(count))) +
         theme_classic() + 
         geom_histogram(bins=50,alpha = 0.25, col="grey15") + 
         scale_x_continuous(name= "CpG coverage", 

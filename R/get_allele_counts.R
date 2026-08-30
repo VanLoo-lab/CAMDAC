@@ -25,21 +25,29 @@
 #' 
 #' @return One .fst file including methylation info at CpGs and BAF and depth of coverage at
 #' SNPs for the ith subset of RRBS loci
-
+#' @keywords internal
 get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
-                               path, path_to_CAMDAC, build=NULL, n_cores, test=FALSE, paired_end = TRUE){
+                               path, path_to_CAMDAC, build=NULL, n_cores, test=FALSE, paired_end = TRUE, segments_bed=NULL){
   
   if(getOption("scipen")==0){options(scipen = 999)} 
   # important to turn scientific notation off when saving genomic coordinates to .txt files
-  
-  # ensure mq is parsed as numerical value
-  mq <- as.numeric(mq)
-  cat("Mapping treshold MQ ≥ ",mq," applied","\nBase quality treshold BQ ≥ 20 applied\n", sep = "")
-  
+
   # Set working directory path and create results folders
   # Do not change this - subsequent functions will look for files in this directory
   path_output <- file.path(path, patient_id, "Allelecounts", sample_id)
   suppressWarnings(dir.create(path_output, recursive = TRUE))
+
+  # Return output file if it exists
+  f_nm <- file.path(path_output, paste(patient_id, ".", sample_id, ".", i, ".SNPs.CpGs.fst", sep = ""))
+  if (file.exists(f_nm)){
+    logging::loginfo(paste0("Output counts file exists - Skipping: ", f_nm, "\n"), logger="CAMDAC")
+    return(NULL)
+  }
+  
+  # ensure mq is parsed as numerical value
+  mq <- as.numeric(mq)
+  logging::loginfo(paste0("Mapping treshold MQ ≥ ",mq," applied.","Base quality treshold BQ ≥ 20 applied"), logger="CAMDAC")
+  
 
   # Load doParrellel if running job in parrallel 
   if(n_cores > 1){
@@ -60,7 +68,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     build <- ifelse(unname(tmp)=="155270560", "hg19", "hg38")
     UCSC <- ifelse(substr(names(tmp), 1, 1)=="c", TRUE, FALSE)
   }
-  cat(paste("ScanBam pileup with build ", build, sep = " "), "\n", sep = "")
+  logging::loginfo(paste0("ScanBam pileup with build ", build, sep = " "), logger="CAMDAC")
   
   # Set build variables
   if(build%in%c("hg19","hg38")){UCSC=TRUE}
@@ -76,6 +84,16 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
   f_name = paste(segments_file_path, "segments.",build, ".",i, ".RData", sep = "")
   load(f_name)
   rm(f_name)
+
+  # If segments_bed is given, subset segments file to overlapping locations
+  if (!is.null(segments_bed)){
+    regions = read_segments_bed(segments_bed)
+    segments_subset = segments_subset[queryHits(GenomicRanges::findOverlaps(segments_subset, regions) )]
+  }
+  if(length(segments_subset) == 0){
+    logging::loginfo(paste0("No regions found for ", i, "."), logger="CAMDAC")
+    return(NULL)
+  }
   
   # Ensure that spurious alignments to Y in females are removed
   if(sex=="XX"&i==25){segments_subset<-segments_subset[!as.character(seqnames(segments_subset))%in%c("chrY","Y")]}
@@ -196,7 +214,7 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
     if(UCSC == FALSE){seqlevelsStyle(loci_subset) <- "Ensembl"}
     
     # Extract info per CpG/SNP loci
-    overlaps <- mergeByOverlaps(gr_bam, loci_subset)
+    overlaps <- IRanges::mergeByOverlaps(gr_bam, loci_subset)
     rm(gr_bam, loci_subset)
         
     df_pileup <- data.table(qname=as.character(overlaps$qname), strand=as.character(strand(overlaps[,"gr_bam"])),
@@ -597,7 +615,6 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
  
   # get_reads in parrallel
   if(n_cores>1){
-    print(n_cores)
     
     # Set the cluster
     cl <- makeCluster(n_cores)
@@ -633,9 +650,9 @@ get_allele_counts <- function (i , patient_id, sample_id, sex, bam_file, mq=0,
   invisible(gc())
   
   # Create file
-  f_nm <- file.path(path_output, paste(patient_id, ".", sample_id, ".", i, ".SNPs.CpGs.fst", sep = ""))
-  write_fst(df_merged,  f_nm)
-  cat(paste0("Written to: ", f_nm, "\n"))
+
+  fst::write_fst(df_merged,  f_nm)
+  logging::loginfo(paste0("Written to: ", f_nm), logger="CAMDAC")
 }
 
 # END

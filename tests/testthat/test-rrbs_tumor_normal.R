@@ -1,6 +1,7 @@
+testthat::skip("Long-running function.")
+
 test_that("rrbs tumor_normal_pipeline", {
-  # Log test run
-  logger::log_info("Running test: rrbs tumor_normal_pipeline. Estimated time: 25 minutes.")
+  # rrbs tumor_normal_pipeline testing. Estimated time: 25 minutes.")
 
   # Ensure pipeline files are downloaded
   pf_dir <- "pf_rrbs"

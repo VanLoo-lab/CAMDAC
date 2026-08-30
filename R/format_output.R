@@ -20,7 +20,7 @@
 #' is desired in addition to GRanges object in .RData file
 #'
 #' @return Concatenated SNP and CpG information
-
+#' @keywords internal
 format_output <- function(patient_id, sample_id, sex,
                           is_normal = FALSE,
                           path, path_to_CAMDAC,
@@ -91,7 +91,7 @@ format_output <- function(patient_id, sample_id, sex,
     path_to_CAMDAC = path_to_CAMDAC,
     outfile = outfile_prefix
   )
-  cat("Msp1 fragments information obtained for patient\n")
+  logging::loginfo("Msp1 fragments information obtained for patient\n", logger="CAMDAC")
   rm(outfile_prefix)
 }
 
@@ -105,7 +105,7 @@ format_output <- function(patient_id, sample_id, sex,
 #' @param outfile character srting with output filename
 #'
 #' @author elizabeth larose cadieux
-
+#' @keywords internal
 get_msp1_fragments <- function(dt, build, path_to_CAMDAC, outfile) {
   # Set build to to assembly version disregarging USCS vs. Ensembl
   if (build == "GRCH37") {
@@ -120,9 +120,10 @@ get_msp1_fragments <- function(dt, build, path_to_CAMDAC, outfile) {
     path_to_CAMDAC,
     paste0("pipeline_files/msp1_fragments/msp1_fragments_RRBS_", build, ".fst")
   )
-  fragments <- read_fst(path = msp1_fragments_file, as.data.table = TRUE)
+  fragments <- fst::read_fst(path = msp1_fragments_file, as.data.table = TRUE)
 
   # Assign CpG IDs
+  dt = data.table::data.table(dt)
   dt[, CpG_ID := paste(CHR, start, end, sep = "_")]
   dt <- dt[!duplicated(CpG_ID), ]
 
@@ -216,8 +217,8 @@ get_msp1_fragments <- function(dt, build, path_to_CAMDAC, outfile) {
 
   # plot log10 fragment size distribution
   outfile <- paste0(outfile, "fragment_length_histogram.pdf")
-  p <- ggplot(df_fragments) +
-    geom_histogram(aes(x = l, y = ..count..), col = "cornflowerblue", fill = "white", bins = 100) +
+  p <- ggplot2::ggplot(df_fragments) +
+    geom_histogram(aes(x = l, y = ggplot2::after_stat(count)), col = "cornflowerblue", fill = "white", bins = 100) +
     theme_classic() +
     ylab("Number of fragments") +
     coord_cartesian(xlim = c(35, 1000)) + #+coord_cartesian(xlim=c(log10(40),3))+
@@ -232,10 +233,12 @@ get_msp1_fragments <- function(dt, build, path_to_CAMDAC, outfile) {
 }
 
 
+#' @title Round2
 #' @description Round numerical values to 'n' digits
 #' @param x Numerical vector containing the numbers to round
 #' @param digits Numerical value representing the number of decimal digits to retain
 #' @return rounded numerical vector
+#' @keywords internal
 round2 <- function(x, digits) {
   ifelse(as.integer(x * (10^(digits + 1))) %% 10 >= 5, ceiling(x * (10^digits)) / (10^digits), floor(x * (10^digits)) / (10^digits))
 }
