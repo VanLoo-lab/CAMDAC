@@ -90,21 +90,23 @@ prob_to_call <- function(p, mdiff, effect_size = 0.2, prob = 0.99) {
 #' DT must have chrom, start, end
 #' @noRd
 annotate_dmp_regions <- function(dt, all_regions_anno) {
-  # Ensure chromosomes are correct format
-  dt[, chrom := factor(chrom, levels = c(1:22, "X", "Y"), ordered = TRUE)]
+  # `dt` arrives pre-subset, pre-factored and pre-keyed from call_dmrs(), and is
+  # shared by every forked worker. Do not modify it here: setkey() sorts in place,
+  # which touches every page and forces a private copy of the whole DMP table in
+  # each worker. Only the small per-worker region subset is keyed.
+  all_regions_anno <- data.table::copy(all_regions_anno)
   all_regions_anno[, chrom := factor(chrom, levels = c(1:22, "X", "Y"), ordered = TRUE)]
+  setkey(all_regions_anno, chrom, start, end)
 
   # Overlap annotated regions and CpG methylation objects
-  setkey(dt, chrom, start, end)
-  setkey(all_regions_anno, chrom, start, end)
   dt <- foverlaps(all_regions_anno, dt, type = "any", nomatch = NULL)
 
-  # Order regions
-  dt <- dt[order(
-    as.numeric(cluster_id),
-    factor(chrom, levels = c(1:22, "X", "Y"), ordered = TRUE),
-    start, end
-  ), ]
+  # Order regions. setorder sorts by reference, where dt[order(...)] duplicated the
+  # whole overlap result. cluster_id is ordered numerically, as before; chrom is
+  # already an ordered factor so it needs no second conversion.
+  dt[, .cluster_num := as.numeric(cluster_id)]
+  data.table::setorderv(dt, c(".cluster_num", "chrom", "start", "end"))
+  dt[, .cluster_num := NULL]
   return(dt)
 }
 
@@ -221,7 +223,29 @@ set_dmr_type <- function(x) {
   return(dmr_type)
 }
 
+# Columns of the DMP table consumed downstream, by get_cluster_counts() and
+# collapse_cpg_to_dmr(), plus the three needed to key the overlap. Everything else
+# is dropped before the join, which emits one row per (region, CpG) pair and so
+# carries every retained column through that expansion.
+DMR_DMP_COLS <- c(
+  "chrom", "start", "end",
+  "DMP_t", "prob_DMP", "CG_CN", "nA", "nB",
+  "m_n", "m_x_low_n", "m_x_high_n", "m_t", "m_t_low", "m_t_high"
+)
+
 call_dmrs <- function(tmeth_dmps, regions_annotations, itersplit = 3e5, min_DMP_counts = 5, min_consec_DMP = 4, n_cores = 5) {
+  # Prepare the DMP table ONCE, in the master process. Previously each worker
+  # subset, factored and setkey()'d the full genome-wide table itself, which
+  # defeats fork copy-on-write and repeats an identical sort n_cores times.
+  missing_cols <- setdiff(DMR_DMP_COLS, names(tmeth_dmps))
+  if (length(missing_cols) > 0) {
+    stop("call_dmrs: DMP table is missing required columns: ",
+         paste(missing_cols, collapse = ", "))
+  }
+  dmps <- tmeth_dmps[, DMR_DMP_COLS, with = FALSE]
+  dmps[, chrom := factor(chrom, levels = c(1:22, "X", "Y"), ordered = TRUE)]
+  setkey(dmps, chrom, start, end)
+
   # Split region annotations in order to parallelise over subsets
   split_factor <- make_split_factor(nrow(regions_annotations), itersplit)
   regions_annotations <- split(regions_annotations, split_factor)
@@ -231,12 +255,15 @@ call_dmrs <- function(tmeth_dmps, regions_annotations, itersplit = 3e5, min_DMP_
   options(warn = 2)
   # Calculate DMR data for CpGs in parallel
   doParallel::registerDoParallel(cores = n_cores)
-  dmrs <- foreach(regions_subset = regions_annotations, .combine = "rbind") %dopar% {
-    call_dmr_routine(tmeth_dmps, regions_subset, min_DMP_counts, min_consec_DMP)
+  # Collect results and bind once. `.combine = "rbind"` reallocated the growing
+  # result on every combine; rbindlist allocates the output a single time.
+  dmrs <- foreach(regions_subset = regions_annotations) %dopar% {
+    call_dmr_routine(dmps, regions_subset, min_DMP_counts, min_consec_DMP)
   }
   doParallel::stopImplicitCluster()
   options(warn = 0)
 
+  dmrs <- data.table::rbindlist(dmrs, use.names = TRUE, fill = TRUE)
   return(dmrs)
 }
 
