@@ -1,0 +1,74 @@
+---
+title: "FAQs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{questions}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval=FALSE
+)
+```
+
+## General FAQ
+
+### What if I don't have a CNA profile or matched germline sample? (WGBS)
+
+Ideally, CAMDAC is run with a matched normal sample from which to derive heterozygous germline SNPs for copy number estimation. In the absence of matched normals, a panel of sex- and tissue-matched normal samples may be used by averaging DNA methylation rates from multiple patients. See `vignette("experimental")` for more information. 
+
+### I want to run CAMDAC on something other than hg19 or hg38 (WGBS)
+
+Please raise an issue on GitHub to request files for a new reference genome.
+
+### Can I skip steps of the analysis? (WGBS)
+
+When calling `pipeline` if you do not give a normal infiltrate or cell of origin, the pipeline skips deconvolution and differential methylation respectively. This may be useful to run a quick first-pass to find and refit copy number solutions. When CAMDAC has found a solution and is rerun with the same tumor, config, and normal, the `infiltrates` and `cell_of_origin` arguments will continue the pipeline where it left off. The entire pipeline can be re-run be deleting the output directory or setting `overwrite=TRUE` in the `CamConfig`.
+
+### How do I run individual steps of the CAMDAC pipeline? (WGBS)
+
+The simplest way is to call `pipeline` with `overwrite=FALSE` in your config, giving the right normal sample for your step. Additionally, you `CamConfig` must run with the same output directory.
+
+If for any reason, you have changed the output directory structure from previous run, you can initiate CAMDAC by manually passing outputs to `CamSample` objects. See the vignette `vignette("output")` for more information.
+
+Finally, you can run the `cmain_*` functions used  by `pipeline()` directly. For example, to run the deconvolution step, you can call `cmain_deconvolve_methylation()`.
+
+### My CNA solution wasn't right. How can I refit with different purity and ploidy values? (WGBS)
+
+If you want to use an external purity and ploidy solution, simply pass a CNA file that has only the purity and ploidy fields. Additionally, set `refit==TRUE` in the CamConfig and CAMDAC will use this to refit the sample.
+
+### Can I limit my analysis to specific regions of interest?
+
+To analyse specific genomic regions, you may pass a BED file to CAMDAC config:
+
+```{r}
+CamConfig(outdir=".", ref="./pipeline_files", regions="regions.bed")
+```
+
+CAMDAC will merge any overlapping regions prior to analysis.
+
+### How can I manually replace pipeline outputs? (WGBS)
+
+If you have outputs from a previous run, you can manually assign them to a CAMDAC object. This overwrites the expected path for that output type, allowing the pipeline to run with this data instead of computing it. Use the `attach_output` function, passing one of three arguments:
+
+* `counts`: CAMDAC allele counts `*.SNP.CpGs.all.sorted.csv.gz` file
+* `snps`: CAMDAC sample SNP counts `*.SNPs.csv.gz` file
+* `meth`: CAMDAC bulk methylation `*.m.csv.gz` file
+* `cna`: CAMDAC CNA `*.cna.txt` file
+* `pure`: CAMDAC deconvolved methylation `*.m.pure.csv.gz` file
+
+For example, to attach a previous counts file to a CAMDAC object:
+
+```{r}
+library(CAMDAC)
+tumor <- CamSample(id = "T", sex = "XY", bam = NULL)
+config <- CamConfig(outdir = tempdir(), build="hg38", bsseq="wgbs", lib="pe")
+counts_file <- system.file("testdata", "test.SNPs.CpGs.all.sorted.csv.gz", package = "CAMDAC")
+tumor <- attach_output(tumor, config, "counts", counts_file)
+```
+
+The CAMDAC pipeline can now access the file in the expected location at `config$outdir`.

@@ -1,50 +1,101 @@
-# Copy-number Aware Methylation Deconvolution and Analysis of Cancer (CAMDAC)
 
-Plesae refer to the [CAMDAC manual](https://htmlpreview.github.io/?https://github.com/VanLoo-lab/CAMDAC/blob/main/CAMDAC_manual/CAMDAC_manual.html) for a detailed description of the CAMDAC principles, installation and steps for running the code.
+<!-- README.md is generated from README.Rmd. Please edit that file -->
 
-To cite CAMDAC, please refer to our pre-print: [Larose Cadieux et al., 2020. Copy number-aware deconvolution of tumor-normal DNA methylation profiles. bioRxiv.](https://doi.org/10.1101/2020.11.03.366252).
+# CAMDAC
 
-## Installation
+Copy-number Aware Methylation Deconvolution Analysis of Cancer (CAMDAC)
+is an R library for deconvolving bulk tumor DNA methylation (bisulfite)
+sequencing data ([Larose Cadieux et al., 2022,
+bioRxiv](https://www.biorxiv.org/content/10.1101/2020.11.03.366252v2)).
 
-The CAMDAC R library can be install from github repository:
+<!-- badges: start -->
 
-```r
-# Install the remotes package 
-install.packages("remotes")
+<!-- badges: end -->
 
-# Install CAMDAC from GitHub
-remotes::install_github("VanLoo-lab/CAMDAC")
+## Documentation
+
+Visit <https://vanloo-lab.github.io/CAMDAC/>.
+
+## Installation : Dockerhub
+
+A CAMDAC container is available on
+[dockerhub](https://hub.docker.com/r/nmensah5/camdac) for use with
+Docker, Singularity or Apptainer:
+
+``` bash
+docker pull nmensah5/camdac:latest
+echo "library(CAMDAC)" > commands.R
+docker run -v $(pwd):/app nmensah5/camdac:latest Rscript commands.R
 ```
 
-Files required to run the CAMDAC pipeline [(listed here)](inst/extdata/pipeline_files_urls.txt) can be downloaded with a helper function:
+## Installation : Github
 
-```r
-library(CAMDAC)
-CAMDAC::download_pipeline_files(bsseq="rrbs", directory="pipeline_files/")
+You can install CAMDAC and its dependencies from an R console:
+
+``` r
+install.packages("remotes")
+remotes::install_github("VanLoo-lab/CAMDAC")
 ```
 
 ## Quickstart
 
-To call CAMDAC with a matched tumor and adjacent normal sample:
+We provide pre-built reference datasets for hg38 and hg19. These files
+are required to run CAMDAC for either RRBS or WGBS analysis [from the
+Zenodo repository: (10565423)](https://zenodo.org/records/10565423). An
+R getter function is provided for convenience:
 
-```r
+``` r
+CAMDAC::download_pipeline_files(bsseq = "rrbs", directory = "./refs")
+CAMDAC::download_pipeline_files(bsseq = "wgbs", directory = "./refs")
+```
+
+For WGBS analysis, CAMDAC requires the `java` command line utility to be
+available in the system PATH.
+
+With reference files downloaded, run the tumor-normal deconvolution
+pipeline with test data:
+
+> \[\!NOTE\]  
+> We provide downsampled BAM files for testing the pipeline. For
+> representative results, please use your own BAM files.
+
+``` r
 library(CAMDAC)
-tumor_bam <- system.file("extdata", "test_tumor.bam", package = "CAMDAC")
-normal_bam <- system.file("extdata", "test_normal.bam", package = "CAMDAC")
 
-CAMDAC::pipeline_tumor_normal(
-    patient_id="P1",
-    tumor_id="T",
-    normal_id="N",
-    tumor_bam=tumor_bam,
-    normal_bam=normal_bam,
-    sex="XY",
-    path="results/",
-    pipeline_files="pipeline_files/",
-    build="hg38",
-    min_tumor = 1,
-    min_normal = 1,
-    mq = 0,
-    n_cores = 1
+tumor_bam <- system.file("testdata", "tumour_beds_min.sorted.bam", package = "CAMDAC")
+normal_bam <- system.file("testdata", "normal_beds_min.sorted.bam", package = "CAMDAC")
+
+# Select samples for basic tumor-normal analysis
+tumor <- CamSample(id = "T", sex = "XY", bam = tumor_bam, patient_id="readme")
+normal <- CamSample(id = "N", sex = "XY", bam = normal_bam, patient_id="readme")
+
+# Configure pipeline
+config <- CamConfig(
+  outdir = "./validation/results/test_readme/", bsseq = "rrbs", lib = "pe",
+  build = "hg38", refs = "./refs", n_cores = 1, cna_caller='ascat',
+  min_cov=1, # Minimum tumour coverage at 1 for testing.
+  min_normal_cov=1, # Minimum normal coverage at 1 for testing. 
+  min_mapq=1 # Minimum MAPQ at 1 for testing.
+)
+
+# Run CAMDAC
+CAMDAC::pipeline(
+  tumor, germline = normal, infiltrates = normal, origin = normal, config
 )
 ```
+
+For a more detailed walkthrough with test data, see
+`vignette("pipeline")`.
+
+## Contributing
+
+To contribute to CAMDAC, fork [the
+repository](https://github.com/VanLoo-lab/CAMDAC) and install the
+development dependencies with `remotes::install_dev_deps('.')`.
+
+After making your changes, run the build and test commands listed in
+`vignette("contributing")`.
+
+Finally, submit a [pull
+request](https://github.com/VanLoo-lab/CAMDAC/pulls) with the changes on
+your fork.

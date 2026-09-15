@@ -1,6 +1,6 @@
 Package: CAMDAC
 Title: Copy-number Aware Methylation Deconvolution and Analysis of Cancers
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: 
     c(
     person(given = "Elizabeth",
@@ -10,6 +10,9 @@ Authors@R:
            family = "Mensah",
            role = c("aut", "cre"),
            email="nana.mensah@crick.ac.uk"),
+    person(given = "Siqi",
+           family = "Lai",
+           role = c("aut")),
     person(given = "Carla",
            family = "Castignani",
            role = c("aut")),
@@ -25,44 +28,52 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.2
+RoxygenNote: 7.3.1
 Suggests: 
-    testthat (>= 3.0.0),
-    devtools,
+    testthat,
     pryr,
+    devtools,
     tictoc,
     mockr,
     tidyr,
     knitr,
     rmarkdown,
-    pkgdown,
-    usethis
+    rcmdcheck
 biocViews:
 Imports: 
-    optparse,
-    logger
-Depends: 
-    R (>= 3.6.2),
-    ASCAT,
-    stringr,
-    GenomicRanges,
-    GenomicAlignments,
     Rsamtools,
-    scales,
-    ggplot2,
-    gridExtra,
-    gtable,
-    data.table,
-    readr,
-    dplyr,
+    fs,
+    qs,
+    fst,
     parallel,
     doParallel,
-    devtools,
-    fst,
-    fs,
+    gtable,
+    stats,
+    optparse,
+    readr,
+    scales,
+    rtracklayer,
+    R.utils,
+    Battenberg,
+    data.table (>= 1.14.6),
+    foreach,
+    GenomicRanges,
+    GenomicAlignments,
+    GenomeInfoDb,
+    IRanges,
+    S4Vectors,
+    logging,
+    ggplot2,
+    dplyr,
+    gridExtra,
+    grid,
+    stringr,
     png,
-    grid
-Remotes: VanLoo-Lab/ascat/ASCAT@v3.2.0,
-VignetteBuilder: knitr
-Config/testthat/edition: 3
-Config/testthat/start-first: test_download*
+    MASS,
+    ASCAT (>= 3.0.0)
+Depends:
+    R (>= 3.6.2)
+Remotes: 
+    Battenberg=NMNS93/battenberg@dev-ascat3,
+    ASCAT=Vanloo-Lab/ascat/ASCAT/@44ddd3080723a2c3640d1cfead13437a093c21d1
+VignetteBuilder: rmarkdown

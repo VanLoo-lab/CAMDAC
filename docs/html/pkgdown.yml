@@ -1,0 +1,14 @@
+pandoc: 2.9.2.1
+pkgdown: 2.0.9
+pkgdown_sha: ~
+articles:
+  contributing: contributing.html
+  experimental: experimental.html
+  introduction: introduction.html
+  output: output.html
+  pipeline: pipeline.html
+  questions: questions.html
+  setup: setup.html
+  technical: technical.html
+last_built: 2025-05-27T23:48Z
+

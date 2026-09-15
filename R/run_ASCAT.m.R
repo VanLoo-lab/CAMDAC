@@ -31,7 +31,7 @@
 #' @param reference_panel_coverage Path to the reference panel for the coverage.
 #'
 #' @return Three text files with all the CpG loci and their SNP and/or CpG methylation info 
-
+#' @keywords internal
 run_ASCAT.m <- function (patient_id,sample_id,sex,
                          patient_matched_normal_id=NULL,
                          path,path_to_CAMDAC,build,
@@ -78,7 +78,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
   orig_dir <- getwd()
   
   # Set reference human genome build variables
-  cat(paste("Data with build ", build, sep = " "), "\n", sep = "")
+  logging::loginfo(paste("Data with build ", build, sep = " "), logger="CAMDAC")
   if(build=="GRCH37"){build="hg19"} # set build to to assembly version disregarging UCSC/Ensembl
   if(build=="GRCH38"){build="hg38"}
   
@@ -135,7 +135,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
     # Overlap normal and tumour
     dt_sample_SNPs <- merge(dt_sample_SNPs, dt_normal_SNPs, by = c("chrom","POS","ref", "alt"))
     rm(dt_normal_SNPs)
-    cat("Germline SNP info loaded succesfully!\n")
+    logging::logdebug("Germline SNP info loaded succesfully!", logger="CAMDAC")
   } ; rm(cols)
   
   # Obatin SNP genotype from bulk if there is no patient-matched normal
@@ -160,14 +160,14 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
   if(sample_id == normal_id){
      dt_sample_SNPs <- dt_sample_SNPs[total_counts >= min_normal,]
      min <- min_normal
-     cat("Minimum counts treshold in the matched normal",min_normal,"count(s)\n")
+     logging::loginfo("Minimum counts treshold in the matched normal %s count(s)",min_normal, logger="CAMDAC")
   }
   
   if(sample_id != normal_id){
      dt_sample_SNPs <- dt_sample_SNPs[total_counts >= min_tumour,]
      min <- min_tumour
-     cat("Minimum counts treshold in tumour sample set to",min,
-         "count(s) \nMinimum counts treshold in the matched normal",min_normal,"count(s)\n")
+     logging::loginfo(paste0("Minimum counts treshold in tumour sample set to ",min,
+         "count(s).Minimum counts treshold in the matched normal",min_normal,"count(s)."), logger="CAMDAC")
   }
   
   # Add SNP loci ids
@@ -199,11 +199,11 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
   
   if(sample_id!=normal_id){
     # Remove low coverage singletons
-    cat("Removing low coverage singletons\n")
+    logging::logdebug("Removing low coverage singletons.", logger="CAMDAC")
     n <- nrow(dt_sample_SNPs)
     dt_sample_SNPs <- remove_low_cov_singletons(dt_sample_SNPs=dt_sample_SNPs,min=min)
-    cat(paste0("Low coverage singletons removed (", 
-        round2((1-(nrow(dt_sample_SNPs)/n))*100, digits=2),"% of SNPs).\n"))
+    logging::loginfo(paste0("Low coverage singletons removed (", 
+        round2((1-(nrow(dt_sample_SNPs)/n))*100, digits=2),"% of SNPs).\n"), logger="CAMDAC")
     rm(n)
 
     # Set reference file names for LogR bias correction
@@ -234,7 +234,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
     dt_sample_SNPs <- dt_sample_SNPs[dt_stats, nomatch=0]
     rm(dt_stats)
   
-    cat("LogR correction completed\n")
+    logging::loginfo("LogR correction completed.", logger="CAMDAC")
   } else {      
     # format normal seqnames in normal
     y <- substr(as.character(dt_sample_SNPs$chrom[1]),1,3)
@@ -286,7 +286,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
                     Germline_BAF=data.frame(rBAF_n=dt_sample_SNPs$rBAF_n),
                     Tumor_LogR_segmented=NULL, Tumor_BAF_segmented=NULL,
                     Tumor_counts=NULL, Germline_counts=NULL,
-                    SNPpos=SNPpos[,c("chrom","POS")], chr=chr,
+                    SNPpos = as.data.frame(SNPpos[, .(chrom, POS)]), chr=chr,
                     samples=paste(patient_id, sample_id, sep="."), 
                     chrs=chr_names, ch=ch, 
                     gender=sex, sexchromosomes=c("X", "Y"),
@@ -300,30 +300,30 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
     
     ascat.m.plotRawData(ascat.bc, raw_LogR=dt_sample_SNPs$LogR_t, pch = 10, cex = 0.2, lim_logR = 2.5)
     save(ascat.bc, file = paste(patient_id, sample_id, "ascat.bc.RData", sep = "."))
-    cat("ASCAT object created\n")
+    logging::logdebug("ASCAT object created.", logger="CAMDAC")
     
     # Carry out segmentation
     gg = list(germlinegenotypes=ascat.bc$genotypes)
-    ascat.frag <- ascat.aspcf(ascat.bc, ascat.gg=gg, penalty=200)
+    ascat.frag <- ASCAT::ascat.aspcf(ascat.bc, ascat.gg=gg, penalty=200)
     # penalty = 200 recommended for sequencing data
 
-    # fix issue with ascat.ascpcf renaming samples 
+    # fix issue with ascat.aspcf renaming samples 
     ascat.frag$samples <- paste(patient_id, sample_id, sep=".")
     rm(ascat.bc)
     
     ascat.m.plotSegmentedData(ascat.frag, lim_logR = 2.5) 
     save(ascat.frag, file = paste(patient_id, sample_id, "ascat.frag.RData", sep = "."))
-    cat("\nASCAT copy number segmentation completed\n")
+    logging::loginfo("ASCAT copy number segmentation completed.", logger="CAMDAC")
     
     # Run copy number caller a first time to get the distance matrix
-    ascat.output <- ascat.runAscat(ascat.frag, gamma = 1)
+    ascat.output <- ASCAT::ascat.runAscat(ascat.frag, gamma = 1)
     save(ascat.output, file = paste(patient_id, sample_id,"ascat.output.RData", sep = "."))
     num_het_SNPs = nrow(ascat.frag$Tumor_LogR_segmented)
     num_hom_SNPs = nrow(ascat.frag$Tumor_BAF_segmented[[1]])
     rm(ascat.frag)
     
     if(file.exists(paste(patient_id, sample_id,"ASCATprofile.png", sep = "."))){
-      cat("\nASCAT completed\n")
+      logging::loginfo("ASCAT completed.", logger="CAMDAC")
     
       # Save purity and ploidy
       f.nm <- paste(patient_id, ".", sample_id,".ACF.and.ploidy.txt", sep = "")
@@ -337,12 +337,13 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
                       median_depth = median(dt_sample_SNPs$total_depth, na.rm=TRUE),
                       median_n_depth = median(dt_sample_SNPs$total_depth_n, na.rm=TRUE))
       rm(ascat.output, num_het_SNPs, num_hom_SNPs)
-      cat(format_delim(dt, delim = "\t", col_names = T),  file = f)
+      cat(readr::format_delim(dt, delim = "\t", col_names = T),  file = f)
       close(f); rm(dt,f,f.nm)
-      cat(paste("\nPloidy, Purity and summary stats saved in ",
-                path_output,patient_id,".",sample_id,".ACF.and.ploidy.txt","\n",sep = ""))
+      logging::loginfo(paste("\nPloidy, Purity and summary stats saved in ",
+                path_output,patient_id,".",sample_id,".ACF.and.ploidy.txt","\n",sep = ""), logger="CAMDAC")
       } else {
-        cat("\nASCAT could not find a solution\n")  
+        logging::logerror("ASCAT could not find a solution for this sample.")
+        stop()  
     }
     
     # convert to data.table
@@ -368,7 +369,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
     # run plot function
     outfile = paste(patient_id, sample_id,"SNP_data.pdf", sep = "_")
     plot_SNP_info(dt=dt,outfile=outfile,min=min)
-    cat("BAF and LogR diagnostics plots generated\n")
+    logging::logdebug("BAF and LogR diagnostics plots generated.", logger="CAMDAC")
     }
     
     if(is.null(reference_panel_coverage)&sample_id==normal_id){ 
@@ -393,7 +394,7 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
       
       # run plot function
       plot_normal_SNP_info(dt=dt,outfile=outfile,min=min)
-      cat("Normal BAF plots generated\n")
+      logging::logdebug("Normal BAF plots generated.", logger="CAMDAC")
     }
 
   setwd(orig_dir)
@@ -409,7 +410,8 @@ run_ASCAT.m <- function (patient_id,sample_id,sex,
 
 split_genome_RRBS = function(SNPpos) {
   # look for gaps of more than 1Mb and chromosome borders
-  SNPposnum <- SNPpos
+  # hard copy for data table to avoid modifying SNPpos
+  SNPposnum <- data.table::copy(SNPpos)
   SNPposnum[, chrom := ifelse(chrom == "X", 23, chrom)]
   SNPposnum <- SNPposnum[, lapply(.SD, as.numeric)]
   
@@ -468,6 +470,7 @@ split_genome_RRBS = function(SNPpos) {
 #' @title remove_low_cov_singletons
 #' @description Remove low coverage singletons outliers
 #' @author Elizabeth larose cadieux
+#' @keywords internal
 remove_low_cov_singletons = function(dt_sample_SNPs,min){
 
   # subselect relevant columns
@@ -512,7 +515,7 @@ remove_low_cov_singletons = function(dt_sample_SNPs,min){
 #' @param fragments_file CAMDAC reference MspI fragments file
 #' @param replic_timing_file_prefix CAMDAC reference replication timing files path and file name prefix
 #' @param n_cores Numerical value correspdonding to the number of cores for parallel processing
-
+#' @keywords internal
 LogR_correction = function(dt_sample,dt_SNPs,build,chr_names,min_normal,
                            fragments_file,replic_timing_file_prefix,n_cores){
   
@@ -637,7 +640,7 @@ LogR_correction = function(dt_sample,dt_SNPs,build,chr_names,min_normal,
   chrom_idx = 1:23
   if(build=="hg19"){replic_files = paste0(replic_timing_file_prefix, chrom_idx, ".fst")}
   if(build=="hg38"){replic_files = paste0(replic_timing_file_prefix, chrom_idx,"_",build,".fst")}
-  replic_data = data.table(do.call(rbind, mclapply(replic_files, fst::read_fst, mc.cores = n_cores)))
+  replic_data = data.table(do.call(rbind, parallel::mclapply(replic_files, fst::read_fst, mc.cores = n_cores)))
   
   # format replication timing data
   cols <- colnames(replic_data)
@@ -680,8 +683,8 @@ LogR_correction = function(dt_sample,dt_SNPs,build,chr_names,min_normal,
   corr_rep = abs(cor(fragments_replic_data[, .SD, .SDcols=2:ncol(fragments_replic_data)], 
                      dt_SNPs$LogR_t, use="complete.obs")[,1])
   maxreplic = which.max(corr_rep)+1 ;rm(corr_rep)
-  cat(paste0("Replication timimg correction based on ", colnames(fragments_replic_data)[maxreplic], 
-             " ENCODE cell line Repli-Seq data."))
+  logging::loginfo(paste0("Replication timing correction based on ", colnames(fragments_replic_data)[maxreplic], 
+             " ENCODE cell line Repli-Seq data."), logger="CAMDAC")
   
   # annotate each SNP with fragment replication timing info
   dt_SNPs$replic <- fragments_replic_data[, .SD, .SDcols=maxreplic]
@@ -725,6 +728,7 @@ LogR_correction = function(dt_sample,dt_SNPs,build,chr_names,min_normal,
 #' @return Produces png files showing the logR and BAF values for tumour and germline samples
 #' @author Peter Van Loo
 #' @export
+#' @keywords internal
 
 ascat.m.plotSegmentedData <- function (ASCATobj, lim_logR=2) 
 {
@@ -787,7 +791,7 @@ ascat.m.plotSegmentedData <- function (ASCATobj, lim_logR=2)
 #' 
 #' @return Produces png files showing the logR and BAF values for tumour and germline samples
 #' @author Peter Van Loo
-#' @export
+#' @keywords internal
 
 ascat.m.plotRawData = function(ASCATobj, raw_LogR, pch, cex, lim_logR) {
   
@@ -893,6 +897,7 @@ ascat.m.plotRawData = function(ASCATobj, raw_LogR, pch, cex, lim_logR) {
 #' Saves a pdf w/ methylation rate distribution, biases at polymorphic and 
 #' non-polymorphic CG/CCGG and coverage distribution 
 #' @author Elizabeth Larose Cadieux
+#' @keywords internal  
 plot_BAF_and_LogR <- function (dt, outfile, downsample=1E5) {
   
   # Only plot heterozygous SNPs
@@ -930,12 +935,12 @@ plot_BAF_and_LogR <- function (dt, outfile, downsample=1E5) {
     scale_x_continuous("SNP loci", minor_breaks = lines_pos$BAFloci, breaks = lines_pos$BAFloci, labels = NULL) +
     ggtitle("BAF") + theme(legend.title = element_text(hjust = 0.5)) + guides(color = guide_legend(override.aes = list(size=10)))
   
-  d_BAF_n <-ggplot(dt_sample, aes(x=BAF_n,y=..count..,color = flag, fill=flag)) + geom_density(alpha=0.25) +
+  d_BAF_n <-ggplot(dt_sample, aes(x=BAF_n,y=ggplot2::after_stat(count),color = flag, fill=flag)) + geom_density(alpha=0.25) +
     scale_color_manual(name = "SNP\nflag", values=c("CCGG"="red","CG"="orange3","neither"="cornflowerblue")) + 
     scale_fill_manual(name = "SNP\nflag", values=c("CCGG"="red","CG"="orange3","neither"="cornflowerblue")) + 
     theme_classic()
   
-  h_BAF_n <-ggplot(dt_sample, aes(x=BAF_n,y=..count..,color = flag, fill=flag)) + geom_histogram(bins=100) +
+  h_BAF_n <-ggplot(dt_sample, aes(x=BAF_n,y=ggplot2::after_stat(count),color = flag, fill=flag)) + geom_histogram(bins=100) +
     scale_color_manual(name = "SNP\nflag", values=c("CCGG"="red","CG"="orange3","neither"="cornflowerblue")) + 
     scale_fill_manual(name = "SNP\nflag", values=c("CCGG"="red","CG"="orange3","neither"="cornflowerblue")) + theme_classic()
   
@@ -957,6 +962,7 @@ plot_BAF_and_LogR <- function (dt, outfile, downsample=1E5) {
 #' 
 #' @return pdf
 #' @author Elizabeth Larose Cadieux
+#' @keywords internal
 plot_SNP_info <- function (dt, outfile, min) {
     
   # Total INFORMATIVE counts at SNPs
@@ -978,7 +984,7 @@ plot_SNP_info <- function (dt, outfile, min) {
               axis.text.x = element_blank(), axis.ticks.x = element_blank())
   
   # Compare logR and logR corrected 
-  #p3 <- ggplot(dt, aes(y=..count..))+
+  #p3 <- ggplot(dt, aes(y=ggplot2::after_stat(count)))+
   #      ggtitle("C.")+ylab("Number of SNPs")+xlab("LogR")+
   #      theme_classic()+coord_cartesian(xlim=c(-2.5, 2.5)) +
   #      geom_histogram(aes(x=LogR_t, color="raw", fill="raw"),
@@ -1081,11 +1087,12 @@ plot_SNP_info <- function (dt, outfile, min) {
 #' 
 #' @return pdf
 #' @author Elizabeth Larose Cadieux
+#' @keywords internal
 plot_normal_SNP_info <- function (dt, outfile, min) {
   tmp <- dt[BAF>=0.15 & BAF <= 0.85 & !is.na(BAF),]
   tmp2 <- table(cut(tmp$BAF, breaks = (0.85-0.15)/0.01))
   tmp2 <- unname(tmp2[which.max(tmp2)])*9/10
-  p4 <- ggplot(data = tmp, aes(x=BAF,y=..count..,color = type,fill = type)) +
+  p4 <- ggplot(data = tmp, aes(x=BAF,y=ggplot2::after_stat(count),color = type,fill = type)) +
     geom_histogram(binwidth = 0.01, alpha = 0.25) + theme_minimal() +
     scale_color_manual(name = "", values = c("Homozygous" = "orange3", "Heterozygous" = "mediumpurple")) +
     scale_fill_manual(name = "", values = c("Homozygous" = "orange3", "Heterozygous" = "mediumpurple")) +
