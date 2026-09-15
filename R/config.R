@@ -419,6 +419,113 @@ load_loci_for_segment <- function(seg, loci_files) {
   return(loci_dt)
 }
 
+
+#' Pre-load and Split Loci by Segments
+#' 
+#' Grouping by chromosome ensures each .RData file is read only once, 
+#' Reduce I/O contention before parallel processing.
+#'
+#' @param segments A list of GRanges objects.
+#' @return A list of keyed data.tables matching the length and order of 'segments'.
+prepare_loci_list <- function(segments, loci_files, drop_ccgg = FALSE) {
+  logging::loginfo("Pre-loading and splitting loci for parallel workers...", logger="CAMDAC")
+  
+  # Create an empty list to hold results
+  loci_list <- vector("list", length(segments))
+  # A segment may hold several ranges, and those ranges may sit on more than one
+  # chromosome, so index each segment under every chromosome it touches.
+  seg_chroms <- lapply(segments, function(x) unique(as.character(seqnames(x))))
+  all_chroms <- unique(unlist(seg_chroms))
+
+  for (ch in all_chroms) {
+    seg_idx <- which(vapply(seg_chroms, function(cs) ch %in% cs, logical(1)))
+    if (length(seg_idx) == 0) {
+      next
+    }
+
+    # 1. Map chromosome name to CAMDAC file numbering
+    ch_num <- dplyr::case_when(
+      ch == "chrX" | ch == "X" ~ "23", 
+      ch == "chrY" | ch == "Y" ~ "24", 
+      TRUE ~ gsub("chr", "", ch)
+    )
+    
+    # 2. Identify and load the specific Chromosome file
+    # Uses $ to ensure exact match (e.g., .1.RData not .11.RData)
+    ch_file <- loci_files[grepl(paste0("\\.", ch_num, "\\.RData$"), loci_files)]
+    
+    if (length(ch_file) == 0) {
+      logging::logwarn("No loci file found for chromosome: %s", ch, logger="CAMDAC")
+      next
+    }
+    
+    # Load 'loci_subset' into a temporary environment to avoid name collisions
+    tmp_env <- new.env()
+    load(ch_file, envir = tmp_env)
+    
+    if (!exists("loci_subset", envir = tmp_env)) {
+      logging::logerror("Object 'loci_subset' not found in %s", ch_file, logger="CAMDAC")
+      next
+    }
+    
+    # 3. Convert to keyed data.table once per chromosome
+    ch_loci_dt <- data.table::as.data.table(tmp_env$loci_subset)
+    data.table::setnames(ch_loci_dt, 1, "chrom")
+    # Ensure chrom is character and keys are set ONCE per chromosome
+    ch_loci_dt[, chrom := as.character(chrom)]
+    essential_cols <- c("chrom", "start", "end", "width", "strand", "POS", "ref", "alt")
+    ch_loci_dt <- ch_loci_dt[, ..essential_cols]
+    
+    # 4. Pre-apply Filters for WGBS
+    if (drop_ccgg) {
+      ch_loci_dt <- ch_loci_dt[width != 4]
+    }
+
+    # 5. SET KEY ONCE (Crucial for inherited keys in workers)
+    data.table::setkey(ch_loci_dt, chrom, start, end)
+
+    # 6. Extract loci for each segment on this chromosome.
+    # Select by genomic overlap, as load_loci_for_segment() did. A containment
+    # test would silently drop loci straddling a segment boundary, and would
+    # recycle rather than error on segments holding more than one range.
+    ch_loci_gr <- GRanges(
+      seqnames = ch_loci_dt$chrom,
+      ranges = IRanges(ch_loci_dt$start, ch_loci_dt$end)
+    )
+
+    for (idx in seg_idx) {
+      s <- segments[[idx]]
+      # Restrict to the ranges of this segment that lie on the current chromosome
+      s_ch <- s[as.character(seqnames(s)) == ch]
+      hits <- sort(unique(subjectHits(findOverlaps(s_ch, ch_loci_gr))))
+      if (length(hits) == 0) {
+        next
+      }
+      part <- ch_loci_dt[hits]
+      # A segment spanning chromosomes accumulates loci across iterations
+      loci_list[[idx]] <- if (is.null(loci_list[[idx]])) {
+        part
+      } else {
+        rbind(loci_list[[idx]], part)
+      }
+    }
+
+    # Cleanup chromosome-level data to keep Master Process lean
+    rm(tmp_env, ch_loci_dt, ch_loci_gr); gc()
+  }
+
+  # Mark empty segments and key the rest, ready for zero-copy sharing in workers
+  for (i in seq_along(loci_list)) {
+    if (is.null(loci_list[[i]]) || nrow(loci_list[[i]]) == 0) {
+      loci_list[[i]] <- NA # Explicitly mark empty
+    } else {
+      data.table::setkeyv(loci_list[[i]], c("chrom", "start", "end"))
+    }
+  }
+
+  return(loci_list)
+}
+
 pipeline_files <- function() {
   pf <- Sys.getenv("CAMDAC_PIPELINE_FILES")
   ifelse(pf == "", fs::path_real("."), pf)

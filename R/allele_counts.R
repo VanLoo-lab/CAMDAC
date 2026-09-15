@@ -44,16 +44,21 @@ get_reads_in_segments <- function(bam_file, segments, min_mapq, paired_end = FAL
   bam <- Rsamtools::scanBam(bam_object, param = param)
 
   # Convert BAM to data.table with one row per read
+  # For standard WGBS analysis: 
+  # Segments of the cmain function is generated from reference files or bed regions
+  # Bam will have length of one as only one range is provided
+  # For ASM, segments = snps_gr is a GRanges object with multiple ranges
+  # Bam will have length > 1 which needs rbindlist and as.data.frame.list
+
   # The lapply operation takes bam from a list-of-lists to a list-of-dataframes,
   # which rbindlist combines into a single datatable.
   bam_dt <- data.table::rbindlist(
     lapply(bam, as.data.frame.list)
   )
 
-  # Format BAM to ucsc format if not already
-  is_ucsc <- startsWith(seqnames(seqinfo(BamFile(bam_file)))[[1]], "chr")
-  if (!is_ucsc & nrow(bam_dt) > 0) {
-    bam_dt$rname <- paste0("chr", bam_dt$rname)
+  # UCSC Fix (Vectorized is faster)
+  if (nrow(bam_dt) > 0 && !startsWith(as.character(bam_dt$rname[1]), "chr")) {
+    bam_dt[, rname := paste0("chr", rname)]
   }
 
   return(bam_dt)
@@ -94,36 +99,24 @@ load_loci_as_data_table <- function(loci_file, drop_ccgg = TRUE) {
   return(loci_dt)
 }
 
-annotate_bam_with_loci <- function(bam_dt, loci_subset, drop_ccgg = FALSE, paired_end = FALSE) {
-  loci_subset$chrom <- as.character(loci_subset$chrom)
-  data.table::setkey(loci_subset, chrom, start, end)
-  bam_dt$chrom <- as.character(bam_dt$chrom)
+annotate_bam_with_loci <- function(bam_dt, loci_subset, paired_end = FALSE) {
+  # DO NOT modify loci_subset here! Avoid deep copy in workers.
+  # Ensure bam_dt matches the key structure of the pre-keyed loci
+  bam_dt[, chrom := as.character(chrom)]
   data.table::setkey(bam_dt, chrom, start, end)
-  # Depreciated on 210513 as loci already subset to relevant regions upstream
-  # First limit loci_subset to regions in BAM to speed up later overlap by ~5x
-  # lcgr = reduce(GRanges(seqnames=bam_dt$chrom, ranges=IRanges(bam_dt$start, bam_dt$end)))
-  # lcgr = data.table(data.frame(lcgr)); names(lcgr)[1] = "chrom"; setkey(lcgr, chrom, start, end)
-  # loci_subset = foverlaps(loci_subset, lcgr)
-  # loci_subset = loci_subset[!is.na(start)]
-  # loci_subset[,`:=`(start=NULL, end=NULL, width=NULL, strand=NULL)]
-  # names(loci_subset) = gsub("^i.","",names(loci_subset))
-  # setkey(loci_subset, chrom,start,end)
-
-  # Filter CCGG loci if WGBS
-  if (drop_ccgg) {
-    loci_subset <- loci_subset[width != 4]
-  }
-
-  bam_loci_overlap <- data.table::foverlaps(bam_dt, loci_subset)
+  bam_loci_overlap <- data.table::foverlaps(bam_dt, loci_subset, nomatch = NULL)
 
   # Filter overlap to expected columns and rename columns to those used in CAMDAC-RRBS
-  setnames(bam_loci_overlap, "i.start", "read.start")
-  setnames(bam_loci_overlap, "i.end", "read.end")
-  setnames(bam_loci_overlap, "mapq", "mq")
+  data.table::setnames(bam_loci_overlap, 
+                     old = c("i.start", "i.end", "mapq"), 
+                     new = c("read.start", "read.end", "mq"))
   # Replace the i.strand column with the strand column
   # The strand column is "*" as it derives from loci_subset,
   # while i.strand derives from the BAM and contains true strand orientation for each read
-  bam_loci_overlap[, strand := i.strand]
+  bam_loci_overlap[, `:=`(
+    strand = i.strand,
+    i.strand = NULL
+  )]
   bam_cols <- c(
     "qname", "strand", "chrom", "read.start", "read.end", "POS", "width",
     "start", "end", "ref", "alt", "seq", "qual", "mq", "cigar"
@@ -132,10 +125,8 @@ annotate_bam_with_loci <- function(bam_dt, loci_subset, drop_ccgg = FALSE, paire
     bam_cols <- c(bam_cols, "flag", "groupid", "mate_status")
   }
 
-  # Filter out rows with no loci data, set expected columns and return
-  bam_loci_overlap <- bam_loci_overlap[!is.na(width), ..bam_cols]
-
-  return(bam_loci_overlap)
+  # Set expected columns and return
+  return(bam_loci_overlap[, ..bam_cols])
 }
 
 drop_positions_outside_segments <- function(bam_dt, segments) {
@@ -179,23 +170,29 @@ infer_ot_ob_strand_from_flag <- function(flag) {
   )
 }
 
-fix_pe_strand_with_flags <- function(bam_dt, paired_end = T) {
+fix_pe_strand_with_flags <- function(bam_dt, paired_end = TRUE) {
+  if (paired_end) {
   # Convert "strand" column to CAMDAC-expected strand using Bismark flags for OT/OB
   #
   #                 |  R1     R2    |  CAMDAC strand column
   # Bismark flag OT | 99(+)  147(-) |       OT = "+"
   # Bismark flag OB | 83(-)  163(+) |       OB = "-"
   # Note, this is the same as viewing in IGV as "first of pair strand".
-  if (paired_end) {
-    setkey(bam_dt, groupid)
-    bam_dt[, strand := infer_ot_ob_strand_from_flag(flag)]
+
+    # DO NOT setkey(bam_dt, groupid). Sorting 20M rows here is a waste of time and RAM.
+    # Use fcase (Fast Case) to map the specific Bismark OT/OB flags directly
+    # 99/147 are CAMDAC Top (+), 83/163 are CAMDAC Bottom (-)
+    bam_dt[, strand := data.table::fcase(
+      flag == 99L  | flag == 147L, "+",
+      flag == 83L  | flag == 163L, "-",
+      default = NA_character_
+    )]
   }
   return(bam_dt)
-
 }
 
 fix_pe_overlap_at_loci <- function(bam_dt) {
-  # Filter mate pairs that overlap loci.
+    # Filter mate pairs that overlap loci.
   # We prefentially keep R2 as for Swift Accel-MethylSeq library, the tail of +ve R1 may
   # contain adapter contaminant sequences typically trimmed off 5' +ve R2.
   # See: https://swiftbiosci.com/wp-content/uploads/2019/02/16-0853-Tail-Trim-Final-442019.pdf
@@ -203,19 +200,14 @@ fix_pe_overlap_at_loci <- function(bam_dt) {
   #    than their R2 counterparts. As we aren't using PE overlaps, filter R2 to see if it improves score
 
   # Set flag for R1 status
-  bam_dt[, is_r1:=(bitwAnd(flag, 0x40)!=0)]
+  data.table::setkey(bam_dt, NULL)
+  is_r1 <- bitwAnd(bam_dt$flag, 0x40) != 0
+  
+  dup_cols <- c("chrom", "width", "start", "groupid")
+  is_dup <- duplicated(bam_dt, by = dup_cols) | 
+            duplicated(bam_dt, by = dup_cols, fromLast = TRUE)
 
-  # Get data table of duplicated reads,
-  dups <- bam_dt[, .N, by = .(chrom, width, start, groupid)][N > 1, .(start, groupid)]
-  bam_dt <- bam_dt[
-    # Using an anti-join, remove non-R1 reads from loci with pe overlap
-    !bam_dt[dups, on = .(start, groupid)][is_r1==FALSE],
-    on = .(chrom, width, start, groupid, flag) # Note: must include flag in join
-  ]
-
-  # Clean R1 flag field
-  bam_dt[, is_r1:=NULL]
-
+  bam_dt <- bam_dt[!is_dup | is_r1]
   return(bam_dt)
 }
 
@@ -238,25 +230,50 @@ add_loci_read_position_skipCIGAR <- function(bam_dt) {
 }
 
 add_loci_read_position <- function(bam_dt) {
-  # Setup data as GRanges and aln object
-  aln <- GAlignments(
-    seqnames = as.character(bam_dt$chrom), pos = bam_dt$read.start,
-    cigar = as.character(bam_dt$cigar), strand = GenomicAlignments::strand(bam_dt$strand), names = as.character(bam_dt$qname)
-  )
-  gr <- GRanges(seqnames = bam_dt$chrom, ranges = IRanges(bam_dt$start, bam_dt$end))
-  # Get loci position in read
-  res <- pmapToAlignments(gr, aln)
+  # 1. Identify 'Simple' reads: Only digits followed by 'M' (e.g., 150M)
+  # This avoids calling the heavy CIGAR parser for 99% of the data
+  # We use fixed=FALSE but a very specific regex for speed.
+  is_complex <- grepl("[IDSHNX=]", bam_dt$cigar, perl = TRUE)
+  
+  # 2. For simple 'M' matches, the read position is just the genomic 
+  # offset from the start of the alignment.
+  bam_dt[is_complex == FALSE, `:=`(
+    rstart = as.integer(start - read.start + 1L),
+    rend = as.integer(end - read.start + 1L)
+  )]
+  
+  # 3. Only for the reads with Indels/Clipping
+  if (any(is_complex)) {
+    complex_idx <- which(is_complex)
+    sub_dt <- bam_dt[complex_idx]
+    
+    aln <- GenomicAlignments::GAlignments(
+      seqnames = as.character(sub_dt$chrom), 
+      pos = sub_dt$read.start,
+      cigar = as.character(sub_dt$cigar), 
+      strand = GenomicAlignments::strand(sub_dt$strand),
+      names = as.character(sub_dt$qname)
+    )
+    
+    gr <- GenomicRanges::GRanges(
+      seqnames = sub_dt$chrom, 
+      ranges = IRanges::IRanges(sub_dt$start, sub_dt$end)
+    )
+    
+    res <- GenomicAlignments::pmapToAlignments(gr, aln)
+    bam_dt[complex_idx, `:=`(
+      rstart = GenomicRanges::start(res), 
+      rend = GenomicRanges::end(res)
+    )]
+  }
 
-  # Get loci by mapping alignments
-  bam_dt[, rstart := start(res)]
-  bam_dt[, rend := end(res)]
-  bam_dt[, rwidth := width(res)]
-
-  # Remove any loci where CIGAR operation indicates no read at position
-  bam_dt <- bam_dt[width == rwidth][, rwidth := NULL]
-
-  # Return result
-  return(bam_dt)
+  keep_idx <- bam_dt[, which(
+    rstart >= 1L & 
+    rend <= as.integer(read.end - read.start + 1L) & 
+    width == (rend - rstart + 1L)
+  )]
+  
+  return(bam_dt[keep_idx])
 }
 
 add_loci_read_position_legacy <- function(bam_dt, skip_cigar = T) {
@@ -385,15 +402,21 @@ get_alleles_and_qual <- function(bam_dt) {
   bam_dt[width == 4, CCGG := TRUE]
   bam_dt[width == 4, alleles.CCGG := paste0(substr(seq, rstart, rend), strand)]
   # Set dinucleotides at CG sites for methylation rate calculation
-  bam_dt[width == 2, alleles.dinucs := paste0(substr(seq, rstart, rend), strand)]
-  bam_dt[width == 2, qual.dinucs := paste0(substr(qual, rstart, rend), strand)]
+  bam_dt[width == 2, `:=`(
+    alleles.dinucs = paste0(substr(seq, rstart, rend), strand),
+    qual.dinucs = paste0(substr(qual, rstart, rend), strand)
+  )]
 
   # Set nucleotides at SNP sites, including CG-SNPs
   # As POS always gives the SNP position, we need to determine how far this is from the
   # feature position (SNP/CG/CCGG, given by `start`) and adjust the read string index `rstart` accordingly.
   # Hence, snp_pos = rstart + (POS-start)
-  bam_dt[!is.na(POS), alleles.SNP := paste0(substr(seq, rstart + (POS - start), rstart + (POS - start)), strand)]
-  bam_dt[!is.na(POS), qual.SNP := paste0(substr(qual, rstart + (POS - start), rstart + (POS - start)), strand)]
+  bam_dt[!is.na(POS), snp_idx := as.integer(rstart + (POS - start))]
+  bam_dt[!is.na(POS), `:=`(
+    alleles.SNP = paste0(substr(seq, snp_idx, snp_idx), strand),
+    qual.SNP = paste0(substr(qual, snp_idx, snp_idx), strand)
+  )]
+  bam_dt[, `:=`(seq = NULL, qual = NULL, snp_idx = NULL)]
   return(bam_dt)
 }
 
@@ -402,15 +425,16 @@ filter_bam_by_quality <- function(bam_dt, min_mapq) {
   # Q score encoding reference: https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/QualityScoreEncoding_swBS.htm
   # In the regular expression, ":-@" captures all Q score ASCII symbols between ":" and "@"
   # This is capturing base quality scores at q20 and above
-  hi_qual_dinucs <- data.table::like(bam_dt$qual.dinucs, "([5-9A-K:-@])([5-9A-K:-@])")
-  hi_qual_snps <- data.table::like(bam_dt$qual.SNP, "([5-9A-K:-@])")
+  bam_dt <- bam_dt[mq >= min_mapq]
+  hi_qual_dinucs <- grepl("[5-9A-K:-@]{2}", bam_dt$qual.dinucs, perl = TRUE)
+  hi_qual_snps   <- grepl("[5-9A-K:-@]", bam_dt$qual.SNP, perl = TRUE)
 
   # Set dinuc data to NA at positions where only SNP passed the quality filter
   #  This keeps the SNP data for downstream BAF/LogR but excludes the site from
   #  methylation rate calculations
   bam_dt[
-    width >= 2 & !hi_qual_dinucs,
-    c("alleles.dinucs", "qual.dinucs") := NA
+    width >= 2 & !hi_qual_dinucs, 
+    `:=`(alleles.dinucs = NA_character_, qual.dinucs = NA_character_)
   ]
 
   # Filter BAM for high quality dinucleotides and SNPs
@@ -418,10 +442,6 @@ filter_bam_by_quality <- function(bam_dt, min_mapq) {
     (width >= 2 & hi_qual_dinucs) | # Hi quality dinucleotide filter
       (!is.na(POS) & hi_qual_snps) # Hi quality SNP filter
   ]
-
-  # Filter records for minimum mapping quality
-  # Note: mq filtering can also be applied by ScanBam
-  bam_dt <- bam_dt[mq >= min_mapq]
 
   return(bam_dt)
 }
@@ -432,27 +452,27 @@ filter_clipped_dinucleotides <- function(bam_dt) {
 }
 
 annotate_nucleotide_counts <- function(bam_dt, rrbs = FALSE) {
-  # Creates columns with binary flags for nucleotides on forward and reverse reads
-  bam_dt[, Af := fifelse(alleles.SNP == "A+", 1, 0)]
-  bam_dt[, Ar := fifelse(alleles.SNP == "A-", 1, 0)]
-  bam_dt[, Cf := fifelse(alleles.SNP == "C+", 1, 0)]
-  bam_dt[, Cr := fifelse(alleles.SNP == "C-", 1, 0)]
-  bam_dt[, Gf := fifelse(alleles.SNP == "G+", 1, 0)]
-  bam_dt[, Gr := fifelse(alleles.SNP == "G-", 1, 0)]
-  bam_dt[, Tf := fifelse(alleles.SNP == "T+", 1, 0)]
-  bam_dt[, Tr := fifelse(alleles.SNP == "T-", 1, 0)]
-  # Set dinucleotdies expected at CpG sites
-  bam_dt[, CGr := fifelse(alleles.dinucs == "CG-", 1, 0)]
-  bam_dt[, CGf := fifelse(alleles.dinucs == "CG+", 1, 0)]
-  bam_dt[, CAr := fifelse(alleles.dinucs == "CA-", 1, 0)]
-  bam_dt[, TGf := fifelse(alleles.dinucs == "TG+", 1, 0)]
+  # Group everything into a single vectorized assignment block.
+  bam_dt[, `:=`(
+    Af  = as.integer(alleles.SNP == "A+"),
+    Ar  = as.integer(alleles.SNP == "A-"),
+    Cf  = as.integer(alleles.SNP == "C+"),
+    Cr  = as.integer(alleles.SNP == "C-"),
+    Gf  = as.integer(alleles.SNP == "G+"),
+    Gr  = as.integer(alleles.SNP == "G-"),
+    Tf  = as.integer(alleles.SNP == "T+"),
+    Tr  = as.integer(alleles.SNP == "T-"),
+    
+    CGr = as.integer(alleles.dinucs == "CG-"),
+    CGf = as.integer(alleles.dinucs == "CG+"),
+    CAr = as.integer(alleles.dinucs == "CA-"),
+    TGf = as.integer(alleles.dinucs == "TG+")
+  )]
 
   if (rrbs) {
-    # Assign fragments breakpoint for RRBS
-    bam_dt[, CCGG := fifelse(CCGG == "5pCCGG", 1, 0)]
+    bam_dt[, CCGG := as.integer(CCGG == "5pCCGG")]
   } else {
-    # Set CCGG to 0 for WGBS
-    bam_dt[, CCGG := 0]
+    bam_dt[, CCGG := 0L] # 0L ensures it matches the integer type of the rest
   }
   return(bam_dt)
 }
@@ -473,9 +493,9 @@ flatten_pileup_to_counts <- function(bam_dt) {
     "CAr" = sum(CAr, na.rm = TRUE),
     # total_depth counts reads contributing to position defined by "keyby" field,
     # hence Af selection is arbitrary and any field could be used.
-    "total_depth" = length(Af),
+    "total_depth" = .N,
     "CCGG" = sum(CCGG, na.rm = TRUE),
-    "mq" = median(as.numeric(mq), na.rm = TRUE)
+    "mq" = as.numeric(median(mq, na.rm = TRUE))
   ),
   keyby = .(chrom, start, end, width, POS, ref, alt)
   ]
@@ -856,14 +876,18 @@ clean_and_limit_segments <- function(seg, bam_file) {
 # Wrapper ----
 
 #' @export
-cwrap_get_allele_counts <- function(bam_file, seg, loci_dt = NA, paired_end, drop_ccgg, min_mapq = 1, min_cov = 3) {
+cwrap_get_allele_counts <- function(bam_file, seg, loci_dt = NA, paired_end, min_mapq = 1, min_cov = 3) {
   # Loci may be NA if loci for segment chromosome (i.e. chromY)
   # is missing. Return early in these cases as no alleles to count.
   # Two conditions required to avoid error raised using is.na alone.
-  if (all(class(loci_dt) == "logical")) {
-    if (is.na(loci_dt)) {
-      return(empty_count_alleles_result())
-    }
+  # Handle the NA case from prepare_loci_list
+  if (is.logical(loci_dt) && is.na(loci_dt)) {
+     return(empty_count_alleles_result())
+  }
+  
+  # Ensure loci_dt is a data.table (if it survived the NA check)
+  if (!data.table::is.data.table(loci_dt)) {
+     return(empty_count_alleles_result())
   }
 
   # Limit segments to chromosomes covered in BAM file
@@ -880,7 +904,7 @@ cwrap_get_allele_counts <- function(bam_file, seg, loci_dt = NA, paired_end, dro
 
   # Overlap with loci
   bam_dt <- format_bam_for_loci_overlap(bam_dt, paired_end = paired_end)
-  bam_dt <- annotate_bam_with_loci(bam_dt, loci_dt, drop_ccgg = drop_ccgg, paired_end = paired_end)
+  bam_dt <- annotate_bam_with_loci(bam_dt, loci_dt, paired_end = paired_end)
   bam_dt <- drop_positions_outside_segments(bam_dt, seg)
   if (nrow(bam_dt) == 0) {
     return(empty_count_alleles_result())
