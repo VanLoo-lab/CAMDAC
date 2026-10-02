@@ -52,7 +52,6 @@ cmain_count_alleles <- function(sample, config) {
   min_cov <- config$min_cov
 
   # Prepare the loci list (Master process reads disk 24 times)
-  # Moved CCGG filtering to master process.
   loci_list <- prepare_loci_list(segments, loci_files, drop_ccgg)
   
   logging::loginfo("Counting alleles for %s", paste0(sample$patient_id, ":", sample$id), logger="CAMDAC")

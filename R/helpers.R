@@ -83,44 +83,12 @@ setup_cna_inject_subdir <- function(tumour, normal, config, subdir_name) {
   return(config)
 }
 
-#' Cache existing CAMDAC results into a sub-directory so that the current ones can be
-#' overwritten by the refitting pipeline
-#'    Decided this is unnecessary as the initial results were so wrong.
+# Cache existing CAMDAC results into a sub-directory so that the current ones can be
+# overwritten by the refitting pipeline
+#    Decided this is unnecessary as the initial results were so wrong.
 # setup_cache_refit <- function(tumour, normal, config, cache_path){
 #
 # }
-
-#' Exported only for development
-#' @keywords internal
-helper_camdac_pileup <- function(bam_file, seg, loci_dt) {
-  paired_end <- T
-  drop_ccgg <- T
-  bam_dt <- CAMDAC:::get_reads_in_segments(bam_file, seg, paired_end = paired_end, min_mapq = 0)
-  if (nrow(bam_dt) == 0) {
-    return(empty_count_alleles_result())
-  }
-  bam_dt <- CAMDAC:::format_bam_for_loci_overlap(bam_dt, paired_end = paired_end)
-  # annotate_bam_with_loci() expects pre-filtered, pre-keyed loci and will not
-  # mutate them. Copy first so this dev helper leaves the caller's table alone.
-  loci_dt <- data.table::copy(loci_dt)
-  if (drop_ccgg) {
-    loci_dt <- loci_dt[width != 4]
-  }
-  loci_dt[, chrom := as.character(chrom)]
-  data.table::setkey(loci_dt, chrom, start, end)
-  bam_dt <- CAMDAC:::annotate_bam_with_loci(bam_dt, loci_dt, paired_end = paired_end)
-  bam_dt <- CAMDAC:::drop_positions_outside_segments(bam_dt, seg)
-  bam_dt <- CAMDAC:::fix_pe_overlap_at_loci(bam_dt)
-  bam_dt <- CAMDAC:::add_loci_read_position(bam_dt)
-  bam_dt <- CAMDAC:::fix_pe_strand_with_flags(bam_dt)
-  bam_dt <- CAMDAC:::get_alleles_and_qual(bam_dt)
-  bam_dt <- CAMDAC:::drop_pe_fields(bam_dt)
-  bam_dt <- CAMDAC:::filter_clipped_dinucleotides(bam_dt)
-  bam_dt <- CAMDAC:::annotate_nucleotide_counts(bam_dt)
-  bam_dt$total_depth <- 1
-  bam_dt <- CAMDAC:::get_snp_allele_counts(bam_dt)
-  return(bam_dt)
-}
 
 
 #' Parse ASCAT and Battenberg output directories to load CNA data

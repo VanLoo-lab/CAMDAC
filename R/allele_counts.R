@@ -100,7 +100,6 @@ load_loci_as_data_table <- function(loci_file, drop_ccgg = TRUE) {
 }
 
 annotate_bam_with_loci <- function(bam_dt, loci_subset, paired_end = FALSE) {
-  # DO NOT modify loci_subset here! Avoid deep copy in workers.
   # Ensure bam_dt matches the key structure of the pre-keyed loci
   bam_dt[, chrom := as.character(chrom)]
   data.table::setkey(bam_dt, chrom, start, end)
@@ -172,16 +171,18 @@ infer_ot_ob_strand_from_flag <- function(flag) {
 
 fix_pe_strand_with_flags <- function(bam_dt, paired_end = TRUE) {
   if (paired_end) {
-  # Convert "strand" column to CAMDAC-expected strand using Bismark flags for OT/OB
-  #
-  #                 |  R1     R2    |  CAMDAC strand column
-  # Bismark flag OT | 99(+)  147(-) |       OT = "+"
-  # Bismark flag OB | 83(-)  163(+) |       OB = "-"
-  # Note, this is the same as viewing in IGV as "first of pair strand".
-
-    # DO NOT setkey(bam_dt, groupid). Sorting 20M rows here is a waste of time and RAM.
-    # Use fcase (Fast Case) to map the specific Bismark OT/OB flags directly
-    # 99/147 are CAMDAC Top (+), 83/163 are CAMDAC Bottom (-)
+    # Convert "strand" column to CAMDAC-expected strand using Bismark flags for OT/OB
+    #
+    #                 |  R1     R2    |  CAMDAC strand column
+    # Bismark flag OT | 99(+)  147(-) |       OT = "+"
+    # Bismark flag OB | 83(-)  163(+) |       OB = "-"
+    # Note, this is the same as viewing in IGV as "first of pair strand".
+    #
+    # Bismark OT/OB flags:
+    #   OT R1: 64 (R1) + 32 (mate_rev) + 2 (proper) + 1 (paired) = 99
+    #   OT R2: 128 (R2) + 16 (self_rev) + 2 + 1 = 147
+    #   OB R1: 64 (R1) + 16 (self_rev) + 2 + 1 = 83
+    #   OB R2: 128 (R2) + 32 (mate_rev) + 2 + 1 = 163
     bam_dt[, strand := data.table::fcase(
       flag == 99L  | flag == 147L, "+",
       flag == 83L  | flag == 163L, "-",
