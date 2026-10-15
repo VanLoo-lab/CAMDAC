@@ -1,0 +1,18 @@
+articles:
+- title: Pipeline
+  navbar: ~
+  contents:
+  - introduction
+  - setup
+  - pipeline
+  - output
+- title: Experimental
+  navbar: ~
+  contents:
+  - experimental
+- title: Extra
+  navbar: ~
+  contents:
+  - questions
+  - technical
+  - contributing

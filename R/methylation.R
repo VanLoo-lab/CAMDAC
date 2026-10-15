@@ -1,0 +1,463 @@
+#' Pre-process CAMDAC methylation data
+
+# Code ----
+
+#' Calculate HDI interval width
+#' @noRd
+#' @keywords internal
+intervalWidth <- function(lowTailPr, ICDFname, credMass, ...) {
+  ICDFname(credMass + lowTailPr, ...) - ICDFname(lowTailPr, ...)
+}
+
+#' HDI of ICDF
+#' @param ICDFname The inverse cumulative density function of the distribution.
+#' @param credMass The desired mass of the HDI region.
+#' @param tol Tolerance parameter for optimisation. the lower the tolerance,the
+#'   longer the optimisation, but the higher the accuracy.
+#'   According to CAMDAC RRBS comments, tol=1e-4 gives values
+#'   of the same accuracy as our max resolution.
+#'   This function is adapted from Greg Snow's TeachingDemos package
+#'   E.g.Determine HDI of a M=30 and UM=12 CpG
+#'   Adding 1 to shape parameter ensures uniform beta(1,1) is updated with our counts
+#'   HDIofICDF(qbeta,shape1 = 30+1 , shape2 = 12+1 )
+#' @return Highest density interval (HDI) limits in a vector.
+#' @keywords internal
+HDIofICDF <- function(ICDFname, credMass = 0.99, tol = 1e-4, ...) {
+  incredMass <- 1.0 - credMass
+
+  # Here, shape parameters are passed to ICDFname function via `...`
+  optInfo <- optimize(f = intervalWidth, interval = c(0, incredMass), ICDFname = ICDFname, credMass = credMass, tol = tol, ...)
+
+  HDIlowTailPr <- optInfo$minimum
+  vec <- setNames(object = ICDFname(c(HDIlowTailPr, credMass + HDIlowTailPr), ...), nm = c("low", "high"))
+  return(data.frame(lo = vec[[1]], high = vec[[2]]))
+  # return(vec)
+}
+
+# Calculate HDI counts for unique combinations of records to speed up processing time
+unique_calculate_counts_hdi <- function(M, UM, n_cores = 1, itersplit = 5e5) {
+  # Itersplit default: Benchmarking found 500K cpgs takes ~1min
+  # Validate M-length
+  inp_len <- length(M)
+  stopifnot(inp_len == length(UM))
+
+  # Get unique pairs to save computation
+  udata <- unique(data.table(M = M, UM = UM))
+  M <- udata$M
+  UM <- udata$UM
+  inp_len <- length(M)
+  rm(udata)
+
+  # Split data for parallel chunks
+  split_factor <- make_split_factor(inp_len, itersplit)
+  M <- split(M, split_factor)
+  UM <- split(UM, split_factor)
+
+  # Calculate HDI parallel
+  doParallel::registerDoParallel(cores = n_cores)
+  # mapply is used to vectorise over M and UM, which are arrays
+  hdi <- foreach(M = M, UM = UM) %dopar% {
+    hdi_qbeta(M, UM)
+  }
+  doParallel::stopImplicitCluster()
+
+  # Bind result as data.table
+  hdi <- data.table::rbindlist(hdi)
+  res <- cbind(
+    data.table(M = unlist(M), UM = unlist(UM)),
+    hdi
+  )
+
+  return(res)
+}
+
+calculate_counts_hdi <- function(M, UM, n_cores = 1, itersplit = 5e5) {
+  # Calculate HDI and bind to original data. Adds columns "m_x_low" and "m_x_high"
+  u_hdi <- unique_calculate_counts_hdi(M, UM, n_cores = n_cores, itersplit = itersplit)
+  u_hdi <- round(u_hdi, digits = 5)
+  # Combine original data with HDI in order
+  hdi_data <- merge(
+    data.table(M = M, UM = UM, i = seq(length(M))),
+    u_hdi,
+    all.x = TRUE,
+    by = c("M", "UM")
+  )
+  names(hdi_data) <- c("M", "UM", "hdi_i", "m_x_low", "m_x_high")
+  hdi_data <- hdi_data[order(hdi_i), .(m_x_low, m_x_high)]
+  # Return HDI data alone (able to cbind original data)
+  return(hdi_data)
+}
+
+# Return allele counts data restricted to methylation sites and formatted for
+# downstream deconvolution and DMP identification
+process_methylation <- function(allele_counts, min_meth_loci_reads = 3) {
+  # Limit data to CpG/CCGG sites with methylation data.
+  methyl <- allele_counts[width > 1 & !is.na(m) & total_counts_m > min_meth_loci_reads]
+  rm(allele_counts)
+
+  # Annotate heterozygous SNPs for downstream CG-SNP investigation
+  # FEATURE: BAF is already counted in allele_counts,
+  # therefore this label may be more appropriate earlier in the pipeline
+  methyl[, SNP := fifelse(!is.na(BAF) & (BAF >= 0.15) & (BAF <= 0.85), 1, 0)]
+
+  # Add column of methylation coverage as cov.
+  methyl[, cov := total_counts_m]
+
+  # Add CG-SNP status (CG-forming or destroying). Required for accurate CG-copy number assignment
+  methyl[, cg_snp := classify_cg_snp(start, width, POS, ref, alt)]
+
+  # Subset to required output columns
+  methyl <- methyl[, .(chrom, start, end, M, UM, m, cov, SNP, BAF, cg_snp)]
+
+  # Return data
+  return(methyl)
+}
+
+
+
+save_methylation_df <- function(methyl, sample, config) {
+  output_file <- get_fpath(sample, config, "meth")
+  data.table::fwrite(methyl, file = output_file)
+}
+
+# A key result of run_methylation_data_processing is the dt_tumour_and_normal_m.RData object
+# I would like to see how far I can get without combining these two, but rather working with the data separately (memory issues afterall)
+# I.e. can differential methylation analysis start by loading each separately?
+combine_tumour_normal_methylation <- function(t_meth, n_meth) {
+  new_names <- sapply(names(n_meth), function(x) {
+    ifelse(x %in% c("CHR", "chrom", "start", "end"), x, paste0(x, "_n"))
+  })
+  names(n_meth) <- new_names
+
+  # Set keys for merge (sorts table internally)
+  #   We first correct orderings for chrom fields by making them factors
+  t_meth$chrom <- factor(t_meth$chrom, levels = c(1:22, "X", "Y"))
+  n_meth$chrom <- factor(n_meth$chrom, levels = c(1:22, "X", "Y"))
+  setkey(t_meth, chrom, start, end)
+  setkey(n_meth, chrom, start, end)
+
+  # Combine into a single CpG table.
+  #   All normal fields are now prefixed with 'i.'
+  #   nomatch=0 drops mismatching fields, rather than retaining them as NA
+  #   type="equal" searches for exact CpG range matches
+  meth_c <- foverlaps(n_meth, t_meth, nomatch = 0, type = "equal")
+  meth_c$i.start <- NULL
+  meth_c$i.end <- NULL
+  setkey(meth_c, chrom, start, end)
+  return(meth_c)
+}
+
+annotate_cgs_with_cnas <- function(meth_c, cna) {
+  # Format cna names, allowing datasets to be independent
+  names(cna)[1:5] <- c("chrom", "start", "end", "nA", "nB")
+  setkey(cna, chrom, start, end)
+  # Add additional columns so segments can be referenced elswhere in code
+  cna$seg_start <- cna$start
+  cna$seg_end <- cna$end
+  cna$CN <- cna$nA + cna$nB
+  meth_cna <- foverlaps(cna, meth_c, nomatch = 0)
+  meth_cna[, i.start := NULL]
+  meth_cna[, i.end := NULL]
+
+  # Set CG copy number us BAF threshold of 0.5.
+  #  At CG-SNP sites, reads will only contain CGs depending on whether the site is a CG-forming or CG-destroying SNP.
+  #  Therefore the methylation copy number at these loci will reflect the major or minor allele.
+  meth_cna[, CG_CN := data.table::fcase(
+    #  If not a CG-SNP, take total copy number
+    is.na(BAF), CN,
+    #  Take major if majority allele contains CG (CG-destroying with low BAF or CG-forming with high BAF)
+    (BAF <= 0.5 & cg_snp == "D") | (BAF >= 0.5 & cg_snp == "F"), nA,
+    #  Take minor if majority allele does no contain CG (CG-destroying with high BAF or CG-forming with low BAF)
+    (BAF > 0.5 & cg_snp == "D") | (BAF < 0.5 & cg_snp == "F"), nB,
+    # Set to total CN for any other case
+    rep(TRUE, nrow(meth_cna)), CN
+  )]
+
+  # Set normal CG copy number.
+  # CG_CN_n is 1 at CG-destroying/forming hetrozygous SNPs
+  meth_cna[, CG_CN_n := data.table::fifelse(is.na(BAF), 2, 1, na = NA)]
+  # Set normal copy number on sex chromosome X in MALES
+  # In males, it has CN=1 outside PAR regions and 2 within.
+  # TODO: meth_cna <- calculate_cg_cn_norm(meth_cna, patient_sex, reference_genome)
+
+  # Add overall tumour purity
+  meth_cna[, p := cna$purity[[1]]]
+  return(meth_cna)
+}
+
+# TODO: Include CCGG sites in this function for RRBS
+classify_cg_snp <- function(start, width, POS, ref, alt) {
+  cg_snp_class <- data.table::fcase(
+    # A CG-SNP is any position with a width >1 and a non-na POS
+    # Return NA for sites that do not meet this criteria
+    width != 2 | is.na(POS), NA_character_,
+    # CG-destroying SNPs have a reference C at CG-start or G at CG-end.
+    (start == POS & ref == "C") | (start + 1 == POS & ref == "G"), "D",
+    # CG-forming SNPs have an alt C at the CG-start or G at the CG-end.
+    (start == POS & alt == "C") | (start + 1 == POS & alt == "G"), "F",
+    default = NA_character_
+  )
+  return(
+    factor(cg_snp_class, levels = c("F", "D", NA_character_))
+  )
+}
+
+calculate_mt <- function(mb, mn, p, CN) {
+  tumour_frac <- p * CN
+  normal_frac <- (1 - p) * 2 # Normal CN assumed to be 2
+  mt <- ((
+    mb * (tumour_frac + normal_frac)
+  ) - (
+    mn * normal_frac
+  )) /
+    tumour_frac
+  return(mt)
+}
+
+calculate_mt_cov <- function(cov_b, p, CN) {
+  # Effective tumour coverage estimated by deconvolving bulk coverage
+  # The fractin of reads reporting the tumour is a function of the tumour purity,
+  #   and copy number. If CN was not included two sites with the same purity, cov_b and CN_norm can
+  #   differ by CN and be incorrectly inferred
+  tumour_frac <- p * CN
+  normal_frac <- (1 - p) * 2 # Normal CN assumed to be 2
+  cov_t <- round(
+    cov_b * tumour_frac / (tumour_frac + normal_frac),
+    digits = 0
+  )
+  return(cov_t)
+}
+
+deconvolve_bulk_methylation <- function(meth_c) {
+  # Deconvolve methylation
+  meth_c[, m_t_raw := calculate_mt(
+    m, m_n, p, CG_CN
+  )]
+
+  # Correct pure tumour methylation rates set outside 0 and 1 after deconvolution
+  meth_c[, m_t := data.table::fcase(
+    m_t_raw < 0, 0,
+    m_t_raw > 1, 1,
+    rep(TRUE, nrow(meth_c)), m_t_raw
+  )]
+
+  # Calculate tumour coverage by deconvolution
+  meth_c[, cov_t := calculate_mt_cov(cov, p, CG_CN)]
+
+  return(meth_c)
+}
+
+filter_deconvolved_methylation <- function(meth_c) {
+  meth_c[
+    CN > 0 & # Remove homozygous deletions
+      cov_t >= 3 & # Remove low-coverage CpGs (after deconvolution)
+      !is.na(m_t_raw) # Capture any errors in deconvolution. Should be none!
+  ]
+}
+
+#' Calculate HDI by simulation
+#' @keywords internal
+calculate_m_t_hdi <- function(meth_c, n_cores, itersplit = 1e5) {
+  inp_len <- nrow(meth_c)
+  split_factor <- make_split_factor(inp_len, itersplit)
+
+  msplit <- iterators::isplit(meth_c, split_factor)
+
+  # Calculate HDI
+  doParallel::registerDoParallel(cores = n_cores)
+  hdi_all <- foreach(v = msplit, .combine = "rbind") %dopar% {
+    x <- v$value
+    hdi <- vec_HDIofMCMC_mt(
+      M_b = x$M,
+      UM_b = x$UM,
+      M_n = x$M_n,
+      UM_n = x$UM_n,
+      p = x$p,
+      CN = x$CG_CN,
+      credMass = 0.99
+    )
+    colnames(hdi) <- c("m_t_low", "m_t_high")
+    return(hdi)
+  }
+  doParallel::stopImplicitCluster()
+
+  meth_c <- cbind(meth_c, hdi_all)
+  return(meth_c)
+}
+
+#' Calculate HDI by simulation
+#'
+#' Computes highest density interval from a sample of representative values,
+#'  estimated as shortest credible interval for a unimodal distribution
+#'
+#' @param M_b counts methylated in the tumour
+#' @param UM_b counts unmethylated in the tumour
+#' @param M_n counts methylated in the normal
+#' @param UM_n counts unmethylated in the normal
+#' @param p tumour purity
+#' @param CN total tumour copy number
+#' @param CN_n total normal copy number
+#' @param credMass default is 0.99
+#' credMass is a scalar between 0 and 1, indicating the mass within the
+#' credible interval that is to be estimated.
+#' @return Value: HDIlim is a vector containing the limits of the HDI
+#' @keywords internal
+HDIofMCMC_mt <- function(M_b, UM_b, M_n, UM_n, p, CN, credMass = 0.99) {
+  # Cannot calculate if counts are not given. Return NA in this instance
+  if(any(is.na(c(M_b, UM_b, M_n, UM_n, p, CN)))){
+    return(c(lower=NA, upper=NA))
+  }
+
+  # Simulate beta distributions from bulk and normal methylation
+  bulk_dist <- rbeta(n = 2000, shape1 = M_b + 1, shape2 = UM_b + 1)
+  normal_dist <- rbeta(n = 2000, shape1 = M_n + 1, shape2 = UM_n + 1)
+
+  # Get constants for effect of purity and copy number
+  tumour_frac <- p * CN
+  normal_frac <- (1 - p) * 2 # Normal CN assumed to be 2
+  bulk_constant <- tumour_frac + normal_frac
+
+  # Deconvolve methylation rates from monte carlo simulation to approximate mt distribution
+  mt_dist <- ((bulk_dist * bulk_constant) - (normal_dist * normal_frac)) / tumour_frac
+
+  # Calculate the HDI of mt from the simulation
+  # See (Kruschke, K., 2015, Doing Bayesian Data Analysis, 721–736)
+  mt_dist <- sort(mt_dist)
+  # get the width of the nth percentile where n=credMass
+  ci_idx_length <- ceiling(credMass * length(mt_dist))
+  # get the diff between all pairs at a suitable width
+  ciWidth <- diff(x = mt_dist, lag = ci_idx_length)
+  # Return HDI
+  HDIlim <- (c(
+    lower = mt_dist[which.min(ciWidth)],
+    upper = mt_dist[which.min(ciWidth) + ci_idx_length]
+  ))
+
+  return(HDIlim)
+}
+
+# Vectorise HDI simulation
+vec_HDIofMCMC_mt <- function(...) {
+  vf <- Vectorize(HDIofMCMC_mt) # Accepts vectors with dim(y,0)
+  result <- vf(...) # Returns a matrix with dim(x ,y)
+  # Transpose result to return rows corresponding to original data: dim(y,x)
+
+  # Vectorize will return a matrix, however if there are sufficiently large rows,
+  # the matrix is returned as a list of vectors. This is a workaround to ensure that the
+  # result is always a matrix.
+  if ("list" %in% class(result)) {
+    # Unfortunately, sites with no result are returned simply as numeric(0).
+    # Set these to appropriate NA values before reducing, otherwise they are dropped by R.
+    z <- sapply(result, length) != 2
+    result[z] <- list(c(NA, NA))
+    out <- Reduce(rbind, result)
+    return(out)
+  } else {
+    # If the result is not a list, it is a matrix
+    # The matrix must be transposed
+    out <- t(result)
+  }
+
+  return(out)
+}
+
+# Helper function to split data
+make_split_factor <- function(nrows, itersplit) {
+  # Get the integer by which we will split data
+  # If nrows is < itersplit, set the factor to 1
+  split_factor <- ifelse(
+    nrows < itersplit,
+    1,
+    round(nrows / itersplit, 0)
+  )
+
+  # Repeat a sequence of our split factor
+  # then sort it to ensure data is split in order
+  split_f <- sort(
+    rep_len(
+      seq(split_factor),
+      nrows
+    )
+  )
+
+  return(split_f)
+}
+
+
+# Calculate HDI of mt by normal approximation
+hdi_norm_approx <- function(m, um, mn, umn, p, CN){
+    # Is robust to NA
+    # Add the relevant pseudocounts as they are in the m_t calculation
+    m = m+1; um = um+1; mn = mn+1; umn = umn+1
+    
+    # Calculate mt as mean
+    m_b = m/(m+um)
+    m_n = mn/(mn+umn)
+    bulk_constant = ( (p * CN) + ((1 - p) * 2) ) / (p * CN)
+    norm_constant = ( (1-p) * 2) / (p * CN)
+    m_t = (m_b * bulk_constant) - (m_n * norm_constant)
+
+    # Calculate variance
+    var_bulk = var_func(m, um) * (bulk_constant^2)
+    var_norm = var_func(mn, umn) * (norm_constant^2)
+    var_t = var_bulk + var_norm
+    sd_t = sqrt(var_t)
+
+    # Calculate normal approx for HDI 
+    m_t_low = qnorm(c(0.005), mean = m_t, sd = sd_t)
+    m_t_high = qnorm(c(0.995), mean = m_t, sd = sd_t)
+    
+    return(data.table(cbind(m_t_low, m_t_high)))
+}
+
+# Calculate HDI of mt by normal approximation
+calculate_m_t_hdi_norm <- function(meth_c){
+    meth_c_hdi = hdi_norm_approx(
+        meth_c$M,
+        meth_c$UM,
+        meth_c$M_n,
+        meth_c$UM_n,
+        meth_c$p,
+        meth_c$CN
+    )
+    meth_c = cbind(meth_c, meth_c_hdi)
+    return(meth_c)
+}
+
+# Refactored from unique_calculate_counts_hdi
+hdi_qbeta <- function(M, UM){
+    # Settings
+    shape1 = M+1
+    shape2 = UM+1
+    incredMass <- 1.0 - .99
+    credMass <- .99
+    tol <- 1e-4
+
+    qBetaInterval <- function(lowTailPr, credMass, shape1, shape2) {
+    qbeta(credMass + lowTailPr, shape1, shape2) - qbeta(lowTailPr, shape1, shape2)
+    }
+
+    # Vectorize optimisation
+    get_minima <- function(shape1, shape2, credMass, incredMass){
+        optInfo <- optimize(f = intervalWidth, interval = c(0, incredMass), ICDFname = qbeta, credMass = credMass, tol = tol, 
+            shape1=shape1, shape2=shape2)
+        return(optInfo$minimum)
+    }
+    v_get_minima <- Vectorize(get_minima, vectorize.args = c("shape1", "shape2"))
+
+    # Warnings if NA
+    minima = suppressWarnings(v_get_minima(shape1, shape2, credMass, incredMass))
+    lo = qbeta(minima, shape1, shape2)
+    hi = qbeta(minima + credMass, shape1, shape2)
+
+    hdi = data.frame(lo, hi)
+    return(hdi)
+}
+
+# Now, variance is the sum of the individual beta variances
+# And, to scale variance, you multiply by the scaling factor squared.
+var_func <- function(a, b){
+    (a * b)  / (
+        ( a + b ) ^ 2 * ( a + b + 1 )
+    )
+}

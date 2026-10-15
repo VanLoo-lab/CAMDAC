@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use CAMDAC, please cite both the software and the paper below."
+title: "CAMDAC: Copy-number Aware Methylation Deconvolution and Analysis of Cancers"
+abstract: >-
+  CAMDAC performs copy-number aware deconvolution of bulk tumour bisulfite
+  sequencing data, recovering purified tumour methylation rates and calling
+  differentially methylated positions and regions. Supports RRBS and WGBS.
+type: software
+version: 0.2.0
+date-released: 2026-10-15
+license: MIT
+repository-code: "https://github.com/VanLoo-lab/CAMDAC"
+authors:
+  - family-names: "Larose Cadieux"
+    given-names: "Elizabeth"
+  - family-names: "Mensah"
+    given-names: "Nana"
+    email: "nana.mensah@crick.ac.uk"
+  - family-names: "Lai"
+    given-names: "Siqi"
+  - family-names: "Castignani"
+    given-names: "Carla"
+  - family-names: "Demeulemeester"
+    given-names: "Jonas"
+  - family-names: "Van Loo"
+    given-names: "Peter"
+preferred-citation:
+  type: article
+  title: >-
+    Copy number aware deconvolution of tumour-normal DNA methylation profiles
+  doi: "10.1101/2020.11.03.366252"
+  year: 2020
+  journal: "bioRxiv"
+  authors:
+    - family-names: "Larose Cadieux"
+      given-names: "Elizabeth"
+    - family-names: "Van Loo"
+      given-names: "Peter"
