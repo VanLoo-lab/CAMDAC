@@ -212,7 +212,7 @@ cmain_asm_call_cna <- function(tumor, germline, config) {
     }
 
     # Preprocess CpG, SNP and methylation data for all samples
-    preprocess(
+    preprocess_wgbs(
         list(tumor, germline),
         config
     )

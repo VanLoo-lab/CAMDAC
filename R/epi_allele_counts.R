@@ -14,6 +14,16 @@ cwrap_get_epialleles <- function(bam_file, seg, loci_dt = NA, paired_end, drop_c
     # Pre-applying multi-SNP loci filter
     loci_dt <- loci_dt[!duplicated(loci_dt, by = c("chrom", "start", "end"), fromLast = T)]
 
+    # Filter CCGG loci if WGBS, then key for the overlap.
+    # annotate_bam_with_loci() no longer filters or keys the loci itself, so that
+    # it never mutates a table shared across forked workers. Callers now pass a
+    # pre-filtered, pre-keyed table. The subset above already made a local copy.
+    if (drop_ccgg) {
+        loci_dt <- loci_dt[width != 4]
+    }
+    loci_dt[, chrom := as.character(chrom)]
+    data.table::setkey(loci_dt, chrom, start, end)
+
     # Read BAM and annotate SNP and CPG loci
     bam_dt <- get_reads_in_segments(bam_file, seg, min_mapq, paired_end = paired_end)
     if (nrow(bam_dt) == 0) {
@@ -22,7 +32,7 @@ cwrap_get_epialleles <- function(bam_file, seg, loci_dt = NA, paired_end, drop_c
 
     # Overlap with loci
     bam_dt <- format_bam_for_loci_overlap(bam_dt, paired_end = paired_end)
-    bam_dt <- annotate_bam_with_loci(bam_dt, loci_dt, drop_ccgg = drop_ccgg, paired_end = paired_end)
+    bam_dt <- annotate_bam_with_loci(bam_dt, loci_dt, paired_end = paired_end)
     bam_dt <- drop_positions_outside_segments(bam_dt, seg)
     if (nrow(bam_dt) == 0) {
         return(empty_count_alleles_result())
