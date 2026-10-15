@@ -23,7 +23,9 @@ Take a hypothetical female patient with primary tumour sample ID "**T1**" and no
 
 CAMDAC employs an allele counter module to count SNP and CpG (methylation) alleles for downstream analysis. SNP counts are performed at 1000 genome SNP positions, and CpG alleles are counted using dinucleotides. To speed up the computation, we leverage a reference RRBS and WGBS genome files listing all genomic regions supported by the respective platforms. 
 
-By default, the read mapping quality filter is set to **mq**>=0 as default in `CamConfig()`. Mapping quality scores from bisulfite sequencing aligners may be biased against the alternate allele for reads with polymorphisms. Please review the mapping quality distribution of your data to determine if it is appropriate to increase this setting.
+The read mapping quality filter, **min_mapq** in `CamConfig()`, defaults to **0 for RRBS** and **1 for WGBS**. Mapping quality scores from bisulfite sequencing aligners may be biased against the alternate allele for reads with polymorphisms, so CAMDAC counts every alignment wherever it safely can. RRBS alignments are validated on their read start site rather than their mapping quality, which makes a mapping quality filter redundant there; WGBS alignments have no such constraint, so MAPQ 0 alignments are dropped. Please review the mapping quality distribution of your data to determine whether a different setting is appropriate, and pass `min_mapq` explicitly to override the default.
+
+The minimum coverage filter, **min_cov**, defaults to 3 for both protocols. It is applied to DNA methylation rates and to normal SNP selection.
 
 
 If the function is successful, a signle file output with the suffix "SNPs.CpGs". This file carries compiled SNP and methylation information with the following columns:  

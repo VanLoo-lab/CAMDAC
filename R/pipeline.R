@@ -114,7 +114,7 @@ pipeline_rrbs <- function(tumor, germline, infiltrates, origin, config){
     logging::loginfo("Preprocessing sample %s:%s", s$patient_id, s$id, logger="CAMDAC")
     preprocess_rrbs_normal(
       patient_id = s$patient_id , sample_id = s$id, bam_file = s$bam,
-      min_tumor = 1, min_normal = config$min_normal_cov, mq = config$min_mapq,
+      min_tumor = config$min_cov, min_normal = config$min_normal_cov, mq = config$min_mapq,
       sex = s$sex, path = config$outdir,
       pipeline_files = config$refs, build = config$build,
       n_cores = config$n_cores, paired_end = is_pe(config), segments_bed=config$regions

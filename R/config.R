@@ -27,8 +27,11 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #' @param refs Path to CAMDAC reference files. If this is not given, CAMDAC searches the
 #'   environment variable CAMDAC_PIPELINE_FILES. If this is not set, CAMDAC searches recursively in the current
 #'   working directory.
-#' @param min_mapq Minimum mapping quality filter used in `cmain_allele_counts()`.
-#' @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP selection.
+#' @param min_mapq Minimum mapping quality filter. Defaults to 1 for WGBS and 0
+#'   for RRBS. A filter of 1 drops MAPQ 0 alignments; RRBS requires 0 so that
+#'   those reads are retained.
+#' @param min_cov Minimum coverage filter for: DNA methylation, Normal SNP
+#'   selection. Defaults to 3, as on both parent branches.
 #' @param overwrite Config to overwrite files if they already exist.
 #' @param cna_caller The CNA caller to use. "ascat" or "battenberg". Default is "battenberg"
 #' @param cna_settings A list of settings to pass to the CNA caller. rho, psi, java, beaglemaxmem
@@ -37,7 +40,7 @@ CamSample <- function(id, sex, bam = NULL, patient_id = "P") {
 #'   0.08/0.92 for WGBS. Deep WGBS may warrant a tighter window, e.g. c(0.2, 0.8).
 #' @export
 CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
-                      refs = NULL, n_seg_split = 50, min_mapq = 1, min_cov = 1, min_normal_cov=10, overwrite = FALSE,
+                      refs = NULL, n_seg_split = 50, min_mapq = NULL, min_cov = 3, min_normal_cov=10, overwrite = FALSE,
                       cna_caller = "battenberg", cna_settings = NULL, het_baf = NULL) {
   # Create output directory if it doesn't exist and set to absolute path
   fs::dir_create(outdir)
@@ -47,6 +50,13 @@ CamConfig <- function(outdir, bsseq, lib, build, n_cores = 1, regions = NULL,
   stopifnot(cna_caller %in% c("ascat", "battenberg"))
   stopifnot(lib %in% c("pe", "se"))
   stopifnot(bsseq %in% c("wgbs", "rrbs"))
+
+  # Resolve the mapping quality filter for this protocol
+  if (is.null(min_mapq)) {
+    min_mapq <- MIN_MAPQ_DEFAULTS[[bsseq]]
+  }
+  stopifnot(is.numeric(min_cov), length(min_cov) == 1, min_cov >= 0)
+  stopifnot(is.numeric(min_mapq), length(min_mapq) == 1, min_mapq >= 0)
 
   # Resolve the heterozygous SNP BAF window for this protocol
   if (is.null(het_baf)) {
@@ -124,6 +134,12 @@ is_ccgg <- function(config) {
 # window recovers more het SNPs. Deep WGBS can afford a tighter one, set via
 # the `het_baf` argument to `CamConfig()`.
 HET_BAF_DEFAULTS <- list(wgbs = c(0.08, 0.92), rrbs = c(0.15, 0.85))
+
+# Protocol default for the mapping quality filter. RRBS alignments are validated
+# by read start site rather than mapping quality, so CAMDAC-RRBS counted every
+# alignment (mq 0) to avoid biasing against reads carrying the alternate allele.
+# The WGBS branch applied mq 1, which the RRBS manual anticipated.
+MIN_MAPQ_DEFAULTS <- list(wgbs = 1, rrbs = 0)
 
 # Resolve the het SNP BAF window, falling back to protocol defaults for config
 # objects created before `het_baf` existed.
